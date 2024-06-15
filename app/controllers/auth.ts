@@ -24,7 +24,7 @@ export default class AuthController {
     }
   }
 
-  async login({ response, request }: HttpContext) {
+  async login({ request }: HttpContext) {
     try {
       const payload = await request.validateUsing(loginUserValidator)
       const user = await User.verifyCredentials(payload.email, payload.password)
@@ -41,20 +41,4 @@ export default class AuthController {
     }
   }
 
-  async logout({ auth, response }: HttpContext) {
-    try {
-      const user = auth.user!
-
-      // await User.accessTokens.delete(user, user.currentAccessToken.identifier)
-      return response.json({ message: 'Logout successful' })
-    } catch (error) {
-      console.log(error.message)
-    }
-  }
-
-  async me({ auth }: HttpContext) {
-    await auth.check()
-    const user = auth.user
-    return user
-  }
 }
