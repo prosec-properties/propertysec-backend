@@ -15,7 +15,7 @@ export default class AuthController {
         expiresIn: '30 days',
       })
 
-      response.json({
+      response.created({
         message: 'Login successful',
         token,
       })
@@ -24,21 +24,36 @@ export default class AuthController {
     }
   }
 
-  async login({ request }: HttpContext) {
+  async login({ request, response }: HttpContext) {
     try {
+      console.log('payload', request.body())
       const payload = await request.validateUsing(loginUserValidator)
       const user = await User.verifyCredentials(payload.email, payload.password)
 
-      console.log('user', user.toJSON())
+      const existingToken = await User.accessTokens.all(user)
 
-      const token = await User.accessTokens.create(user)
+      if (existingToken.length > 0) {
+        await User.accessTokens.delete(user, existingToken[0].identifier)
+      }
 
-      console.log('token', token.value!.release())
-
-      return token
+      const token = await User.accessTokens.create(user, ['*'], {
+        expiresIn: '30 days',
+      })
+      console.log('token', token)
+      response.ok(token)
     } catch (error) {
       console.log(error)
     }
   }
 
+  async me({ auth, response }: HttpContext) {
+    try {
+      await auth.check()
+      const user = auth.user!
+
+      response.ok(user)
+    } catch (error) {
+      console.log(error.message)
+    }
+  }
 }
