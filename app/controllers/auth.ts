@@ -80,7 +80,7 @@ export default class AuthController {
         message: 'Email verified successfully',
       })
     } catch (error) {
-      console.log('error', error)
+      console.log('error stuff', error)
     }
   }
 
