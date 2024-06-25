@@ -11,6 +11,7 @@ export default class extends BaseSchema {
       table.string('last_name').notNullable()
       table.string('email').notNullable().unique()
       table.string('password').notNullable()
+      table.boolean('email_verified').notNullable().defaultTo(false)
       table.timestamp('created_at', { useTz: true }).notNullable()
       table.timestamp('updated_at', { useTz: true }).notNullable()
     })

@@ -1,4 +1,5 @@
 import User from '#models/user'
+import email from '#services/email'
 import { loginUserValidator, registerUserValidator } from '#validators/auth'
 import type { HttpContext } from '@adonisjs/core/http'
 
@@ -7,20 +8,25 @@ export default class AuthController {
     try {
       const payload = await request.validateUsing(registerUserValidator)
 
-      console.log(payload)
-
       const user = await User.create(payload)
 
       const token = await User.accessTokens.create(user, ['*'], {
-        expiresIn: '30 days',
+        expiresIn: '15 minutes',
       })
 
-      response.created({
-        message: 'Login successful',
-        token,
+      if (!token) {
+        response.abort({
+          message: 'Error creating token',
+        })
+      }
+
+      await email.sendEmail(payload.email, user.id, token.identifier as string)
+
+      response.ok({
+        message: 'Please verify your email',
       })
     } catch (error) {
-      console.log(error.message)
+      console.log('error', error)
     }
   }
 
@@ -46,14 +52,36 @@ export default class AuthController {
     }
   }
 
-  async me({ auth, response }: HttpContext) {
+  async verifyEmail({ request, response }: HttpContext) {
     try {
-      await auth.check()
-      const user = auth.user!
+      const query = request.qs()
 
-      response.ok(user)
+      const user = await User.findOrFail(query.uid)
+
+      const token = await User.accessTokens.find(user, query.tid)
+      if (!token) {
+        response.abort({
+          message: 'Token not found',
+        })
+      }
+
+      if (token!.isExpired()) {
+        response.abort({
+          message: 'Token expired',
+        })
+      }
+
+      user.emailVerified = true
+      await user.save()
+
+      await User.accessTokens.delete(user, token!.identifier)
+
+      return response.send({
+        message: 'Email verified successfully',
+      })
     } catch (error) {
-      console.log(error.message)
+      console.log('error', error)
     }
   }
+
 }

@@ -11,7 +11,8 @@
     "test": "node ace test",
     "lint": "eslint .",
     "format": "prettier --write .",
-    "typecheck": "tsc --noEmit"
+    "typecheck": "tsc --noEmit",
+    "migrate": "node ace migration:run"
   },
   "imports": {
     "#controllers/*": "./app/controllers/*.js",
@@ -57,8 +58,12 @@
     "@adonisjs/cors": "^2.2.1",
     "@adonisjs/lucid": "^20.6.0",
     "@adonisjs/mail": "^9.2.1",
+    "@adonisjs/redis": "^9.1.0",
     "@vinejs/vine": "^2.1.0",
+    "bullmq": "^5.8.2",
+    "edge.js": "^6.0.2",
     "luxon": "^3.4.4",
+    "mjml": "^4.15.3",
     "mysql2": "^3.10.1",
     "pg": "^8.12.0",
     "reflect-metadata": "^0.2.2",
