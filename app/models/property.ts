@@ -4,6 +4,8 @@ import type { HasOne } from '@adonisjs/lucid/types/relations'
 import User from './user.js'
 import Category from './category.js'
 import { v4 as uuidv4 } from 'uuid'
+import string from '@adonisjs/core/helpers/string'
+import { nanoid } from 'nanoid'
 
 export default class Property extends BaseModel {
   @column({ isPrimary: true })
@@ -52,6 +54,9 @@ export default class Property extends BaseModel {
   declare status: 'draft' | 'published' | 'pending' | 'closed' | 'rejected'
 
   @column()
+  declare slug: string
+
+  @column()
   declare meta: string
 
   @column.dateTime({ autoCreate: true })
@@ -63,6 +68,11 @@ export default class Property extends BaseModel {
   @beforeCreate()
   static generateId(property: Category) {
     property.id = uuidv4()
+  }
+
+  @beforeCreate()
+  static generateSlug(property: Category) {
+    property.slug = string.slug(property.name + nanoid(5))
   }
 
   @hasOne(() => User)

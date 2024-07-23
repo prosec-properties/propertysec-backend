@@ -1,7 +1,9 @@
 import { DateTime } from 'luxon'
-import { BaseModel, beforeCreate, column } from '@adonisjs/lucid/orm'
+import { BaseModel, beforeCreate, column, hasMany } from '@adonisjs/lucid/orm'
 import { v4 as uuidv4 } from 'uuid'
-
+import Subcategory from './subcategory.js'
+import type { HasMany } from '@adonisjs/lucid/types/relations'
+import string from '@adonisjs/core/helpers/string'
 export default class Category extends BaseModel {
   @column({ isPrimary: true })
   declare id: string
@@ -16,6 +18,9 @@ export default class Category extends BaseModel {
   declare status: 'draft' | 'published' | 'pending' | 'closed' | 'rejected'
 
   @column()
+  declare slug: string
+
+  @column()
   declare meta: string
 
   @column.dateTime({ autoCreate: true })
@@ -28,4 +33,12 @@ export default class Category extends BaseModel {
   static generateId(property: Category) {
     property.id = uuidv4()
   }
+
+  @beforeCreate()
+  static generateSlug(property: Category) {
+    property.slug = string.slug(property.name)
+  }
+
+  @hasMany(() => Subcategory)
+  declare subcategories: HasMany<typeof Subcategory>
 }

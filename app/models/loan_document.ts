@@ -1,6 +1,8 @@
 import { DateTime } from 'luxon'
-import { BaseModel, beforeCreate, column } from '@adonisjs/lucid/orm'
+import { BaseModel, beforeCreate, column, hasOne } from '@adonisjs/lucid/orm'
 import { v4 as uuidv4 } from 'uuid'
+import LoanApplication from './loan_application.js'
+import type { HasOne } from '@adonisjs/lucid/types/relations'
 
 export default class LoanDocument extends BaseModel {
   @column({ isPrimary: true })
@@ -36,4 +38,7 @@ export default class LoanDocument extends BaseModel {
   static generateUUID(model: LoanDocument) {
     model.id = uuidv4()
   }
+
+  @hasOne(() => LoanApplication)
+  declare loanApplication: HasOne<typeof LoanApplication>
 }

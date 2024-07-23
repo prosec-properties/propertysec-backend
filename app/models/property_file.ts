@@ -1,24 +1,24 @@
 import { DateTime } from 'luxon'
 import { BaseModel, beforeCreate, column, hasOne } from '@adonisjs/lucid/orm'
 import { v4 as uuidv4 } from 'uuid'
-import type { HasOne } from '@adonisjs/lucid/types/relations'
-import User from './user.js'
+import Property from './property.js'
+import { HasOne } from '@adonisjs/lucid/types/relations'
 
-export default class UserSetting extends BaseModel {
+export default class PropertyFile extends BaseModel {
   @column({ isPrimary: true })
   declare id: string
 
   @column()
-  declare userId: string
+  declare propertyId: string
 
   @column()
-  declare columnName: string
+  declare fileUrl: string
 
   @column()
-  declare columnValue: string
+  declare fileType: 'image' | 'other'
 
   @column()
-  declare meta: string
+  declare meta?: string
 
   @column.dateTime({ autoCreate: true })
   declare createdAt: DateTime
@@ -27,10 +27,10 @@ export default class UserSetting extends BaseModel {
   declare updatedAt: DateTime
 
   @beforeCreate()
-  static generateId(property: UserSetting) {
-    property.id = uuidv4()
+  static generateUUID(model: PropertyFile) {
+    model.id = uuidv4()
   }
 
-  @hasOne(() => User)
-  declare user: HasOne<typeof User>
+  @hasOne(() => Property)
+  declare property: HasOne<typeof Property>
 }
