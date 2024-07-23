@@ -32,9 +32,16 @@ export default class AuthController {
 
   async login({ request, response }: HttpContext) {
     try {
-      console.log('payload', request.body())
       const payload = await request.validateUsing(loginUserValidator)
+      const userExists = await User.query().where('email', payload.email).first()
+
+      if (!userExists) {
+        response.abort({
+          message: 'User not found',
+        })
+      }
       const user = await User.verifyCredentials(payload.email, payload.password)
+      console.log('payload 39', payload)
 
       const existingToken = await User.accessTokens.all(user)
 
@@ -43,7 +50,7 @@ export default class AuthController {
       }
 
       const token = await User.accessTokens.create(user, ['*'], {
-        expiresIn: '30 days',
+        expiresIn: '1 minute',
       })
       console.log('token', token)
       response.ok(token)
@@ -83,5 +90,4 @@ export default class AuthController {
       console.log('error stuff', error)
     }
   }
-
 }

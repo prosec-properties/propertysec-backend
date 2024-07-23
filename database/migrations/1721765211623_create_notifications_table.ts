@@ -2,21 +2,22 @@ import { BaseSchema } from '@adonisjs/lucid/schema'
 import { v4 as uuidv4 } from 'uuid'
 
 export default class extends BaseSchema {
-  protected tableName = 'auth_access_tokens'
+  protected tableName = 'notifications'
 
   async up() {
     this.schema.createTable(this.tableName, (table) => {
       table.uuid('id').primary().notNullable().unique().defaultTo(uuidv4())
-      table.uuid('tokenable_id').notNullable().references('id').inTable('users').onDelete('CASCADE')
+      table.uuid('user_id').references('id').inTable('users').onDelete('CASCADE').notNullable()
+      table.json('data').nullable()
+      table.text('message').notNullable()
+      table.boolean('is_read').defaultTo(false).notNullable()
+      table.string('read_at').nullable()
 
-      table.string('type').notNullable()
-      table.string('name').nullable()
-      table.string('hash').notNullable()
-      table.text('abilities').notNullable()
+      /**
+       * Uses timestamptz for PostgreSQL and DATETIME2 for MSSQL
+       */
       table.timestamp('created_at', { useTz: true })
       table.timestamp('updated_at', { useTz: true })
-      table.timestamp('last_used_at').nullable()
-      table.timestamp('expires_at').nullable()
     })
   }
 
