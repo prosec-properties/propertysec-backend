@@ -12,7 +12,8 @@
     "lint": "eslint .",
     "format": "prettier --write .",
     "typecheck": "tsc --noEmit",
-    "migrate": "node ace migration:run"
+    "migrate": "node ace migration:run",
+    "db": "echo 'running migration' && node ace migration:run && echo 'seeding database' && node ace db:seed"
   },
   "imports": {
     "#controllers/*": "./app/controllers/*.js",

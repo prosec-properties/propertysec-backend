@@ -8,8 +8,8 @@ export default class extends BaseSchema {
     this.schema.createTable(this.tableName, (table) => {
       table.uuid('id').primary().notNullable().unique().defaultTo(uuidv4())
       table.uuid('user_id').references('id').inTable('users').onDelete('CASCADE')
-      table.uuid('category_id').references('id').inTable('categories').onDelete('CASCADE')
-      table.uuid('sub_category_id').references('id').inTable('sub_categories').onDelete('CASCADE')
+      table.uuid('category_id').references('id').inTable('categories')
+      table.uuid('subcategory_id').references('id').inTable('subcategories')
       table.string('name').notNullable()
       table.string('location').nullable()
       table.bigInteger('price').notNullable()

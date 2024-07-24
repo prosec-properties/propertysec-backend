@@ -9,7 +9,7 @@ export default class extends BaseSchema {
       table.uuid('id').primary().notNullable().unique().defaultTo(uuidv4())
       table.string('name').notNullable()
       table.boolean('is_active').defaultTo(true)
-      table.string('state_id').notNullable().references('id').inTable('states').onDelete('CASCADE')
+      table.uuid('state_id').notNullable().references('id').inTable('states')
       table.text('meta').nullable()
 
       table.timestamp('created_at', { useTz: true })

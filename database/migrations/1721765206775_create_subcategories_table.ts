@@ -17,7 +17,7 @@ export default class extends BaseSchema {
       table.timestamp('created_at', { useTz: true })
       table.timestamp('updated_at', { useTz: true })
 
-      table.index(['name'], 'name_index')
+      table.index(['name'], 'subcategory_name_index')
     })
   }
 

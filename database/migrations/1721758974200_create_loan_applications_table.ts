@@ -7,7 +7,7 @@ export default class extends BaseSchema {
   async up() {
     this.schema.createTable(this.tableName, (table) => {
       table.uuid('id').primary().notNullable().unique().defaultTo(uuidv4())
-      table.uuid('applicant_id').references('id').inTable('applicants')
+      table.uuid('applicant_id').references('id').inTable('loan_applicants')
       table.uuid('loan_id').references('id').inTable('loans')
       table.date('application_date')
       table.string('application_status')

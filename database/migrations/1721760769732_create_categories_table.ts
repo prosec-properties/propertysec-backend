@@ -11,7 +11,6 @@ export default class extends BaseSchema {
       table.text('description').nullable()
       table.text('meta').nullable()
       table.enum('status', ['active', 'inactive']).defaultTo('ACTIVE')
-      table.text('meta').nullable()
 
       table.timestamp('created_at', { useTz: true })
       table.timestamp('updated_at', { useTz: true })
