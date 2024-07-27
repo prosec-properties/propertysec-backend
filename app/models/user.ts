@@ -6,6 +6,7 @@ import { withAuthFinder } from '@adonisjs/auth/mixins/lucid'
 import { compose } from '@adonisjs/core/helpers'
 import type { HasMany } from '@adonisjs/lucid/types/relations'
 import Property from './property.js'
+import type { IUserRole } from '../interface/user.js'
 
 const AuthFinder = withAuthFinder(() => hash.use('scrypt'), {
   uids: ['email'],
@@ -17,7 +18,7 @@ export default class User extends compose(BaseModel, AuthFinder) {
   declare id: string
 
   @column()
-  declare fullname: string
+  declare fullName: string
 
   @column()
   declare email: string
@@ -32,7 +33,7 @@ export default class User extends compose(BaseModel, AuthFinder) {
   declare phoneNumber: string
 
   @column()
-  declare role: 'landlord' | 'buyer' | 'affiliate' | 'developer' | 'lawyer' | 'admin' | 'other'
+  declare role: IUserRole
 
   @column()
   declare avatarUrl: string

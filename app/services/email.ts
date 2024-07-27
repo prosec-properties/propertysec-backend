@@ -32,8 +32,8 @@ class Email {
   //   })
   // }
 
-  async sendEmail(email: string, userId: string, tokenId: string) {
-    return await mail.sendLater(new VerifyENotification(email, userId, tokenId))
+  async sendEmail(email: string, otp: string) {
+    return await mail.sendLater(new VerifyENotification(email, otp))
   }
 }
 

@@ -1,5 +1,6 @@
 import { BaseSchema } from '@adonisjs/lucid/schema'
 import { v4 as uuidv4 } from 'uuid'
+import { IUserRoleEnum } from '../../app/interface/user.js'
 
 export default class extends BaseSchema {
   protected tableName = 'users'
@@ -13,7 +14,7 @@ export default class extends BaseSchema {
       table.string('email').notNullable().unique()
       table.string('phone_number').notNullable().unique()
       table
-        .enum('role', ['landlord', 'buyer', 'affiliate', 'developer', 'lawyer', 'admin', 'other'])
+        .enum('role', IUserRoleEnum)
         .defaultTo('user')
       table.string('avatar_url')
       table.string('full_address')

@@ -1,15 +1,33 @@
-@mjml()
-  <mjml>
-    <mj-body>
-      <mj-section>
-        <mj-column>
-          <mj-text>
-            Hello World!
-            Click on this button below to verify your email
-          </mj-text>
-          <mj-button align="left" font-size="22px" font-weight="bold" background-color="#ffffff" border-radius="10px" color="#1AA0E1" font-family="open Sans Helvetica, Arial, sans-serif" href={{ link }}>Login</mj-button>
-        </mj-column>
-      </mj-section>
-    </mj-body>
-  </mjml>
+@mjml({
+  fonts: {
+    Niramit: 'https://fonts.googleapis.com/css?family=Niramit:400,500,700'
+  }
+})
+<mjml >
+  <mj-body background-color="#F2F2F2">
+    <mj-section background-color="#FFFFFF">
+      <mj-column>
+
+        <mj-text font-size="20px" color="#2B2B2B" font-family="Niramit">Verify Email</mj-text>
+        <mj-text font-size="16px" color="#464646" font-family="Murecho">Verify your new Property Sec account To verify your email address, please use the following One Time Password (OTP):</mj-text>
+
+        <mj-text font-size="20px" color="#2B2B2B" font-family="Niramit">{{otp}}</mj-text>
+
+        <mj-text font-size="16px" color="#464646" font-family="Murecho">Don't share this OTP with anyone. Property Sec takes your account security very seriously. Property Sec Customer Service will never ask you to disclose your Property Sec password or OTP.</mj-text>
+
+      </mj-column>
+
+    </mj-section>
+    <mj-section>
+    <mj-column >
+      <mj-text align="center"><span  style="color: #464646">Sent by </span> <span style="color: #080808">Property Sec</span> </mj-text>
+        <mj-text align="center">Privacy Policy | Terms and Conditions</mj-text>
+
+       <mj-text align="center"><span style="color: #464646">If you have any questions please contact us at</span>  <span>support@propertysec.com</span> </mj-text>
+      
+      
+      </mj-column>
+    </mj-section>
+  </mj-body>
+</mjml>
 @end

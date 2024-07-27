@@ -1,10 +1,12 @@
 import vine from '@vinejs/vine'
+import { IUserRoleEnum } from '../interface/user.js'
 
 export const registerUserValidator = vine.compile(
   vine.object({
-    firstName: vine.string().trim().minLength(3),
-    lastName: vine.string().minLength(3),
+    fullName: vine.string().trim().minLength(3),
     email: vine.string().email(),
+    phoneNumber: vine.string().minLength(11),
+    role: vine.enum(IUserRoleEnum),
     password: vine.string().minLength(6),
   })
 )

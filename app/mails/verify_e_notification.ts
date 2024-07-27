@@ -2,16 +2,14 @@ import { BaseMail } from '@adonisjs/mail'
 
 export default class VerifyENotification extends BaseMail {
   email: string
-  userId: string
-  tokenId: string
+  otp: string
   from = 'info@example.org'
   subject = 'Verify your email'
 
-  constructor(email: string, userId: string, tokenId: string) {
+  constructor(email: string, otp: string) {
     super()
     this.email = email
-    this.userId = userId
-    this.tokenId = tokenId
+    this.otp = otp
   }
 
   /**
@@ -19,8 +17,8 @@ export default class VerifyENotification extends BaseMail {
    * the email is sent or queued.
    */
   prepare() {
-    this.message.to(this.email).htmlView('emails/verify_email_text', {
-      link: `http://localhost:3000/auth/verify-email?uid=${this.userId}&tid=${this.tokenId}`,
+    this.message.to(this.email).htmlView('emails/verify_email_html', {
+      otp: this.otp
     })
   }
 }
