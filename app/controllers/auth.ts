@@ -7,17 +7,20 @@ import {
   resetPasswordValidator,
 } from '#validators/auth'
 import type { HttpContext } from '@adonisjs/core/http'
-import { customAlphabet } from 'nanoid'
+import { customAlphabet, nanoid } from 'nanoid'
 import redis from '@adonisjs/redis/services/main'
 import {
   EMAIL_TEMPLATES,
   OTP_LENGTH,
   RANDOM_OTP_NUMBERS,
+  REDIS_FORGOT_PASSWORD_PREFIX,
   REDIS_RESET_PASSWORD_PREFIX,
   REDIS_VERIFY_EMAIL_PREFIX,
 } from '#constants/auth'
 import { FIXED_TIME_VALUES } from '#constants/time'
 import { errorResponse, getErrorObject } from '#helpers/error'
+import env from '#start/env'
+import encryption from '@adonisjs/core/services/encryption'
 
 export default class AuthController {
   async register({ request, response }: HttpContext) {
@@ -42,7 +45,7 @@ export default class AuthController {
 
       const otp = customAlphabet(RANDOM_OTP_NUMBERS, OTP_LENGTH)()
 
-      await emailService.sendEmail(payload.email, otp, EMAIL_TEMPLATES.VERIFY_EMAIL)
+      await emailService.sendEmail(payload.email, otp, EMAIL_TEMPLATES.VERIFY_EMAIL_OTP)
 
       await redis.setex(
         `${REDIS_VERIFY_EMAIL_PREFIX}${otp}`,
@@ -145,19 +148,15 @@ export default class AuthController {
 
       await User.findByOrFail('email', email)
 
-      console.log('type', type)
-
       const otp = customAlphabet(RANDOM_OTP_NUMBERS, OTP_LENGTH)()
 
       if (type === 'reset-password') {
         redisKey = REDIS_RESET_PASSWORD_PREFIX
-        emailTemplate = EMAIL_TEMPLATES.RESET_PASSWORD
+        emailTemplate = EMAIL_TEMPLATES.RESET_PASSWORD_OTP
       } else {
         redisKey = REDIS_VERIFY_EMAIL_PREFIX
-        emailTemplate = EMAIL_TEMPLATES.VERIFY_EMAIL
+        emailTemplate = EMAIL_TEMPLATES.VERIFY_EMAIL_OTP
       }
-
-      console.log('redisKey', redisKey)
 
       await emailService.sendEmail(email, otp, emailTemplate)
 
@@ -208,17 +207,25 @@ export default class AuthController {
     try {
       const { email } = await request.validateUsing(emailValidator)
 
-      await User.findByOrFail('email', email)
+      const user = await User.findByOrFail('email', email)
 
-      const otp = customAlphabet(RANDOM_OTP_NUMBERS, OTP_LENGTH)()
-
-      await emailService.sendEmail(email, otp, EMAIL_TEMPLATES.RESET_PASSWORD)
+      // const otp = customAlphabet(RANDOM_OTP_NUMBERS, OTP_LENGTH)()
+      const token = nanoid(10)
 
       await redis.setex(
-        `${REDIS_RESET_PASSWORD_PREFIX}${otp}`,
+        `${REDIS_FORGOT_PASSWORD_PREFIX}${user.id}`,
         FIXED_TIME_VALUES.TWENTY_MINUTES,
-        email
+        token
       )
+
+      const encryptedToken = {
+        code: encryption.encrypt({ token, email }, '20 mins'),
+        email,
+      }
+
+      const resetLink = `${env.get('FRONT_END_URL')}/auth/reset-password?code=${encryptedToken.code}&email=${encryptedToken.email}`
+
+      await emailService.sendEmail(email, token, EMAIL_TEMPLATES.RESET_PASSWORD_OTP, resetLink)
 
       response.ok({
         success: true,
