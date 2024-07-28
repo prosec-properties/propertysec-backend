@@ -4,12 +4,14 @@ export default class VerifyENotification extends BaseMail {
   email: string
   otp: string
   from = 'info@example.org'
-  subject = 'Verify your email'
+  subject = this.getSubject()
+  emailTemplate: string
 
-  constructor(email: string, otp: string) {
+  constructor(email: string, otp: string, emailTemplate: string) {
     super()
     this.email = email
     this.otp = otp
+    this.emailTemplate = emailTemplate
   }
 
   /**
@@ -17,8 +19,16 @@ export default class VerifyENotification extends BaseMail {
    * the email is sent or queued.
    */
   prepare() {
-    this.message.to(this.email).htmlView('emails/verify_email_html', {
-      otp: this.otp
+    this.message.to(this.email).htmlView(this.emailTemplate, {
+      otp: this.otp,
     })
+  }
+
+  getSubject() {
+    if (this.emailTemplate === 'reset_password') {
+      return 'Reset your password'
+    } else {
+      return 'Verify your email'
+    }
   }
 }

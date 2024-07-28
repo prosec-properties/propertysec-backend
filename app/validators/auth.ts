@@ -17,3 +17,17 @@ export const loginUserValidator = vine.compile(
     password: vine.string().minLength(6),
   })
 )
+
+export const emailValidator = vine.compile(
+  vine.object({
+    email: vine.string().email().normalizeEmail(),
+  })
+)
+
+export const resetPasswordValidator = vine.compile(
+  vine.object({
+    otp: vine.string().minLength(6).maxLength(6),
+    email: vine.string().email().normalizeEmail(),
+    password: vine.string().minLength(6),
+  })
+)

@@ -32,9 +32,11 @@ class Email {
   //   })
   // }
 
-  async sendEmail(email: string, otp: string) {
-    return await mail.sendLater(new VerifyENotification(email, otp))
+  async sendEmail(email: string, otp: string, emailTemplate: string) {
+    return await mail.sendLater(new VerifyENotification(email, otp, emailTemplate))
   }
+
+
 }
 
 export default new Email()
