@@ -34,7 +34,9 @@
     "#config/*": "./config/*.js",
     "#types/*": "./types/*.js",
     "#constants/*": "./app/constants/*.js",
-    "#helpers/*": ["./app/helpers/*.js"]
+    "#helpers/*": [
+      "./app/helpers/*.js"
+    ]
   },
   "devDependencies": {
     "@adonisjs/assembler": "^7.6.1",
@@ -66,6 +68,7 @@
     "@adonisjs/redis": "^9.1.0",
     "@vinejs/vine": "^2.1.0",
     "bullmq": "^5.8.2",
+    "device-detector-js": "^3.0.3",
     "edge.js": "^6.0.2",
     "luxon": "^3.4.4",
     "mjml": "^4.15.3",

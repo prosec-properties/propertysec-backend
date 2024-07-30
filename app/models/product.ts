@@ -1,9 +1,9 @@
 import { DateTime } from 'luxon'
-import { BaseModel, beforeCreate, column, hasOne } from '@adonisjs/lucid/orm'
+import { BaseModel, beforeCreate, belongsTo, column } from '@adonisjs/lucid/orm'
 import { v4 as uuidv4 } from 'uuid'
 import string from '@adonisjs/core/helpers/string'
 import { nanoid } from 'nanoid'
-import type { HasOne } from '@adonisjs/lucid/types/relations'
+import type { BelongsTo } from '@adonisjs/lucid/types/relations'
 import User from './user.js'
 
 export default class Product extends BaseModel {
@@ -56,6 +56,6 @@ export default class Product extends BaseModel {
     model.slug = string.slug(model.name + nanoid(5))
   }
 
-  @hasOne(() => User)
-  declare user: HasOne<typeof User>
+  @belongsTo(() => User)
+  declare user: BelongsTo<typeof User>
 }

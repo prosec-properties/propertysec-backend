@@ -4,51 +4,31 @@ import { BaseMail } from '@adonisjs/mail'
 
 export default class VerifyENotification extends BaseMail {
   email: string
-  // otp: string
+  otp: string
   from = COMPANY_EMAIL
   subject: string
   emailTemplate: string
-  // resetLink?: string
+  resetLink?: string
 
-  constructor(email: string, emailTemplate: string) {
+  constructor(email: string, emailTemplate: string, otp: string, resetLink?: string) {
     super()
     this.email = email
-    // this.otp = otp
+    this.otp = otp
     this.emailTemplate = emailTemplate
     this.subject = this.getSubject()
-    // this.resetLink = resetLink
-  }
-
-  verifyOtpEmail(otp: string) {
-    this.message.to(this.email).htmlView(this.emailTemplate, {
-      otp,
-    })
-  }
-
-  resetPasswordEmail(resetLink: string) {
-    this.message.to(this.email).htmlView(this.emailTemplate, {
-      resetLink,
-    })
+    this.resetLink = resetLink
   }
 
   /**
    * The "prepare" method is called automatically when
    * the email is sent or queued.
    */
-  // prepare() {
-  //   console.log('resetLink', this.resetLink)
-  //   if (this.emailTemplate === EMAIL_TEMPLATES.RESET_PASSWORD_OTP) {
-  //     this.resetPasswordEmail(this.resetLink)
-  //   }
-
-  //   if (this.emailTemplate === EMAIL_TEMPLATES.VERIFY_EMAIL_OTP) {
-  //     this.verifyOtpEmail(this.otp)
-  //   }
-    // this.message.to(this.email).htmlView(this.emailTemplate, {
-    //   otp: this.otp,
-    //   resetLink: this.resetLink,
-    // })
-  // }
+  prepare() {
+    this.message.to(this.email).htmlView(this.emailTemplate, {
+      resetLink: this.resetLink,
+      otp: this.otp,
+    })
+  }
 
   getSubject() {
     if (this.emailTemplate === EMAIL_TEMPLATES.RESET_PASSWORD_OTP) {

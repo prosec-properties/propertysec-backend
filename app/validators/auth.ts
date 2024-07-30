@@ -26,8 +26,8 @@ export const emailValidator = vine.compile(
 
 export const resetPasswordValidator = vine.compile(
   vine.object({
-    otp: vine.string().minLength(6).maxLength(6),
     email: vine.string().email().normalizeEmail(),
     password: vine.string().minLength(6),
+    token: vine.string(),
   })
 )

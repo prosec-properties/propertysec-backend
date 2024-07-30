@@ -28,10 +28,10 @@ router
       .group(() => {
         router.post('/login', [AuthController, 'login'])
         router.post('/register', [AuthController, 'register'])
-        // router.get('/verify-email', [AuthController, 'verifyEmail'])
         router.post('/verify-otp', [AuthController, 'verifyOtp'])
         router.post('/resend-otp', [AuthController, 'resendOtp'])
         router.post('/forgot-password', [AuthController, 'forgotPassword'])
+        router.post('/reset-password', [AuthController, 'resetPassword'])
       })
       .prefix('auth')
 

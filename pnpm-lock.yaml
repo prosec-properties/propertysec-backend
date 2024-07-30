@@ -35,6 +35,9 @@ importers:
       bullmq:
         specifier: ^5.8.2
         version: 5.8.2
+      device-detector-js:
+        specifier: ^3.0.3
+        version: 3.0.3
       edge.js:
         specifier: ^6.0.2
         version: 6.0.2
@@ -1338,6 +1341,10 @@ packages:
 
   detect-node@2.1.0:
     resolution: {integrity: sha512-T0NIuQpnTvFDATNuHN5roPwSBG83rFsuO+MXXH9/3N1eFbn4wcPjttvjMLEPWJ0RGUYgQE7cGgS3tNxbqCGM7g==}
+
+  device-detector-js@3.0.3:
+    resolution: {integrity: sha512-jM89LJAvP6uOd84at8OlD9dWP8KeYCCHUde0RT0HQo/stdoRH4b54Xl/fntx2nEXCmqiFhmo+/cJetS2VGUHPw==}
+    engines: {node: '>= 8.11.4'}
 
   dezalgo@1.0.4:
     resolution: {integrity: sha512-rXSP0bf+5n0Qonsb+SVVfNfIsimO4HEtmnIpPHY8Q1UCzKlQrDMfdobr8nJOOsRgWCyMRqeSBQzmWUMq7zvVig==}
@@ -4981,6 +4988,8 @@ snapshots:
     optional: true
 
   detect-node@2.1.0: {}
+
+  device-detector-js@3.0.3: {}
 
   dezalgo@1.0.4:
     dependencies:

@@ -7,20 +7,20 @@ import {
   resetPasswordValidator,
 } from '#validators/auth'
 import type { HttpContext } from '@adonisjs/core/http'
-import { customAlphabet, nanoid } from 'nanoid'
+import { customAlphabet } from 'nanoid'
 import redis from '@adonisjs/redis/services/main'
 import {
-  EMAIL_TEMPLATES,
   OTP_LENGTH,
   RANDOM_OTP_NUMBERS,
-  REDIS_FORGOT_PASSWORD_PREFIX,
   REDIS_RESET_PASSWORD_PREFIX,
   REDIS_VERIFY_EMAIL_PREFIX,
 } from '#constants/auth'
 import { FIXED_TIME_VALUES } from '#constants/time'
 import { errorResponse, getErrorObject } from '#helpers/error'
 import env from '#start/env'
-import encryption from '@adonisjs/core/services/encryption'
+import AuthToken from '#services/token'
+import { setSearchParams } from '#helpers/general'
+import UserService from '#services/user'
 
 export default class AuthController {
   async register({ request, response }: HttpContext) {
@@ -45,7 +45,7 @@ export default class AuthController {
 
       const otp = customAlphabet(RANDOM_OTP_NUMBERS, OTP_LENGTH)()
 
-      await emailService.sendEmail(payload.email, otp, EMAIL_TEMPLATES.VERIFY_EMAIL_OTP)
+      await emailService.sendEmailVerificationMail(payload.email, otp)
 
       await redis.setex(
         `${REDIS_VERIFY_EMAIL_PREFIX}${otp}`,
@@ -86,43 +86,27 @@ export default class AuthController {
   }
 
   async verifyOtp({ request, response }: HttpContext) {
-    const { otp } = request.body()
-    const { type } = request.qs()
+    const { otp, email } = request.body()
 
     try {
-      let redisKey: string
+      const user = await User.findByOrFail('email', email)
 
-      if (type === 'reset-password') {
-        redisKey = REDIS_RESET_PASSWORD_PREFIX
-      } else {
-        redisKey = REDIS_VERIFY_EMAIL_PREFIX
-      }
+      const storedOtp = await redis.get(`${REDIS_VERIFY_EMAIL_PREFIX}${user.id}`)
 
-      const redisStoredEmail = await redis.get(`${redisKey}${otp}`)
-
-      console.log('redisStoredEmail', redisStoredEmail)
-      console.log('redisKey', redisKey)
-
-      if (!redisStoredEmail) {
-        return response.abort({
+      if (!storedOtp) {
+        return response.badRequest({
           success: false,
-          message: 'Invalid or expired token',
+          message: 'Expired OTP',
         })
       }
 
-      if (type !== 'reset-password') {
-        const user = await User.findByOrFail('email', redisStoredEmail)
+      const isOtpValid = storedOtp === otp
 
-        if (user.emailVerified) {
-          return response.badRequest({
-            success: false,
-            message: 'Email already verified',
-          })
-        }
-
-        user.emailVerified = true
-        await user.save()
+      if (!isOtpValid) {
+        return response.badRequest(errorResponse('Invalid OTP'))
       }
+
+      await UserService.emailIsVerified(user)
 
       response.ok({
         success: true,
@@ -141,91 +125,18 @@ export default class AuthController {
   async resendOtp({ request, response }: HttpContext) {
     try {
       const { email } = await request.validateUsing(emailValidator)
-      const { type } = request.qs()
-
-      let redisKey: string
-      let emailTemplate: string
-
-      await User.findByOrFail('email', email)
-
-      const otp = customAlphabet(RANDOM_OTP_NUMBERS, OTP_LENGTH)()
-
-      if (type === 'reset-password') {
-        redisKey = REDIS_RESET_PASSWORD_PREFIX
-        emailTemplate = EMAIL_TEMPLATES.RESET_PASSWORD_OTP
-      } else {
-        redisKey = REDIS_VERIFY_EMAIL_PREFIX
-        emailTemplate = EMAIL_TEMPLATES.VERIFY_EMAIL_OTP
-      }
-
-      await emailService.sendEmail(email, otp, emailTemplate)
-
-      await redis.setex(`${redisKey}${otp}`, FIXED_TIME_VALUES.TWENTY_MINUTES, email)
-
-      response.ok({
-        success: true,
-        message: 'OTP sent successfully',
-      })
-    } catch (error) {
-      console.log('error', error)
-    }
-  }
-
-  // async verifyEmail({ request, response }: HttpContext) {
-  //   try {
-  //     const query = request.qs()
-
-  //     const user = await User.findOrFail(query.uid)
-
-  //     const token = await User.accessTokens.find(user, query.tid)
-  //     if (!token) {
-  //       response.abort({
-  //         message: 'Token not found',
-  //       })
-  //     }
-
-  //     if (token!.isExpired()) {
-  //       response.abort({
-  //         message: 'Token expired',
-  //       })
-  //     }
-
-  //     user.emailVerified = true
-  //     await user.save()
-
-  //     await User.accessTokens.delete(user, token!.identifier)
-
-  //     return response.send({
-  //       message: 'Email verified successfully',
-  //     })
-  //   } catch (error) {
-  //     console.log('error stuff', error)
-  //   }
-  // }
-
-  async forgotPassword({ request, response }: HttpContext) {
-    try {
-      const { email } = await request.validateUsing(emailValidator)
 
       const user = await User.findByOrFail('email', email)
 
-      // const otp = customAlphabet(RANDOM_OTP_NUMBERS, OTP_LENGTH)()
-      const token = nanoid(10)
+      const otp = customAlphabet(RANDOM_OTP_NUMBERS, OTP_LENGTH)()
 
       await redis.setex(
-        `${REDIS_FORGOT_PASSWORD_PREFIX}${user.id}`,
+        `${REDIS_VERIFY_EMAIL_PREFIX}${user.id}`,
         FIXED_TIME_VALUES.TWENTY_MINUTES,
-        token
+        otp
       )
 
-      const encryptedToken = {
-        code: encryption.encrypt({ token, email }, '20 mins'),
-        email,
-      }
-
-      const resetLink = `${env.get('FRONT_END_URL')}/auth/reset-password?code=${encryptedToken.code}&email=${encryptedToken.email}`
-
-      await emailService.sendEmail(email, token, EMAIL_TEMPLATES.RESET_PASSWORD_OTP, resetLink)
+      await emailService.sendEmailVerificationMail(email, otp)
 
       response.ok({
         success: true,
@@ -236,44 +147,61 @@ export default class AuthController {
     }
   }
 
-  async resetPassword({ request, response }: HttpContext) {
+  async forgotPassword({ request, response }: HttpContext) {
     try {
-      const { otp, email, password } = await request.validateUsing(resetPasswordValidator)
-      const { type } = request.qs()
-
-      let redisKey: string
-
-      if (type === 'reset-password') {
-        redisKey = REDIS_RESET_PASSWORD_PREFIX
-      } else {
-        redisKey = REDIS_VERIFY_EMAIL_PREFIX
-      }
-
-      const redisStoredEmail = await redis.get(`${redisKey}${otp}`)
-
-      if (!redisStoredEmail) {
-        return response.abort({
-          success: false,
-          message: 'Invalid or expired token',
-        })
-      }
-
-      if (redisStoredEmail !== email) {
-        return response.badRequest({
-          success: false,
-          message: 'Invalid email',
-        })
-      }
+      const { email } = await request.validateUsing(emailValidator)
 
       const user = await User.findByOrFail('email', email)
+
+      const token = await AuthToken.generatePasswordResetToken(user)
+
+      if (!token) {
+        return response.badRequest(errorResponse('Error occured generating token'))
+      }
+
+      const params = {
+        token,
+        email,
+      }
+
+      const searchParams = setSearchParams(params)
+
+      const resetLink = `${env.get('FRONT_END_URL')}/auth/reset-password?${searchParams}`
+
+      await emailService.sendResetPasswordMail(email, resetLink)
+
+      response.ok({
+        success: true,
+        message: 'Reset password link sent to your email!',
+      })
+    } catch (error) {
+      return response.badRequest(getErrorObject(error))
+    }
+  }
+
+  async resetPassword({ request, response }: HttpContext) {
+    try {
+      const { token, email, password } = await request.validateUsing(resetPasswordValidator)
+
+      const user = await User.findByOrFail('email', email)
+
+      const storedToken = await redis.get(`${REDIS_RESET_PASSWORD_PREFIX}${user.id}`)
+
+      const isTokenValid = storedToken === token
+
+      if (!isTokenValid || !storedToken) {
+        return response.badRequest(errorResponse('Invalid or expired token'))
+      }
 
       user.password = password
       await user.save()
 
       response.ok({
         success: true,
-        message: 'Password reset successfully',
+        message: 'Your password has been reset successfully!',
       })
+
+      await redis.del(`${REDIS_RESET_PASSWORD_PREFIX}${user.id}`)
     } catch (error) {
       return response.badRequest(getErrorObject(error))
     }

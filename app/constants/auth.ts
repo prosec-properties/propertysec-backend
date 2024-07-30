@@ -3,6 +3,8 @@ export const REDIS_USER_EMAIL = 'user-id:'
 export const REDIS_RESET_PASSWORD_PREFIX = 'rp-otp:'
 export const REDIS_FORGOT_PASSWORD_PREFIX = 'fp-otp:'
 
+export const REDIS_AUTH_USER_TOKEN_PREFIX = 'auth-user-token:'
+
 export const EMAIL_TEMPLATES = {
   VERIFY_EMAIL_OTP: 'emails/verify_email_otp',
   RESET_PASSWORD_OTP: 'emails/reset_password_otp',

@@ -1,14 +1,41 @@
-import VerifyENotification from '#mails/verify_e_notification'
+import { EMAIL_TEMPLATES } from '#constants/auth'
+import { COMPANY_EMAIL } from '#constants/general'
 import mail from '@adonisjs/mail/services/main'
 
+interface EmailPayload {
+  email: string
+  subject: string
+  template: string
+  data: Record<string, any>
+}
 class Email {
-  async sendEmail(email: string, otp: string, emailTemplate: string, resetLink?: string) {
-    return await mail.sendLater(new VerifyENotification(email, otp, emailTemplate, resetLink))
+  async sendEmailVerificationMail(email: string, otp: string) {
+    await this.sendEmail({
+      email,
+      template: EMAIL_TEMPLATES.VERIFY_EMAIL_OTP,
+      data: { otp },
+      subject: 'Verify your email',
+    })
   }
 
-  // async sendResetPasswordEmail(email: string, otp: string, resetLink: string) {
-  //   return await mail.sendLater(email, otp, 'emails/reset_password_otp', resetLink)
-  // }
+  async sendResetPasswordMail(email: string, resetLink: string) {
+    await this.sendEmail({
+      email,
+      template: EMAIL_TEMPLATES.RESET_PASSWORD_OTP,
+      data: { resetLink },
+      subject: 'Reset your password',
+    })
+  }
+
+  private async sendEmail({ email, subject, template, data }: EmailPayload) {
+    await mail.send((message) => {
+      message
+        .to(email)
+        .from(COMPANY_EMAIL)
+        .subject(subject)
+        .htmlView(template, { ...data })
+    })
+  }
 }
 
 export default new Email()
