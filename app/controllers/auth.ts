@@ -7,15 +7,8 @@ import {
   resetPasswordValidator,
 } from '#validators/auth'
 import type { HttpContext } from '@adonisjs/core/http'
-import { customAlphabet } from 'nanoid'
 import redis from '@adonisjs/redis/services/main'
-import {
-  OTP_LENGTH,
-  RANDOM_OTP_NUMBERS,
-  REDIS_RESET_PASSWORD_PREFIX,
-  REDIS_VERIFY_EMAIL_PREFIX,
-} from '#constants/auth'
-import { FIXED_TIME_VALUES } from '#constants/time'
+import { REDIS_RESET_PASSWORD_PREFIX, REDIS_VERIFY_EMAIL_PREFIX } from '#constants/auth'
 import { errorResponse, getErrorObject } from '#helpers/error'
 import env from '#start/env'
 import AuthToken from '#services/token'
@@ -30,38 +23,19 @@ export default class AuthController {
 
       if (userExists) {
         console.log('userExists', userExists)
-        return response.badRequest(errorResponse('User already exists. Please login'))
+        return response.badRequest(errorResponse('User already exists'))
       }
 
       const user = await User.create(payload)
 
-      const token = await User.accessTokens.create(user, ['*'], {
-        expiresIn: '15 minutes',
-      })
-
-      if (!token) {
-        return response.abort(errorResponse('Error creating token'))
-      }
-
-      const otp = customAlphabet(RANDOM_OTP_NUMBERS, OTP_LENGTH)()
-
-      await emailService.sendEmailVerificationMail(payload.email, otp)
-
-      await redis.setex(
-        `${REDIS_VERIFY_EMAIL_PREFIX}${otp}`,
-        FIXED_TIME_VALUES.TWENTY_MINUTES,
-        user.email
-      )
+      await UserService.verifyEmail(user)
 
       response.ok({
+        success: true,
         message: 'Please verify your email',
       })
     } catch (error) {
-      return response.badRequest(
-        getErrorObject(error, {
-          message: error.message,
-        })
-      )
+      return response.badRequest(getErrorObject(error))
     }
   }
 
@@ -82,6 +56,7 @@ export default class AuthController {
       response.ok(token)
     } catch (error) {
       console.log(error)
+      getErrorObject(error)
     }
   }
 
@@ -128,15 +103,7 @@ export default class AuthController {
 
       const user = await User.findByOrFail('email', email)
 
-      const otp = customAlphabet(RANDOM_OTP_NUMBERS, OTP_LENGTH)()
-
-      await redis.setex(
-        `${REDIS_VERIFY_EMAIL_PREFIX}${user.id}`,
-        FIXED_TIME_VALUES.TWENTY_MINUTES,
-        otp
-      )
-
-      await emailService.sendEmailVerificationMail(email, otp)
+      await UserService.verifyEmail(user)
 
       response.ok({
         success: true,

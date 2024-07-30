@@ -4,8 +4,20 @@ import { IUserRoleEnum } from '../interface/user.js'
 export const registerUserValidator = vine.compile(
   vine.object({
     fullName: vine.string().trim().minLength(3),
-    email: vine.string().email(),
-    phoneNumber: vine.string().minLength(11),
+    email: vine
+      .string()
+      .email()
+      .unique(async (db, value) => {
+        const user = await db.from('users').where('email', value).first()
+        return !user
+      }),
+    phoneNumber: vine
+      .string()
+      .minLength(11)
+      .unique(async (db, value) => {
+        const user = await db.from('users').where('phone_number', value).first()
+        return !user
+      }),
     role: vine.enum(IUserRoleEnum),
     password: vine.string().minLength(6),
   })

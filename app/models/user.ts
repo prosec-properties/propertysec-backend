@@ -1,5 +1,5 @@
 import { DateTime } from 'luxon'
-import { BaseModel, column, hasMany } from '@adonisjs/lucid/orm'
+import { BaseModel, beforeCreate, column, hasMany } from '@adonisjs/lucid/orm'
 import hash from '@adonisjs/core/services/hash'
 import { AccessToken, DbAccessTokensProvider } from '@adonisjs/auth/access_tokens'
 import { withAuthFinder } from '@adonisjs/auth/mixins/lucid'
@@ -7,6 +7,7 @@ import { compose } from '@adonisjs/core/helpers'
 import type { HasMany } from '@adonisjs/lucid/types/relations'
 import Property from './property.js'
 import type { IUserRole } from '../interface/user.js'
+import { v4 as uuidv4 } from 'uuid'
 
 const AuthFinder = withAuthFinder(() => hash.use('scrypt'), {
   uids: ['email'],
@@ -59,6 +60,11 @@ export default class User extends compose(BaseModel, AuthFinder) {
   currentAccessToken?: AccessToken
 
   static accessTokens = DbAccessTokensProvider.forModel(User)
+
+  @beforeCreate()
+  static generateId(property: User) {
+    property.id = uuidv4()
+  }
 
   @hasMany(() => Property)
   declare properties: HasMany<typeof Property>
