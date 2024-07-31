@@ -4,6 +4,7 @@ import User from '#models/user'
 import AuthToken from '#services/token'
 import type { HttpContext } from '@adonisjs/core/http'
 import { v4 as uuidv4 } from 'uuid'
+import jwt from 'jsonwebtoken'
 
 export default class SocialAuthController {
   async googleCallback({ response, request }: HttpContext) {
@@ -13,8 +14,7 @@ export default class SocialAuthController {
       let profile: any = {}
 
       if (credential) {
-        // @ts-ignore
-        const data = jwt.decode(credential, Env.get('GOOGLE_CLIENT_SECRET'))
+        const data = jwt.decode(credential)
         profile = data
       }
 
