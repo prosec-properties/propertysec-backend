@@ -1,3 +1,4 @@
+import { getGoogleUserProfile } from '#helpers/auth'
 import { errorResponse } from '#helpers/error'
 import User from '#models/user'
 import AuthToken from '#services/token'
@@ -5,57 +6,28 @@ import type { HttpContext } from '@adonisjs/core/http'
 import { v4 as uuidv4 } from 'uuid'
 
 export default class SocialAuthController {
-  async googleRedirect({ ally, response }: HttpContext) {
+  async googleCallback({ response, request }: HttpContext) {
     try {
-      const google = await ally.use('google').redirectUrl()
+      const { accessToken, credential } = request.all()
 
-      return response.ok({
-        success: true,
-        data: google,
-      })
-    } catch (error) {
-      return response.badRequest(errorResponse(error.message))
-    }
-  }
+      let profile: any = {}
 
-  async googleCallback({ ally, response }: HttpContext) {
-    try {
-      const google = ally.use('google')
-
-      /**
-       * User has denied access by canceling
-       * the login flow
-       */
-      if (google.accessDenied()) {
-        return 'You have cancelled the login process'
+      if (credential) {
+        // @ts-ignore
+        const data = jwt.decode(credential, Env.get('GOOGLE_CLIENT_SECRET'))
+        profile = data
       }
 
-      /**
-       * OAuth state verification failed. This happens when the
-       * CSRF cookie gets expired.
-       */
-      if (google.stateMisMatch()) {
-        return 'We are unable to verify the request. Please try again'
+      if (accessToken) {
+        const data = await getGoogleUserProfile(accessToken)
+        profile = data
       }
-
-      /**
-       * GitHub responded with some error
-       */
-      if (google.hasError()) {
-        return google.getError()
-      }
-
-      /**
-       * Access user info
-       */
-      const googleUser = await google.user()
-      console.log('user', googleUser)
 
       const userDetails = {
-        email: googleUser.email,
-        name: googleUser.name,
-        token: googleUser.token,
-        avatar: googleUser.avatarUrl,
+        email: profile.email,
+        fullName: profile.name,
+        token: profile.token,
+        avatar: profile.picture,
       }
 
       if (!userDetails.email) {
@@ -65,26 +37,27 @@ export default class SocialAuthController {
         })
       }
 
-      await this.generateUserDetails({
-        name: userDetails.name,
+      const { user } = await this.generateUserDetails({
+        name: userDetails.fullName,
         email: userDetails.email,
         avatar: userDetails.avatar,
         role: 'buyer',
       })
 
-      const user = await User.findByOrFail('email', userDetails.email)
+      if (!user) {
+        return response.badRequest({
+          success: false,
+          message: 'Could not create user',
+        })
+      }
 
       const token = await AuthToken.generateAuthToken(user)
 
       return response.ok({
         success: true,
-        data: {
-          user,
-          token,
-        },
+        token,
       })
     } catch (error) {
-      console.log(error)
       return response.badRequest(errorResponse(error.message))
     }
   }
@@ -97,19 +70,19 @@ export default class SocialAuthController {
   }: {
     name: string
     email: string
-    avatar: string | null
+    avatar: string
     role: any
   }): Promise<{
     user: User
     isNew: boolean
   }> {
     const user = {
-      fullname: name,
+      fullName: name,
       email,
       password: uuidv4(),
       role: role || 'buyer',
       emailVerified: true,
-      avatar,
+      avatarUrl: avatar,
       authProvider: 'google',
     }
 
@@ -127,8 +100,8 @@ export default class SocialAuthController {
       userInDataBase.emailVerified = true
     }
 
-    if (!userInDataBase.avatarUrl && user.avatar) {
-      userInDataBase.avatarUrl = user.avatar
+    if (!userInDataBase.avatarUrl && user.avatarUrl) {
+      userInDataBase.avatarUrl = user.avatarUrl
     }
 
     await userInDataBase.save()
@@ -139,3 +112,19 @@ export default class SocialAuthController {
     }
   }
 }
+
+//   profile {
+//     id: '107688208964398692218',
+//     email: 'javanslem@gmail.com',
+//     verified_email: true,
+//     name: 'Nnakwe Anslem',
+//     given_name: 'Nnakwe',
+//     family_name: 'Anslem',
+//     picture: 'https://lh3.googleusercontent.com/a/ACg8ocKAIC7rL82GHnx_RWOe71mkubVgEnV46W0V7Tlj8Ufp60nSHA=s96-c'
+//   }
+//   userDetails {
+//     email: 'javanslem@gmail.com',
+//     name: 'Nnakwe Anslem',
+//     token: undefined,
+//     avatar: undefined
+//   }

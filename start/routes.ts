@@ -33,7 +33,6 @@ router
         router.post('/resend-otp', [AuthController, 'resendOtp'])
         router.post('/forgot-password', [AuthController, 'forgotPassword'])
         router.post('/reset-password', [AuthController, 'resetPassword'])
-        router.get('/google/redirect', [SocialAuthController, 'googleRedirect'])
         router.get('/google/callback', [SocialAuthController, 'googleCallback'])
       })
       .prefix('auth')

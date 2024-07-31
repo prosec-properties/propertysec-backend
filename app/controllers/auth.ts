@@ -53,14 +53,11 @@ export default class AuthController {
 
       response.ok({
         success: true,
-        data: {
-          user,
-          token,
-        },
+        token,
       })
     } catch (error) {
       console.log(error)
-      getErrorObject(error)
+      response.badRequest(getErrorObject(error))
     }
   }
 
