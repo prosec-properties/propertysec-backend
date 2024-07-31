@@ -11,6 +11,7 @@ import AuthController from '#controllers/auth'
 import router from '@adonisjs/core/services/router'
 import { middleware } from './kernel.js'
 import UsersController from '#controllers/users_controller'
+import SocialAuthController from '#controllers/social_auths_controller'
 
 router.get('/', async () => {
   return {
@@ -32,6 +33,8 @@ router
         router.post('/resend-otp', [AuthController, 'resendOtp'])
         router.post('/forgot-password', [AuthController, 'forgotPassword'])
         router.post('/reset-password', [AuthController, 'resetPassword'])
+        router.get('/google/redirect', [SocialAuthController, 'googleRedirect'])
+        router.get('/google/callback', [SocialAuthController, 'googleCallback'])
       })
       .prefix('auth')
 

@@ -40,4 +40,23 @@ export default class AuthToken {
 
     user.save()
   }
+
+  static async generateAuthToken(user: User) {
+    try {
+      const existingToken = await User.accessTokens.all(user)
+
+      if (existingToken.length > 0) {
+        await User.accessTokens.delete(user, existingToken[0].identifier)
+      }
+
+      const token = await User.accessTokens.create(user, ['*'], {
+        // expiresIn: '30 days',
+        expiresIn: FIXED_TIME_VALUES.ONE_MONTH,
+      })
+
+      return token
+    } catch (error) {
+      throw error
+    }
+  }
 }

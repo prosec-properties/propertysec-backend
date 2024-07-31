@@ -44,16 +44,20 @@ export default class AuthController {
     const user = await User.verifyCredentials(payload.email, payload.password)
 
     try {
-      const existingToken = await User.accessTokens.all(user)
-
-      if (existingToken.length > 0) {
-        await User.accessTokens.delete(user, existingToken[0].identifier)
+      const isEmailVerified = user.emailVerified
+      if (!isEmailVerified) {
+        return response.badRequest(errorResponse('Please verify your email'))
       }
 
-      const token = await User.accessTokens.create(user, ['*'], {
-        expiresIn: '1 minute',
+      const token = await AuthToken.generateAuthToken(user)
+
+      response.ok({
+        success: true,
+        data: {
+          user,
+          token,
+        },
       })
-      response.ok(token)
     } catch (error) {
       console.log(error)
       getErrorObject(error)
