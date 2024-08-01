@@ -2,7 +2,7 @@ import { DateTime } from 'luxon'
 import { BaseModel, beforeCreate, column, hasOne } from '@adonisjs/lucid/orm'
 import { v4 as uuidv4 } from 'uuid'
 import Loan from './loan.js'
-import { HasOne } from '@adonisjs/lucid/types/relations'
+import type { HasOne } from '@adonisjs/lucid/types/relations'
 
 export default class LoanFile extends BaseModel {
   @column({ isPrimary: true })
