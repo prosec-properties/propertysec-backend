@@ -34,6 +34,7 @@ router
         router.post('/forgot-password', [AuthController, 'forgotPassword'])
         router.post('/reset-password', [AuthController, 'resetPassword'])
         router.get('/google/callback', [SocialAuthController, 'googleCallback'])
+        router.post('/complete-registration', [AuthController, 'completeRegistration'])
       })
       .prefix('auth')
 

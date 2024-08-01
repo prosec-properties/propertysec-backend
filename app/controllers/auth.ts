@@ -1,6 +1,7 @@
 import User from '#models/user'
 import emailService from '#services/email'
 import {
+  completeRegistrationValidator,
   emailValidator,
   loginUserValidator,
   registerUserValidator,
@@ -22,11 +23,15 @@ export default class AuthController {
       const userExists = await User.findBy('email', payload.email)
 
       if (userExists) {
-        console.log('userExists', userExists)
         return response.badRequest(errorResponse('User already exists'))
       }
 
-      const user = await User.create(payload)
+      const user = await User.create({
+        ...payload,
+        emailVerified: false,
+        hasCompletedProfile: false,
+        hasCompletedRegistration: true,
+      })
 
       await UserService.verifyEmail(user)
 
@@ -170,6 +175,29 @@ export default class AuthController {
       })
 
       await redis.del(`${REDIS_RESET_PASSWORD_PREFIX}${user.id}`)
+    } catch (error) {
+      return response.badRequest(getErrorObject(error))
+    }
+  }
+
+  async completeRegistration({ request, response }: HttpContext) {
+    try {
+      const {role, phoneNumber, email} = await request.validateUsing(completeRegistrationValidator)
+
+      const user = await User.findByOrFail('email', email)
+
+      user.role = role
+      user.phoneNumber = phoneNumber
+      user.hasCompletedRegistration = true
+      await user.save()
+
+      const token = await AuthToken.generateAuthToken(user)
+
+
+      return response.ok({
+        success: true,
+        token,
+      })
     } catch (error) {
       return response.badRequest(getErrorObject(error))
     }

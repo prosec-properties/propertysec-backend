@@ -37,7 +37,7 @@ export default class SocialAuthController {
         })
       }
 
-      const { user } = await this.generateUserDetails({
+      const { user, isNew } = await this.generateUserDetails({
         name: userDetails.fullName,
         email: userDetails.email,
         avatar: userDetails.avatar,
@@ -51,11 +51,17 @@ export default class SocialAuthController {
         })
       }
 
-      const token = await AuthToken.generateAuthToken(user)
+      let token 
 
+      if(!isNew && user.hasCompletedRegistration){
+        token = await AuthToken.generateAuthToken(user)
+      }
+      
       return response.ok({
         success: true,
-        token,
+        isNew,
+        user,
+        token: token || null,
       })
     } catch (error) {
       return response.badRequest(errorResponse(error.message))
@@ -82,6 +88,8 @@ export default class SocialAuthController {
       password: uuidv4(),
       role: role || 'buyer',
       emailVerified: true,
+      hasCompletedProfile: false,
+      hasCompletedRegistration: false,
       avatarUrl: avatar,
       authProvider: 'google',
     }

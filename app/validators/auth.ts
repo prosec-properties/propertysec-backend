@@ -43,3 +43,12 @@ export const resetPasswordValidator = vine.compile(
     token: vine.string(),
   })
 )
+
+export const completeRegistrationValidator = vine.compile(
+  vine.object({
+    phoneNumber: vine.string().minLength(11),
+    role: vine.enum(IUserRoleEnum),
+    email: vine.string().email().normalizeEmail(),
+
+  })
+)

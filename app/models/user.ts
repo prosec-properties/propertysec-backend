@@ -52,6 +52,12 @@ export default class User extends compose(BaseModel, AuthFinder) {
   declare authProvider: string
 
   @column()
+  declare hasCompletedProfile: boolean
+
+  @column()
+  declare hasCompletedRegistration: boolean
+
+  @column()
   declare meta: string
 
   @column.dateTime({ autoCreate: true })

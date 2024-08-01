@@ -13,6 +13,8 @@ export default class extends BaseSchema {
       table.string('full_name').notNullable()
       table.string('email').notNullable().unique()
       table.string('phone_number').nullable().unique()
+      table.boolean('has_completed_profile').defaultTo(false)
+      table.boolean('has_completed_registration').notNullable()
       table
         .enum('auth_provider', ['email', 'google', 'facebook', 'twitter', 'other'])
         .notNullable()
