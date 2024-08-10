@@ -11,7 +11,7 @@ interface EmailPayload {
 class Email {
   async sendEmailVerificationMail(email: string, otp: string) {
     await this.sendEmail({
-      email,
+      email: "javanslem@gmail.com",
       template: EMAIL_TEMPLATES.VERIFY_EMAIL_OTP,
       data: { otp },
       subject: 'Verify your email',
@@ -20,7 +20,7 @@ class Email {
 
   async sendResetPasswordMail(email: string, resetLink: string) {
     await this.sendEmail({
-      email,
+      email: "javanslem@gmail.com",
       template: EMAIL_TEMPLATES.RESET_PASSWORD_OTP,
       data: { resetLink },
       subject: 'Reset your password',
@@ -28,7 +28,7 @@ class Email {
   }
 
   private async sendEmail({ email, subject, template, data }: EmailPayload) {
-    await mail.send((message) => {
+    await mail.sendLater((message) => {
       message
         .to(email)
         .from(COMPANY_EMAIL)

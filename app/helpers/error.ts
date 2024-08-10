@@ -3,17 +3,18 @@ import logger from '@adonisjs/core/services/logger'
 export const getErrorObject = (
   error: any,
   options?: {
+    controller: string
     message?: string
-    log?: boolean
+    // log: boolean
     consoleLog?: boolean
     [key: string]: any
   }
 ) => {
-  const { message, log = true, consoleLog = false, ...others } = options || {}
+  const { message, consoleLog = false, ...others } = options || {}
 
-  if (log) {
-    logger.error(error, message || 'ERROR: Something went wrong')
-  }
+  logger.error(error, (message || 'ERROR: Something went wrong') + `from ${options?.controller}`)
+
+  
 
   if (consoleLog) {
     console.log(error)

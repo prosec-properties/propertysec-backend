@@ -51,12 +51,16 @@ export default class SocialAuthController {
         })
       }
 
-      let token 
+      let token
 
-      if(!isNew && user.hasCompletedRegistration){
+      if (!isNew && user.hasCompletedRegistration) {
         token = await AuthToken.generateAuthToken(user)
       }
-      
+
+      if (!isNew && user.hasCompletedRegistration && !token) {
+        return response.badRequest(errorResponse)
+      }
+
       return response.ok({
         success: true,
         isNew,
@@ -120,19 +124,3 @@ export default class SocialAuthController {
     }
   }
 }
-
-//   profile {
-//     id: '107688208964398692218',
-//     email: 'javanslem@gmail.com',
-//     verified_email: true,
-//     name: 'Nnakwe Anslem',
-//     given_name: 'Nnakwe',
-//     family_name: 'Anslem',
-//     picture: 'https://lh3.googleusercontent.com/a/ACg8ocKAIC7rL82GHnx_RWOe71mkubVgEnV46W0V7Tlj8Ufp60nSHA=s96-c'
-//   }
-//   userDetails {
-//     email: 'javanslem@gmail.com',
-//     name: 'Nnakwe Anslem',
-//     token: undefined,
-//     avatar: undefined
-//   }

@@ -9,20 +9,6 @@ export default class extends BaseSchema {
       table.uuid('id').primary().notNullable().unique().defaultTo(uuidv4())
       table.uuid('user_id').references('id').inTable('users')
 
-      // Personal
-      table.string('nationality')
-      table.string('state')
-      table.string('city')
-      table.string('religion')
-      table.string('current_address')
-      table.float('monthly_salary')
-      table.string('nin')
-      table.string('bvn')
-      table.string('next_of_kin_name')
-      table.string('bank_name')
-      table.string('bank_account_number')
-      table.string('bank_account_name')
-
       // Company Details
       table.string('company_address')
       table.string('company_name')

@@ -11,39 +11,6 @@ export default class LoanApplicant extends BaseModel {
   declare userId: string
 
   @column()
-  declare nationality: string
-
-  @column()
-  declare state: string
-
-  @column()
-  declare city: string
-
-  @column()
-  declare religion: string
-
-  @column()
-  declare currentAddress: string
-
-  @column()
-  declare monthlySalary: number
-
-  @column()
-  declare bankName: string
-
-  @column()
-  declare bankAccountNumber: string
-
-  @column()
-  declare bankAccountName: string
-
-  @column()
-  declare nin: string
-
-  @column()
-  declare bvn: string
-
-  @column()
   declare companyAddress: string
 
   @column()

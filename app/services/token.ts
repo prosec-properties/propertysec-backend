@@ -45,16 +45,27 @@ export default class AuthTokenService {
     try {
       const existingToken = await User.accessTokens.all(user)
 
-      if (existingToken.length > 0) {
+      if (existingToken && existingToken.length > 0) {
         await User.accessTokens.delete(user, existingToken[0].identifier)
       }
 
       const token = await User.accessTokens.create(user, ['*'], {
-        // expiresIn: '30 days',
-        expiresIn: FIXED_TIME_VALUES.ONE_MONTH,
+        expiresIn: `${FIXED_TIME_VALUES.ONE_MONTH} days`,
       })
 
       return token
+    } catch (error) {
+      throw error
+    }
+  }
+
+  static async revokeAuthToken(user: User) {
+    try {
+      const existingToken = await User.accessTokens.all(user)
+
+      if (existingToken && existingToken.length > 0) {
+        await User.accessTokens.delete(user, existingToken[0].identifier)
+      }
     } catch (error) {
       throw error
     }

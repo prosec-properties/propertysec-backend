@@ -97,7 +97,7 @@ export default class AuthController {
       console.log('error', error)
       return response.badRequest(
         getErrorObject(error, {
-          message: 'Error fetching data from AuthController.verifyOtp ',
+          controller: 'AuthController.verifyOtp',
         })
       )
     }
@@ -123,8 +123,11 @@ export default class AuthController {
   async forgotPassword({ request, response }: HttpContext) {
     try {
       const { email } = await request.validateUsing(emailValidator)
+      const user = await User.findBy('email', email)
 
-      const user = await User.findByOrFail('email', email)
+      if (!user) {
+        return response.badRequest(errorResponse('User not found'))
+      }
 
       const token = await AuthToken.generatePasswordResetToken(user)
 
@@ -182,7 +185,9 @@ export default class AuthController {
 
   async completeRegistration({ request, response }: HttpContext) {
     try {
-      const {role, phoneNumber, email} = await request.validateUsing(completeRegistrationValidator)
+      const { role, phoneNumber, email } = await request.validateUsing(
+        completeRegistrationValidator
+      )
 
       const user = await User.findByOrFail('email', email)
 
@@ -193,13 +198,35 @@ export default class AuthController {
 
       const token = await AuthToken.generateAuthToken(user)
 
-
       return response.ok({
         success: true,
         token,
       })
     } catch (error) {
       return response.badRequest(getErrorObject(error))
+    }
+  }
+
+  async logout({ logger, response, auth }: HttpContext) {
+    try {
+      await auth.authenticate()
+
+      const user = auth.user!
+
+      await AuthToken.revokeAuthToken(user)
+
+      logger.info('User logged out successfully, from AuthController.logout')
+
+      response.ok({
+        success: true,
+        message: 'Logged out successfully',
+      })
+    } catch (error) {
+      return response.badRequest(
+        getErrorObject(error, {
+          controller: 'AuthController.logout',
+        })
+      )
     }
   }
 }

@@ -8,6 +8,8 @@ import type { HasMany } from '@adonisjs/lucid/types/relations'
 import Property from './property.js'
 import type { IUserRole } from '../interface/user.js'
 import { v4 as uuidv4 } from 'uuid'
+import stringHelpers from '@adonisjs/core/helpers/string'
+import { nanoid } from 'nanoid'
 
 const AuthFinder = withAuthFinder(() => hash.use('scrypt'), {
   uids: ['email'],
@@ -40,13 +42,55 @@ export default class User extends compose(BaseModel, AuthFinder) {
   declare avatarUrl: string
 
   @column()
-  declare state: string
+  declare slug: string
 
   @column()
-  declare city: string
+  declare businessName?: string
 
   @column()
-  declare address: string
+  declare businessRegNo?: string
+
+  @column()
+  declare businessAddress?: string
+
+  @column()
+  declare stateOfResidence: string
+
+  @column()
+  declare cityOfResidence: string
+
+  @column()
+  declare homeAddress: string
+
+  @column()
+  declare stateOfOrigin?: string
+
+  @column()
+  declare monthlySalary: number
+
+  @column()
+  declare bankName: string
+
+  @column()
+  declare bankAccountNumber: string
+
+  @column()
+  declare bankAccountName: string
+
+  @column()
+  declare nextOfKin: string
+
+  @column()
+  declare religion: string
+
+  @column()
+  declare nin?: string
+
+  @column()
+  declare bvn: string
+
+  @column()
+  declare nationality?: string
 
   @column()
   declare authProvider: string
@@ -71,8 +115,10 @@ export default class User extends compose(BaseModel, AuthFinder) {
   static accessTokens = DbAccessTokensProvider.forModel(User)
 
   @beforeCreate()
-  static generateId(property: User) {
+  static addOns(property: User) {
     property.id = uuidv4()
+
+    property.slug = stringHelpers.slug(`${property.fullName.toLowerCase()}-${nanoid(5)}`)
   }
 
   @hasMany(() => Property)

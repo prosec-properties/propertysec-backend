@@ -35,12 +35,14 @@ router
         router.post('/reset-password', [AuthController, 'resetPassword'])
         router.get('/google/callback', [SocialAuthController, 'googleCallback'])
         router.post('/complete-registration', [AuthController, 'completeRegistration'])
+        router.get('/logout', [AuthController, 'logout']).use(middleware.auth())
       })
       .prefix('auth')
 
     router
       .group(() => {
         router.get('/me', [UsersController, 'me'])
+        router.put('/update-profile', [UsersController, 'updateProfile'])
       })
       .use(middleware.auth())
       .prefix('users')
