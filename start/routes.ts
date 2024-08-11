@@ -48,4 +48,3 @@ router
       .prefix('users')
   })
   .prefix('api/v1')
-  // .use(middleware.)
