@@ -35,6 +35,8 @@ export default class UsersController {
         user.password = payload.newPassword
       }
 
+      console.log('payload', payload)
+
       const userInfo = {
         fullName: payload?.fullName,
         phoneNumber: payload?.phoneNumber,

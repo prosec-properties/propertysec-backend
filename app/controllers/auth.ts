@@ -9,12 +9,14 @@ import {
 } from '#validators/auth'
 import type { HttpContext } from '@adonisjs/core/http'
 import redis from '@adonisjs/redis/services/main'
-import { REDIS_RESET_PASSWORD_PREFIX, REDIS_VERIFY_EMAIL_PREFIX } from '#constants/auth'
+import { REDIS_RESET_PASSWORD_PREFIX } from '#constants/auth'
 import { errorResponse, getErrorObject } from '#helpers/error'
 import env from '#start/env'
 import AuthToken from '#services/token'
 import { setSearchParams } from '#helpers/general'
 import UserService from '#services/user'
+import Otp from '#models/otp'
+import { DateTime } from 'luxon'
 
 export default class AuthController {
   async register({ request, response }: HttpContext) {
@@ -67,24 +69,17 @@ export default class AuthController {
   }
 
   async verifyOtp({ request, response }: HttpContext) {
-    const { otp, email } = request.body()
+    const { email } = request.body()
 
     try {
       const user = await User.findByOrFail('email', email)
 
-      const storedOtp = await redis.get(`${REDIS_VERIFY_EMAIL_PREFIX}${user.id}`)
+      const storedOtp = await Otp.findByOrFail('userId', user.id)
 
-      if (!storedOtp) {
-        return response.badRequest({
-          success: false,
-          message: 'Expired OTP',
-        })
-      }
-
-      const isOtpValid = storedOtp === otp
+      const isOtpValid = storedOtp.expiresAt > DateTime.now()
 
       if (!isOtpValid) {
-        return response.badRequest(errorResponse('Invalid OTP'))
+        return response.badRequest(errorResponse('Invalid or expired OTP'))
       }
 
       await UserService.emailIsVerified(user)
@@ -129,7 +124,7 @@ export default class AuthController {
         return response.badRequest(errorResponse('User not found'))
       }
 
-      const token = await AuthToken.generatePasswordResetToken(user)
+      const token = await AuthToken.generateToken(user)
 
       if (!token) {
         return response.badRequest(errorResponse('Error occured generating token'))
@@ -157,15 +152,17 @@ export default class AuthController {
 
   async resetPassword({ request, response }: HttpContext) {
     try {
-      const { token, email, password } = await request.validateUsing(resetPasswordValidator)
+      const { email, password } = await request.validateUsing(resetPasswordValidator)
 
       const user = await User.findByOrFail('email', email)
 
-      const storedToken = await redis.get(`${REDIS_RESET_PASSWORD_PREFIX}${user.id}`)
+      const otp = await Otp.findByOrFail('userId', user.id)
 
-      const isTokenValid = storedToken === token
+      const isTokenValid = otp.expiresAt > DateTime.now()
 
-      if (!isTokenValid || !storedToken) {
+      console.log({ isTokenValid })
+
+      if (!isTokenValid) {
         return response.badRequest(errorResponse('Invalid or expired token'))
       }
 

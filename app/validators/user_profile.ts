@@ -11,7 +11,6 @@ export const updateProfileValidator = vine.compile(
           const isUserPhoneNumber = user?.phone_number === value
           return isUserPhoneNumber || !user
         })
-        .nullable()
         .optional(),
       newPassword: vine.string().minLength(6).nullable().optional(),
       oldPassword: vine.string().minLength(6).nullable().optional(),
@@ -43,5 +42,5 @@ export const updateProfileValidator = vine.compile(
       powerOfAttorney: vine.string().nullable().optional(),
       avatarUrl: vine.string().nullable().optional(),
     })
-    .optional()
+    // .optional()
 )

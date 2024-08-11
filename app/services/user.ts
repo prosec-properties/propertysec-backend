@@ -1,22 +1,30 @@
-import { OTP_LENGTH, RANDOM_OTP_NUMBERS, REDIS_VERIFY_EMAIL_PREFIX } from '#constants/auth'
+import { OTP_LENGTH, RANDOM_OTP_NUMBERS } from '#constants/auth'
 import User from '#models/user'
 import { customAlphabet } from 'nanoid'
 import emailService from '#services/email'
-import redis from '@adonisjs/redis/services/main'
 import { FIXED_TIME_VALUES } from '#constants/time'
+import Otp from '#models/otp'
+import { DateTime } from 'luxon'
 
 export default class UserService {
   static async verifyEmail(user: User) {
     try {
       const otp = customAlphabet(RANDOM_OTP_NUMBERS, OTP_LENGTH)()
+      const expiresAt = DateTime.now().plus({ minutes: FIXED_TIME_VALUES.TWENTY_MINUTES })
+
+      const hasExistingOtp = await Otp.findBy('userId', user.id)
+
+      if (hasExistingOtp) {
+        await hasExistingOtp.delete()
+      }
+
+      await Otp.create({
+        userId: user.id,
+        expiresAt,
+        code: otp,
+      })
 
       await emailService.sendEmailVerificationMail(user.email, otp)
-
-      await redis.setex(
-        `${REDIS_VERIFY_EMAIL_PREFIX}${user.id}`,
-        FIXED_TIME_VALUES.TWENTY_MINUTES,
-        otp
-      )
     } catch (error) {
       throw error
     }
@@ -27,11 +35,11 @@ export default class UserService {
       user.emailVerified = true
       user.save()
 
-      await redis.del(`${REDIS_VERIFY_EMAIL_PREFIX}${user.id}`)
+      const otp = await Otp.findByOrFail('userId', user.id)
+
+      await otp.delete()
     } catch (error) {
       throw error
     }
   }
-
-
 }

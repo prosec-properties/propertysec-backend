@@ -1,36 +1,27 @@
-import { REDIS_RESET_PASSWORD_PREFIX, REDIS_VERIFY_EMAIL_PREFIX } from '#constants/auth'
 import { FIXED_TIME_VALUES } from '#constants/time'
+import Otp from '#models/otp'
 import User from '#models/user'
-import redis from '@adonisjs/redis/services/main'
+import { DateTime } from 'luxon'
 import { v4 as uuidv4 } from 'uuid'
 
 export default class AuthTokenService {
-  static async generatePasswordResetToken(user: User | null) {
+  static async generateToken(user: User) {
+    if (!user) return
     const token = uuidv4()
 
-    if (!user) return token
+    const hasExistingOtp = await Otp.findBy('userId', user.id)
 
-    // Key is ignored if it is not available
-    await redis.del(`${REDIS_RESET_PASSWORD_PREFIX}${user.id}`)
+    if (hasExistingOtp) {
+      await hasExistingOtp.delete()
+    }
 
-    await redis.setex(
-      `${REDIS_RESET_PASSWORD_PREFIX}${user.id}`,
-      FIXED_TIME_VALUES.TWENTY_MINUTES,
-      token
-    )
+    const expiresAt = DateTime.now().plus({ minutes: FIXED_TIME_VALUES.TWENTY_MINUTES })
 
-    return token
-  }
-
-  async generateVerifyEmailToken(user: User | null) {
-    const token = uuidv4()
-
-    if (!user) return token
-
-    // Key is ignored if it is not available
-    await redis.del(`${REDIS_VERIFY_EMAIL_PREFIX}${user.id}`)
-
-    await redis.set(`${REDIS_VERIFY_EMAIL_PREFIX}${user.id}`, token)
+    await Otp.create({
+      userId: user.id,
+      code: token,
+      expiresAt,
+    })
 
     return token
   }
