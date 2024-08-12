@@ -17,7 +17,7 @@ export default class UsersController {
 
   async updateProfile({ auth, request, response, logger }: HttpContext) {
     try {
-      await auth.check()
+      await auth.authenticate()
       const user = auth.user!
 
       const payload = await request.validateUsing(updateProfileValidator)
@@ -34,8 +34,6 @@ export default class UsersController {
 
         user.password = payload.newPassword
       }
-
-      console.log('payload', payload)
 
       const userInfo = {
         fullName: payload?.fullName,

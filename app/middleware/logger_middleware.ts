@@ -10,9 +10,9 @@ export default class LoggerMiddleware {
         method: request.method(),
         url: request.url(true),
         logTime: new Date().toISOString(),
-        ips: request.ips(),
-        traceId: request.id(),
-        ...log,
+        // ips: request.ips(),
+        // traceId: request.id(),
+        // ...log,
       },
       'Incoming Request'
     )
