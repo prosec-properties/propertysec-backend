@@ -1,4 +1,5 @@
 import { getErrorObject } from '#helpers/error'
+import azure from '#services/azure'
 import { updateProfileValidator } from '#validators/user_profile'
 import type { HttpContext } from '@adonisjs/core/http'
 import hash from '@adonisjs/core/services/hash'
@@ -57,30 +58,13 @@ export default class UsersController {
         bankAccountName: payload?.bankAccountName,
       }
 
-      const files: { type: string; url: string }[] = []
-
       if (payload?.approvalAgreement) {
-        files.push({
-          type: 'approvalAgreement',
-          url: payload?.approvalAgreement,
-        })
+        const { filename, url, metaData } = await azure.ImageUpload(payload.approvalAgreement)
+
+        console.log('filename', { filename, url, metaData })
       }
 
-      if (payload?.identificationCard) {
-        files.push({
-          type: 'identificationCard',
-          url: payload?.identificationCard,
-        })
-      }
-
-      if (payload?.powerOfAttorney) {
-        files.push({
-          type: 'powerOfAttorney',
-          url: payload?.powerOfAttorney,
-        })
-      }
-
-      console.log(payload)
+      // console.log('payload', payload)
 
       await user.merge(userInfo)
 

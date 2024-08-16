@@ -1,3 +1,4 @@
+import { ACCEPTED_IMAGE_TYPES } from '#constants/general'
 import vine from '@vinejs/vine'
 
 export const updateProfileValidator = vine.compile(
@@ -36,9 +37,29 @@ export const updateProfileValidator = vine.compile(
     meta: vine.string().nullable().optional(),
 
     // files
-    approvalAgreement: vine.string().nullable().optional(),
-    identificationCard: vine.string().nullable().optional(),
-    powerOfAttorney: vine.string().nullable().optional(),
-    avatarUrl: vine.string().nullable().optional(),
+    approvalAgreement: vine
+      .file({
+        size: '10mb',
+        extnames: ACCEPTED_IMAGE_TYPES,
+      })
+      .optional(),
+    identificationCard: vine
+      .file({
+        size: '10mb',
+        extnames: ACCEPTED_IMAGE_TYPES,
+      })
+      .optional(),
+    powerOfAttorney: vine
+      .file({
+        size: '10mb',
+        extnames: ACCEPTED_IMAGE_TYPES,
+      })
+      .optional(),
+    avatarUrl: vine
+      .file({
+        size: '10mb',
+        extnames: ACCEPTED_IMAGE_TYPES,
+      })
+      .optional(),
   })
 )

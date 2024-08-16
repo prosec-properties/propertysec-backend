@@ -22,7 +22,7 @@ class Azure {
   }
 
   public async uploadFile(fileName: string, stream: fs.ReadStream | Readable) {
-    const containerClient = this.client.getContainerClient('lata')
+    const containerClient = this.client.getContainerClient('prosec-container')
     const blockBlobClient = containerClient.getBlockBlobClient(fileName)
     try {
       // Upload data to the blob
@@ -42,7 +42,7 @@ class Azure {
   }
 
   public async deleteFile(fileName: string) {
-    const containerClient = this.client.getContainerClient('lata')
+    const containerClient = this.client.getContainerClient('prosec-container')
     const blockBlobClient = containerClient.getBlockBlobClient(fileName)
     try {
       // Delete blob
@@ -55,7 +55,7 @@ class Azure {
   }
 
   public async downloadFile(fileName: string) {
-    const containerClient = this.client.getContainerClient('lata')
+    const containerClient = this.client.getContainerClient('prosec-container')
     const blockBlobClient = containerClient.getBlockBlobClient(fileName)
     try {
       // Download blob
