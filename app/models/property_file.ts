@@ -12,10 +12,13 @@ export default class PropertyFile extends BaseModel {
   declare propertyId: string
 
   @column()
+  declare fileName: string
+
+  @column()
   declare fileUrl: string
 
   @column()
-  declare fileType: 'image' | 'other'
+  declare fileType: 'image' | 'video' | 'other'
 
   @column()
   declare meta?: string

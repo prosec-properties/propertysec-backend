@@ -12,6 +12,9 @@ import router from '@adonisjs/core/services/router'
 import { middleware } from './kernel.js'
 import UsersController from '#controllers/users_controller'
 import SocialAuthController from '#controllers/social_auths_controller'
+import CountriesController from '#controllers/countries_controller'
+import PropertiesController from '#controllers/properties_controller'
+import CategoriesController from '#controllers/categories_controller'
 
 router.get('/', async () => {
   return {
@@ -46,5 +49,24 @@ router
       })
       .use(middleware.auth())
       .prefix('users')
+
+    router
+      .group(() => {
+        router.get('/', [CountriesController, 'index'])
+      })
+      .prefix('countries')
+
+    router
+      .group(() => {
+        router.get('/', [PropertiesController, 'index'])
+        router.post('/', [PropertiesController, 'store'])
+      })
+      .prefix('properties')
+
+    router
+      .group(() => {
+        router.get('/', [CategoriesController, 'index'])
+      })
+      .prefix('categories')
   })
   .prefix('api/v1')

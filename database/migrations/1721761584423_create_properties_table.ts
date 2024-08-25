@@ -1,5 +1,7 @@
 import { BaseSchema } from '@adonisjs/lucid/schema'
 import { v4 as uuidv4 } from 'uuid'
+import { IPropertyTypes } from '#interfaces/property'
+import { CURRENCIES_ENUM } from '#interfaces/payment'
 
 export default class extends BaseSchema {
   protected tableName = 'properties'
@@ -10,14 +12,16 @@ export default class extends BaseSchema {
       table.uuid('user_id').references('id').inTable('users').onDelete('CASCADE')
       table.string('title').notNullable()
       table.uuid('category_id').references('id').inTable('categories')
-      table.enum('type', ['sale', 'rent']).notNullable()
+      table.enum('type', IPropertyTypes).notNullable()
       table.integer('bedrooms').notNullable()
       table.integer('bathrooms').notNullable()
       table.integer('toilets').notNullable()
-      table.string('property_address').notNullable()
+      table.string('state_id').references('id').inTable('states')
+      table.string('city_id').references('id').inTable('cities')
+      table.string('address').notNullable()
       table.string('street').notNullable()
       table.float('price').notNullable()
-      table.string('currency').notNullable()
+      table.enum('currency', CURRENCIES_ENUM).notNullable()
       table.string('append').nullable()
       table.text('description').notNullable()
       table

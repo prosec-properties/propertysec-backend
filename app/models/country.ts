@@ -1,25 +1,15 @@
 import { DateTime } from 'luxon'
 import { BaseModel, beforeCreate, column, hasMany } from '@adonisjs/lucid/orm'
 import { v4 as uuidv4 } from 'uuid'
+import State from './state.js'
 import type { HasMany } from '@adonisjs/lucid/types/relations'
-import string from '@adonisjs/core/helpers/string'
-import Subcategory from './subcategory.js'
 
-export default class Category extends BaseModel {
+export default class Country extends BaseModel {
   @column({ isPrimary: true })
   declare id: string
 
   @column()
   declare name: string
-
-  @column()
-  declare description: string
-
-  @column()
-  declare status: 'active' | 'inactive'
-
-  @column()
-  declare slug: string
 
   @column()
   declare meta?: string
@@ -31,12 +21,12 @@ export default class Category extends BaseModel {
   declare updatedAt: DateTime
 
   @beforeCreate()
-  static generate(property: Category) {
-    property.id = uuidv4()
-
-    property.slug = string.slug(property.name.toLowerCase())
+  static generateId(country: Country) {
+    country.id = uuidv4()
   }
 
-  @hasMany(() => Subcategory)
-  declare subcategories: HasMany<typeof Subcategory>
+  @hasMany(() => State, {
+    onQuery: (query) => query.preload('cities'),
+  })
+  declare states: HasMany<typeof State>
 }

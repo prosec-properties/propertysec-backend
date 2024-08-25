@@ -9,11 +9,12 @@ export default class extends BaseSchema {
       table.uuid('id').primary().notNullable().unique().defaultTo(uuidv4())
       table.uuid('property_id').references('id').inTable('properties')
       table.string('file_url').notNullable()
-      table.enum('file_type', ['image', 'other']).notNullable().defaultTo('image')
+      table.string('file_name').notNullable()
+      table.enum('file_type', ['image', 'video', 'other']).notNullable()
       table.text('meta').nullable()
 
-      table.timestamp('created_at')
-      table.timestamp('updated_at')
+      table.timestamp('created_at', { useTz: true })
+      table.timestamp('updated_at', { useTz: true })
     })
   }
 

@@ -24,6 +24,7 @@
       "#types/*": ["./types/*.js"],
       "#constants/*": ["./app/constants/*.js"],
       "#helpers/*": ["./app/helpers/*.js"],
+      "#interfaces/*": ["./app/interfaces/*.js"],
     }
   }
 }

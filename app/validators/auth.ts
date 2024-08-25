@@ -1,5 +1,5 @@
 import vine from '@vinejs/vine'
-import { IUserRoleEnum } from '../interface/user.js'
+import { IUserRoleEnum } from '../interfaces/user.js'
 
 export const registerUserValidator = vine.compile(
   vine.object({

@@ -3,10 +3,10 @@ import logger from '@adonisjs/core/services/logger'
 import { Readable } from 'stream'
 import fs from 'fs'
 import { BlobServiceClient } from '@azure/storage-blob'
-import { FileMetaData } from '../interface/file.js'
+import { FileMetaData } from '../interfaces/file.js'
 import { fileNameHash } from '#helpers/file'
 
-interface ImageUploadInterface {
+export interface ImageUploadInterface {
   url: string
   filename: string
   metaData: FileMetaData

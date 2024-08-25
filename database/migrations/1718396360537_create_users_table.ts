@@ -1,6 +1,6 @@
 import { BaseSchema } from '@adonisjs/lucid/schema'
 import { v4 as uuidv4 } from 'uuid'
-import { IUserRoleEnum } from '../../app/interface/user.js'
+import { IUserRoleEnum } from '../../app/interfaces/user.js'
 
 export default class extends BaseSchema {
   protected tableName = 'users'

@@ -36,7 +36,8 @@
     "#constants/*": "./app/constants/*.js",
     "#helpers/*": [
       "./app/helpers/*.js"
-    ]
+    ],
+    "#interfaces": "./app/interfaces/*.js"
   },
   "devDependencies": {
     "@adonisjs/assembler": "^7.7.0",

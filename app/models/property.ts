@@ -1,11 +1,13 @@
 import { DateTime } from 'luxon'
-import { BaseModel, beforeCreate, column, hasOne } from '@adonisjs/lucid/orm'
-import type { HasOne } from '@adonisjs/lucid/types/relations'
+import { BaseModel, beforeCreate, column, hasMany, hasOne } from '@adonisjs/lucid/orm'
+import type { HasMany, HasOne } from '@adonisjs/lucid/types/relations'
 import User from './user.js'
 import Category from './category.js'
 import { v4 as uuidv4 } from 'uuid'
-import string from '@adonisjs/core/helpers/string'
-import { nanoid } from 'nanoid'
+// import string from '@adonisjs/core/helpers/string'
+// import { nanoid } from 'nanoid'
+import type { IPropertyType } from '../interfaces/property.js'
+import PropertyFile from './property_file.js'
 
 export default class Property extends BaseModel {
   @column({ isPrimary: true })
@@ -21,7 +23,7 @@ export default class Property extends BaseModel {
   declare categoryId: string
 
   @column()
-  declare type: 'sale' | 'rent'
+  declare type: IPropertyType
 
   @column()
   declare bedrooms: number
@@ -33,7 +35,7 @@ export default class Property extends BaseModel {
   declare toilets: number
 
   @column()
-  declare property_address: string
+  declare address: string
 
   @column()
   declare street: string
@@ -45,7 +47,13 @@ export default class Property extends BaseModel {
   declare currency: string
 
   @column()
-  declare append: string
+  declare append?: string
+
+  @column()
+  declare stateId: string
+
+  @column()
+  declare cityId: string
 
   @column()
   declare description: string
@@ -54,10 +62,7 @@ export default class Property extends BaseModel {
   declare status: 'draft' | 'published' | 'pending' | 'closed' | 'rejected'
 
   @column()
-  declare slug: string
-
-  @column()
-  declare meta: string
+  declare meta?: string
 
   @column.dateTime({ autoCreate: true })
   declare createdAt: DateTime
@@ -65,19 +70,19 @@ export default class Property extends BaseModel {
   @column.dateTime({ autoCreate: true, autoUpdate: true })
   declare updatedAt: DateTime
 
-  @beforeCreate()
-  static generateId(property: Category) {
-    property.id = uuidv4()
-  }
-
-  @beforeCreate()
-  static generateSlug(property: Category) {
-    property.slug = string.slug(property.name + nanoid(5))
-  }
-
   @hasOne(() => User)
   declare user: HasOne<typeof User>
 
   @hasOne(() => Category)
   declare category: HasOne<typeof Category>
+
+  @hasMany(() => PropertyFile)
+  declare files: HasMany<typeof PropertyFile>
+
+  @beforeCreate()
+  static generate(property: Category) {
+    property.id = uuidv4()
+
+    // property.slug = string.slug(property.name + nanoid(5))
+  }
 }
