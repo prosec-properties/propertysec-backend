@@ -13,10 +13,16 @@ export default class ProfileFile extends BaseModel {
   declare fileUrl: string
 
   @column()
+  declare fileName: string
+
+  @column()
+  declare fileType: 'image' | 'video' | 'other'
+
+  @column()
   declare fileCategory:
     | 'passport'
     | 'power_of_attorney'
-    | 'identfication'
+    | 'identification'
     | 'approval_agreement'
     | 'other'
 

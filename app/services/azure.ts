@@ -6,6 +6,8 @@ import { BlobServiceClient } from '@azure/storage-blob'
 import { FileMetaData } from '../interfaces/file.js'
 import { fileNameHash } from '#helpers/file'
 
+const CONTAINER_NAME = 'prosec-container'
+
 export interface ImageUploadInterface {
   url: string
   filename: string
@@ -22,7 +24,7 @@ class Azure {
   }
 
   public async uploadFile(fileName: string, stream: fs.ReadStream | Readable) {
-    const containerClient = this.client.getContainerClient('prosec-container')
+    const containerClient = this.client.getContainerClient(CONTAINER_NAME)
     const blockBlobClient = containerClient.getBlockBlobClient(fileName)
     try {
       // Upload data to the blob
@@ -42,7 +44,7 @@ class Azure {
   }
 
   public async deleteFile(fileName: string) {
-    const containerClient = this.client.getContainerClient('prosec-container')
+    const containerClient = this.client.getContainerClient(CONTAINER_NAME)
     const blockBlobClient = containerClient.getBlockBlobClient(fileName)
     try {
       // Delete blob
@@ -55,7 +57,7 @@ class Azure {
   }
 
   public async downloadFile(fileName: string) {
-    const containerClient = this.client.getContainerClient('prosec-container')
+    const containerClient = this.client.getContainerClient(CONTAINER_NAME)
     const blockBlobClient = containerClient.getBlockBlobClient(fileName)
     try {
       // Download blob

@@ -24,47 +24,9 @@ export const ACCEPTED_IMAGE_TYPES = [
   'ICO',
 ]
 
-// export const CURRENCIES = [
-//   {
-//     symbol: "₦",
-//     name: "Nigerian Naira",
-//     code: "NGN",
-//   },
-//   {
-//     symbol: "$",
-//     name: "US Dollar",
-//     code: "USD",
-//   },
-//   {
-//     symbol: "£",
-//     name: "British Pound",
-//     code: "GBP",
-//   },
-//   {
-//     symbol: "€",
-//     name: "Euro",
-//     code: "EUR",
-//   },
-//   {
-//     symbol: "R",
-//     name: "South African Rand",
-//     code: "ZAR",
-//   },
-//   {
-//     symbol: "KSh",
-//     name: "Kenyan Shilling",
-//     code: "KES",
-//   },
-//   {
-//     symbol: "₵",
-//     name: "Ghanaian Cedi",
-//     code: "GHS",
-//   },
-//   {
-//     symbol: "CFA",
-//     name: "West African CFA Franc",
-//     code: "XOF",
-//   },
-// ];
+export const ACCEPTED_VIDEO_TYPES = [
+  'mp4', 'MP4', 'webp', 'WEBP'
+]
+
 
 export const CURRENCIES = ['USD', 'NGN', 'GBP', 'EUR', 'ZAR', 'KES', 'GHS', 'XOF']

@@ -10,6 +10,7 @@ export default class extends BaseSchema {
       table.uuid('id').primary().notNullable().unique().defaultTo(uuidv4())
       table.uuid('state_of_residence').references('id').inTable('states')
       table.uuid('city_of_residence').references('id').inTable('cities')
+      table.string('nationality').nullable()
 
       table.string('full_name').notNullable()
       table.string('slug').notNullable().unique()
@@ -33,7 +34,6 @@ export default class extends BaseSchema {
       table.string('business_reg_no').nullable()
 
       table.string('state_of_origin').nullable()
-      table.string('nationality').nullable()
       table.string('nin').nullable()
       table.string('religion').nullable()
       table.string('bvn').nullable()

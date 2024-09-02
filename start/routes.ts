@@ -46,6 +46,7 @@ router
       .group(() => {
         router.get('/me', [UsersController, 'me'])
         router.put('/update-profile', [UsersController, 'updateProfile'])
+        router.delete('/delete-file/:id', [UsersController, 'deleteFile'])
       })
       .use(middleware.auth())
       .prefix('users')

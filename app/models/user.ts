@@ -1,5 +1,5 @@
 import { DateTime } from 'luxon'
-import { BaseModel, beforeCreate, column, hasMany } from '@adonisjs/lucid/orm'
+import { afterFetch, BaseModel, beforeCreate, column, hasMany } from '@adonisjs/lucid/orm'
 import hash from '@adonisjs/core/services/hash'
 import { AccessToken, DbAccessTokensProvider } from '@adonisjs/auth/access_tokens'
 import { withAuthFinder } from '@adonisjs/auth/mixins/lucid'
@@ -10,6 +10,8 @@ import type { IUserRole } from '../interfaces/user.js'
 import { v4 as uuidv4 } from 'uuid'
 import stringHelpers from '@adonisjs/core/helpers/string'
 import { nanoid } from 'nanoid'
+import PropertyAccessRequest from './property_access_request.js'
+import ProfileFile from './profile_file.js'
 
 const AuthFinder = withAuthFinder(() => hash.use('scrypt'), {
   uids: ['email'],
@@ -121,6 +123,19 @@ export default class User extends compose(BaseModel, AuthFinder) {
     property.slug = stringHelpers.slug(`${property.fullName.toLowerCase()}-${nanoid(5)}`)
   }
 
+  @afterFetch()
+  static async fetchUserProperties(query: User) {
+    query.preload('propertyAccessRequests')
+  }
+
   @hasMany(() => Property)
   declare properties: HasMany<typeof Property>
+
+  @hasMany(() => PropertyAccessRequest, {
+    onQuery: (query) => query.where('approved', true),
+  })
+  declare propertyAccessRequests: HasMany<typeof PropertyAccessRequest>
+
+  @hasMany(() => ProfileFile)
+  declare profileFiles: HasMany<typeof ProfileFile>
 }

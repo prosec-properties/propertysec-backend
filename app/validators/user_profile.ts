@@ -38,22 +38,28 @@ export const updateProfileValidator = vine.compile(
 
     // files
     approvalAgreement: vine
-      .file({
-        size: '10mb',
-        extnames: ACCEPTED_IMAGE_TYPES,
-      })
+      .array(
+        vine.file({
+          size: '10mb',
+          extnames: ACCEPTED_IMAGE_TYPES,
+        })
+      )
       .optional(),
     identificationCard: vine
-      .file({
-        size: '10mb',
-        extnames: ACCEPTED_IMAGE_TYPES,
-      })
+      .array(
+        vine.file({
+          size: '10mb',
+          extnames: ACCEPTED_IMAGE_TYPES,
+        })
+      )
       .optional(),
     powerOfAttorney: vine
-      .file({
-        size: '10mb',
-        extnames: ACCEPTED_IMAGE_TYPES,
-      })
+      .array(
+      vine.file({
+          size: '10mb',
+          extnames: ACCEPTED_IMAGE_TYPES,
+        })
+      )
       .optional(),
     avatarUrl: vine
       .file({

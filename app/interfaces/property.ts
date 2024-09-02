@@ -1,4 +1,4 @@
-export const IPropertyTypes = [
+export const PROPERTY_TYPE_ENUMS = [
   'All',
   'House',
   'Apartment',
@@ -31,7 +31,8 @@ export const IPropertyTypes = [
   'Petrol Station',
 ] as const
 
-export type IPropertyType = (typeof IPropertyTypes)[number]
+export type IPropertyType = (typeof PROPERTY_TYPE_ENUMS)[number]
 
+export type IPropertyStatus = 'draft' | 'published' | 'pending' | 'closed' | 'rejected'
 
-
+export const PROPERTY_STATUS_ENUMS = ['draft', 'published', 'pending', 'closed', 'rejected']

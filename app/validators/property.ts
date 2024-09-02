@@ -1,14 +1,16 @@
 import { ACCEPTED_IMAGE_TYPES } from '#constants/general'
 import vine from '@vinejs/vine'
-import { IPropertyTypes } from '../interfaces/property.js'
+import { PROPERTY_TYPE_ENUMS } from '../interfaces/property.js'
+import { CURRENCIES_ENUM } from '#interfaces/payment'
+import { ACCEPTED_VIDEO_TYPES } from '../constants/general.js'
 
 export const createPropertyValidator = vine.compile(
   vine.object({
-    title: vine.string(),
-    description: vine.string(),
-    type: vine.enum(IPropertyTypes),
+    title: vine.string().minLength(3),
+    description: vine.string().minLength(10),
+    type: vine.enum(PROPERTY_TYPE_ENUMS),
     price: vine.number(),
-    currency: vine.string(),
+    currency: vine.enum(CURRENCIES_ENUM),
     address: vine.string(),
     bedrooms: vine.number(),
     bathrooms: vine.number(),
@@ -16,11 +18,11 @@ export const createPropertyValidator = vine.compile(
     street: vine.string(),
     append: vine.string(),
 
-    state: vine.string().exists(async (db, value) => {
+    stateId: vine.string().exists(async (db, value) => {
       const state = await db.from('states').where('id', value).first()
       return !!state
     }),
-    city: vine.string().exists(async (db, value) => {
+    cityId: vine.string().exists(async (db, value) => {
       const city = await db.from('cities').where('id', value).first()
       return !!city
     }),
@@ -29,9 +31,10 @@ export const createPropertyValidator = vine.compile(
       return !!category
     }),
     files: vine.array(
+
       vine.file({
         size: '10mb',
-        extnames: ACCEPTED_IMAGE_TYPES,
+        extnames: [...ACCEPTED_IMAGE_TYPES, ...ACCEPTED_VIDEO_TYPES],
       })
     ),
   })

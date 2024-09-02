@@ -1,15 +1,13 @@
 import { getErrorObject } from '#helpers/error'
 import Property from '#models/property'
-// import User from '#models/user'
 import azure, { ImageUploadInterface } from '#services/azure'
 import { createPropertyValidator } from '#validators/property'
 import type { HttpContext } from '@adonisjs/core/http'
 import { FileData } from '../interfaces/file.js'
-import { v4 as uuidv4 } from 'uuid'
 import { Logger } from '@adonisjs/core/logger'
-import emitter from '@adonisjs/core/services/emitter'
 import FilesService from '#services/files'
 import PropertyFile from '#models/property_file'
+import { MultipartFile } from '@adonisjs/core/bodyparser'
 
 export default class PropertiesController {
   async index({ response, logger }: HttpContext) {
@@ -35,12 +33,18 @@ export default class PropertiesController {
       const user = auth.user!
 
       const { files, ...payload } = await request.validateUsing(createPropertyValidator)
-      console.log('got here')
       const uploadedFiles: any = []
-      const propertyId = uuidv4()
 
       if (files && Array.isArray(files)) {
-        const results = await PropertiesController.savedProductImages(files, logger)
+        files.forEach((file: MultipartFile) => {
+          if (file.type === 'image' && file.size > 5 * 1024 * 1024) {
+            return response.badRequest({
+              success: false,
+              message: 'Image file size should not exceed 5mb',
+            })
+          }
+        })
+        const results = await PropertiesController.savedPropertyFiles(files, logger)
 
         const property = await Property.create({
           ...payload,
@@ -57,15 +61,19 @@ export default class PropertiesController {
         }
 
         results.forEach(({ filename, url, metaData }) => {
+          console.log('metaData', metaData)
           if (!url || !filename) return
           uploadedFiles.push({
             fileName: filename,
             fileUrl: url,
-            fileType: 'image',
+            fileType: metaData.type,
             propertyId: property.id,
             meta: JSON.stringify(metaData),
           })
         })
+
+        property.defaultImageUrl = results[0].url
+        await property.save()
       }
 
       // fileInfo {
@@ -90,7 +98,7 @@ export default class PropertiesController {
       }
 
       // return
-
+      console.log('files', files)
       logger.info('Property created successfully')
 
       return response.created({
@@ -104,7 +112,7 @@ export default class PropertiesController {
     }
   }
 
-  public static async savedProductImages(
+  public static async savedPropertyFiles(
     files: any,
     logger: Logger
   ): Promise<ImageUploadInterface[]> {

@@ -5,16 +5,13 @@ export default class extends BaseSeeder {
   async run() {
     const categories = [
       {
-        name: 'rent',
+        name: 'Rent',
       },
       {
-        name: 'sale',
+        name: 'Sale',
       },
       {
-        name: 'lease',
-      },
-      {
-        name: 'shortlet',
+        name: 'Shortlet',
       },
     ]
 

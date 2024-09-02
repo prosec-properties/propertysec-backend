@@ -9,11 +9,13 @@ export default class extends BaseSchema {
       table.uuid('id').primary().notNullable().defaultTo(uuidv4())
       table.uuid('user_id').references('id').inTable('users').onDelete('CASCADE')
       table.string('file_url').notNullable()
+      table.string('file_name').notNullable()
+      table.enum('file_type', ['image', 'video', 'other']).notNullable()
       table
         .enum('file_category', [
           'passport',
           'power_of_attorney',
-          'identfication',
+          'identification',
           'approval_agreement',
           'other',
         ])

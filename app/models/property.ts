@@ -4,8 +4,6 @@ import type { HasMany, HasOne } from '@adonisjs/lucid/types/relations'
 import User from './user.js'
 import Category from './category.js'
 import { v4 as uuidv4 } from 'uuid'
-// import string from '@adonisjs/core/helpers/string'
-// import { nanoid } from 'nanoid'
 import type { IPropertyType } from '../interfaces/property.js'
 import PropertyFile from './property_file.js'
 
@@ -62,6 +60,9 @@ export default class Property extends BaseModel {
   declare status: 'draft' | 'published' | 'pending' | 'closed' | 'rejected'
 
   @column()
+  declare defaultImageUrl?: string
+
+  @column()
   declare meta?: string
 
   @column.dateTime({ autoCreate: true })
@@ -73,16 +74,16 @@ export default class Property extends BaseModel {
   @hasOne(() => User)
   declare user: HasOne<typeof User>
 
-  @hasOne(() => Category)
+  @hasOne(() => Category, {
+    onQuery: (query) => query.preload('subcategories'),
+  })
   declare category: HasOne<typeof Category>
 
   @hasMany(() => PropertyFile)
   declare files: HasMany<typeof PropertyFile>
 
   @beforeCreate()
-  static generate(property: Category) {
+  static generate(property: Property) {
     property.id = uuidv4()
-
-    // property.slug = string.slug(property.name + nanoid(5))
   }
 }
