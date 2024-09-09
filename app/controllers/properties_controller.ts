@@ -35,6 +35,8 @@ export default class PropertiesController {
       const { files, ...payload } = await request.validateUsing(createPropertyValidator)
       const uploadedFiles: any = []
 
+      console.log('payload', payload)
+
       if (files && Array.isArray(files)) {
         files.forEach((file: MultipartFile) => {
           if (file.type === 'image' && file.size > 5 * 1024 * 1024) {
@@ -50,7 +52,6 @@ export default class PropertiesController {
           ...payload,
           status: 'pending',
           userId: user.id,
-          categoryId: '74f1bfa3-a940-41b2-a9aa-e34f352ba7e3',
         })
 
         if (!property) {
@@ -61,7 +62,7 @@ export default class PropertiesController {
         }
 
         results.forEach(({ filename, url, metaData }) => {
-          console.log('metaData', metaData)
+          // console.log('metaData', metaData)
           if (!url || !filename) return
           uploadedFiles.push({
             fileName: filename,
@@ -146,5 +147,18 @@ export default class PropertiesController {
         reject(error)
       }
     })
+  }
+
+  async show({ logger, response, params }: HttpContext) {
+    try {
+      const property = await Property.query().where('id', params.id).preload('files').firstOrFail()
+      return response.ok({
+        success: true,
+        message: 'Property fetched sucessfully',
+        data: property,
+      })
+    } catch (error) {
+      response.badRequest(getErrorObject(error))
+    }
   }
 }
