@@ -152,6 +152,7 @@ export default class PropertiesController {
   async show({ logger, response, params }: HttpContext) {
     try {
       const property = await Property.query().where('id', params.id).preload('files').firstOrFail()
+      logger.info('Property fetched successfully')
       return response.ok({
         success: true,
         message: 'Property fetched sucessfully',
