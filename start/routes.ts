@@ -59,6 +59,7 @@ router
 
     router
       .group(() => {
+        router.get('/me', [PropertiesController, 'myProperties'])
         router.get('/', [PropertiesController, 'index'])
         router.post('/', [PropertiesController, 'store'])
         router.get('/:id', [PropertiesController, 'show'])

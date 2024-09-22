@@ -22,7 +22,7 @@ export default class PropertiesController {
       })
     } catch (error) {
       console.error(error)
-      return getErrorObject(error)
+      return response.badRequest(getErrorObject(error))
     }
   }
 
@@ -108,8 +108,7 @@ export default class PropertiesController {
         // data: property,
       })
     } catch (error) {
-      console.error(error)
-      return getErrorObject(error)
+      return response.badRequest(getErrorObject(error))
     }
   }
 
@@ -157,6 +156,25 @@ export default class PropertiesController {
         success: true,
         message: 'Property fetched sucessfully',
         data: property,
+      })
+    } catch (error) {
+      response.badRequest(getErrorObject(error))
+    }
+  }
+
+  async myProperties({ auth, response, logger }: HttpContext) {
+    try {
+      await auth.authenticate()
+      const user = auth.user!
+
+      const properties = await Property.query().where('userId', user.id).preload('files')
+
+      logger.info('Properties fetched successfully')
+
+      return response.ok({
+        success: true,
+        message: 'Properties fetched successfully',
+        data: properties,
       })
     } catch (error) {
       response.badRequest(getErrorObject(error))

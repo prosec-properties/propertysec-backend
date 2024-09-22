@@ -22,7 +22,7 @@ export default class UsersController {
       response.ok(user)
     } catch (error) {
       console.error(error.message)
-      response.internalServerError('An error occurred while fetching the user data.')
+      response.badRequest('An error occurred while fetching the user data.')
     }
   }
 
@@ -166,14 +166,14 @@ export default class UsersController {
   async deleteFile({ params, response }: HttpContext) {
     try {
       const { id } = params
-       await FilesService.deleteProfileFile(id)
+      await FilesService.deleteProfileFile(id)
       response.ok({
         success: true,
         message: 'File deleted successfully',
       })
     } catch (error) {
       console.error(error)
-      response.internalServerError('An error occurred while deleting the file')
+      response.badRequest('An error occurred while deleting the file')
     }
   }
 }
