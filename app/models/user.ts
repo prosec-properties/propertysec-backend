@@ -12,6 +12,7 @@ import stringHelpers from '@adonisjs/core/helpers/string'
 import { nanoid } from 'nanoid'
 import PropertyAccessRequest from './property_access_request.js'
 import ProfileFile from './profile_file.js'
+import Transaction from './transaction.js'
 
 const AuthFinder = withAuthFinder(() => hash.use('scrypt'), {
   uids: ['email'],
@@ -138,4 +139,7 @@ export default class User extends compose(BaseModel, AuthFinder) {
 
   @hasMany(() => ProfileFile)
   declare profileFiles: HasMany<typeof ProfileFile>
+
+  @hasMany(() => Transaction)
+  declare transactions: HasMany<typeof Transaction>
 }

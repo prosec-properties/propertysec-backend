@@ -22,6 +22,7 @@ export const getErrorObject = (
 
   return {
     message: message || 'ERROR: Something went wrong',
+    success: false,
     error: error.messages?.errors ?? error.body?.errors,
     errorInfo: error.message,
     errorData: error,

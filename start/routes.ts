@@ -15,6 +15,9 @@ import SocialAuthController from '#controllers/social_auths_controller'
 import CountriesController from '#controllers/countries_controller'
 import PropertiesController from '#controllers/properties_controller'
 import CategoriesController from '#controllers/categories_controller'
+import PaymentsController from '#controllers/payments_controller'
+import PlansContoller from '#controllers/plans_controller'
+import TransactionsController from '#controllers/transactions_controller'
 
 router.get('/', async () => {
   return {
@@ -71,5 +74,26 @@ router
         router.get('/', [CategoriesController, 'index'])
       })
       .prefix('categories')
+
+    router
+      .group(() => {
+        router.post('/init', [PaymentsController, 'initializeSubscriptionPayment'])
+      })
+      .use(middleware.auth())
+      .prefix('payment')
+
+    router
+      .group(() => {
+        router.get('/', [PlansContoller, 'index'])
+      })
+      .use(middleware.auth())
+      .prefix('plans')
+
+    router
+      .group(() => {
+        router.post('/', [TransactionsController, 'store'])
+      })
+      .use(middleware.auth())
+      .prefix('transactions')
   })
   .prefix('api/v1')

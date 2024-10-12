@@ -30,3 +30,7 @@ export const ACCEPTED_VIDEO_TYPES = [
 
 
 export const CURRENCIES = ['USD', 'NGN', 'GBP', 'EUR', 'ZAR', 'KES', 'GHS', 'XOF']
+
+export const ALPHA_STRING = 'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz'
+export const NUMERIC_STRING = '0123456789'
+export const ALPHA_NUMERIC_STRING = `${ALPHA_STRING}${NUMERIC_STRING}`

@@ -13,6 +13,7 @@
     "format": "prettier --write .",
     "typecheck": "tsc --noEmit",
     "migrate": "node ace migration:run",
+    "seed": "echo 'seeding database' && node ace db:seed",
     "db": "echo 'running migration' && node ace migration:run && echo 'seeding database' && node ace db:seed"
   },
   "imports": {
@@ -62,6 +63,7 @@
   "dependencies": {
     "@adonisjs/ally": "^5.0.2",
     "@adonisjs/auth": "^9.2.3",
+    "@adonisjs/bouncer": "^3.1.3",
     "@adonisjs/core": "^6.14.0",
     "@adonisjs/cors": "^2.2.1",
     "@adonisjs/limiter": "^2.3.2",
