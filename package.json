@@ -96,6 +96,5 @@
   "eslintConfig": {
     "extends": "@adonisjs/eslint-config/app"
   },
-  "prettier": "@adonisjs/prettier-config",
-  "packageManager": "^pnpm@9.11.0"
+  "prettier": "@adonisjs/prettier-config"
 }
