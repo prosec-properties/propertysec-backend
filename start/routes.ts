@@ -18,6 +18,9 @@ import CategoriesController from '#controllers/categories_controller'
 import PaymentsController from '#controllers/payments_controller'
 import PlansContoller from '#controllers/plans_controller'
 import TransactionsController from '#controllers/transactions_controller'
+import StatesController from '#controllers/states_controller'
+import Loan from '#models/loan'
+import LoansController from '#controllers/loan_controller'
 
 router.get('/', async () => {
   return {
@@ -56,16 +59,24 @@ router
 
     router
       .group(() => {
+        router.get('/:id', [CountriesController, 'show'])
         router.get('/', [CountriesController, 'index'])
       })
       .prefix('countries')
 
     router
       .group(() => {
+        // router.get('/:id', [StatesController, 'show'])
+        router.get('/', [StatesController, 'index'])
+      })
+      .prefix('states')
+
+    router
+      .group(() => {
         router.get('/me', [PropertiesController, 'myProperties'])
-        router.get('/', [PropertiesController, 'index'])
-        router.post('/', [PropertiesController, 'store'])
         router.get('/:id', [PropertiesController, 'show'])
+        router.get('/', [PropertiesController, 'index'])
+        // router.post('/', [PropertiesController, 'store'])
       })
       .prefix('properties')
 
@@ -95,5 +106,11 @@ router
       })
       .use(middleware.auth())
       .prefix('transactions')
+
+    router
+      .group(() => {
+        router.post('/request', [LoansController, 'initializeObtainLoan'])
+      })
+      .prefix('loans')
   })
   .prefix('api/v1')

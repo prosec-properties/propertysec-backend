@@ -46,7 +46,8 @@ export default class PropertiesController {
             })
           }
         })
-        const results = await PropertiesController.savedPropertyFiles(files, logger)
+        // const results = await PropertiesController.savedPropertyFiles(files, logger)
+        const results = await FilesService.uploadFiles(files)
 
         const property = await Property.create({
           ...payload,
@@ -72,6 +73,7 @@ export default class PropertiesController {
             meta: JSON.stringify(metaData),
           })
         })
+        // const uploadedFiles = await FilesService.getUploadedFilesData(files, property.id)
 
         property.defaultImageUrl = results[0].url
         await property.save()
@@ -112,41 +114,41 @@ export default class PropertiesController {
     }
   }
 
-  public static async savedPropertyFiles(
-    files: any,
-    logger: Logger
-  ): Promise<ImageUploadInterface[]> {
-    return new Promise(async (resolve, reject) => {
-      try {
-        const filesToUpload: FileData[] = Array.isArray(files)
-          ? files.filter((file) => file.tmpPath)
-          : files.tmpPath
-            ? [files]
-            : []
-        const uploadPromises = filesToUpload.map((file) =>
-          azure.ImageUpload(file).catch((e): ImageUploadInterface => {
-            logger.error(file, 'Failed to upload file: %s', e.message)
-            return {
-              filename: '',
-              url: '',
-              metaData: {
-                clientName: '',
-                name: '',
-                type: '',
-                lastModified: '',
-                size: 0,
-                lastModifiedDate: '',
-              },
-            }
-          })
-        )
-        const results = await Promise.all(uploadPromises)
-        resolve(results)
-      } catch (error) {
-        reject(error)
-      }
-    })
-  }
+  // public static async savedPropertyFiles(
+  //   files: any,
+  //   logger: Logger
+  // ): Promise<ImageUploadInterface[]> {
+  //   return new Promise(async (resolve, reject) => {
+  //     try {
+  //       const filesToUpload: FileData[] = Array.isArray(files)
+  //         ? files.filter((file) => file.tmpPath)
+  //         : files.tmpPath
+  //           ? [files]
+  //           : []
+  //       const uploadPromises = filesToUpload.map((file) =>
+  //         azure.ImageUpload(file).catch((e): ImageUploadInterface => {
+  //           logger.error(file, 'Failed to upload file: %s', e.message)
+  //           return {
+  //             filename: '',
+  //             url: '',
+  //             metaData: {
+  //               clientName: '',
+  //               name: '',
+  //               type: '',
+  //               lastModified: '',
+  //               size: 0,
+  //               lastModifiedDate: '',
+  //             },
+  //           }
+  //         })
+  //       )
+  //       const results = await Promise.all(uploadPromises)
+  //       resolve(results)
+  //     } catch (error) {
+  //       reject(error)
+  //     }
+  //   })
+  // }
 
   async show({ logger, response, params }: HttpContext) {
     try {

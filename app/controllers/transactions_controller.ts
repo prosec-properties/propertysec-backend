@@ -3,6 +3,7 @@ import Payment from '#models/payment'
 import Plan from '#models/plan'
 import Subscription from '#models/subscription'
 import Transaction from '#models/transaction'
+import User from '#models/user'
 import PaymentService from '#services/payment'
 import type { HttpContext } from '@adonisjs/core/http'
 import vine from '@vinejs/vine'
@@ -19,9 +20,9 @@ export default class TransactionsController {
       if (user.role === 'admin') {
         await bouncer.with('UserPolicy').authorize('isAdmin')
         const transactions = await Transaction.query()
+          .preload('user', (userQuery) => userQuery.select('id', 'email')) // Preload only necessary columns
           .orderBy('createdAt', 'desc')
           .where('type', 'like', `%${type || ''}%`)
-          .preload('user')
           .paginate(page || 1, setLimit)
 
         return response.ok({
@@ -83,7 +84,7 @@ export default class TransactionsController {
 
       const payment = await Payment.query().where('reference', reference).firstOrFail()
       payment.status = 'SUCCESS'
-      payment.save()
+      await payment.save()
 
       const plan = await Plan.query().where('id', planId).firstOrFail()
 
@@ -98,7 +99,7 @@ export default class TransactionsController {
         actualAmount: payment.amount,
         date: DateTime.now().toISO(),
         currency: 'NGN',
-        narration: `Wallet payment for subscription.`,
+        narration: `Subscription payment for subscription.`,
         providerStatus: 'success',
         provider: 'PAYSTACK',
         transactionTypeId: plan.id,
@@ -118,12 +119,29 @@ export default class TransactionsController {
       logger.info('Paystack Payment Data:', paystackPaymentData)
 
       return response.ok({
-        message: 'Transaction fetched successfully!',
+        message: 'Transaction created successfully!',
         success: true,
         data: paystackPaymentData,
       })
     } catch (error) {
       return response.badRequest(getErrorObject(error))
+    }
+  }
+
+  async checkIfUserHasActiveSub({ user, plan }: { user: User; plan: Plan }) {
+    const activeSub = await Subscription.query()
+      .where('userId', user.id)
+      .where('planId', plan.id)
+      .where('endDate', '>', DateTime.now().toISO())
+      .first()
+
+    // trying to subscribe to a plan that is already active
+
+    if (activeSub) {
+      throw {
+        message: 'You already have an active subscription for this plan.',
+        description: 'Please pick a different plan',
+      }
     }
   }
 }

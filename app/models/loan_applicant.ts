@@ -11,67 +11,70 @@ export default class LoanApplicant extends BaseModel {
   declare userId: string
 
   @column()
-  declare companyAddress: string
+  declare companyAddress?: string
 
   @column()
-  declare companyName: string
+  declare companyName?: string
 
   @column()
-  declare companyPosition: string
+  declare companyPosition?: string
 
   @column()
-  declare companyPhoneNumber: string
+  declare companyPhoneNumber?: string
 
   @column()
-  declare companyEmail: string
+  declare companyEmail?: string
 
   @column()
   declare yearsInApartment: number
 
   @column()
-  declare numberOfRooms: number
+  declare numberOfRooms?: number
 
   @column()
-  declare reasonForFunds: string
+  declare nextOfKin?: string
 
   @column()
-  declare landlordName: string
+  declare reasonForFunds?: string
 
   @column()
-  declare landlordPhoneNumber: string
+  declare landlordName?: string
 
   @column()
-  declare landlordEmail: string
+  declare landlordPhoneNumber?: string
 
   @column()
-  declare landlordAddress: string
+  declare landlordEmail?: string
 
   @column()
-  declare landlordBankName: string
+  declare landlordAddress?: string
 
   @column()
-  declare landlordBankAccountNumber: string
+  declare landlordBankName?: string
 
   @column()
-  declare landlordBankAccountName: string
+  declare landlordBankAccountNumber?: string
 
   @column()
-  declare guarantorName: string
+  declare landlordBankAccountName?: string
 
   @column()
-  declare guarantorPhoneNumber: string
+  declare guarantorName?: string
 
   @column()
-  declare guarantorEmail: string
+  declare guarantorPhoneNumber?: string
 
   @column()
-  declare guarantorHomeAddress: string
+  declare guarantorEmail?: string
 
   @column()
-  declare guarantorOfficeAddress: string
+  declare guarantorHomeAddress?: string
 
   @column()
-  declare meta: string
+  declare guarantorOfficeAddress?: string
+
+  @column()
+  declare meta?: string
 
   @column.dateTime({ autoCreate: true })
   declare createdAt: DateTime

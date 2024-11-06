@@ -1,7 +1,8 @@
 import ProfileFile from '#models/profile_file'
 import PropertyFile from '#models/property_file'
 import logger from '@adonisjs/core/services/logger'
-import azure from './azure.js'
+import azure, { ImageUploadInterface } from './azure.js'
+import { FileData } from '#interfaces/file'
 
 export default class FilesService {
   static async createPropertyFile({ fileType, fileUrl, propertyId, meta, fileName }: PropertyFile) {
@@ -26,7 +27,7 @@ export default class FilesService {
       const file = await PropertyFile.findOrFail(fileId)
       await azure.deleteFile(file.fileName)
       await file.delete()
-      
+
       logger.info('File deleted successfully: %s')
     } catch (error) {
       throw error
@@ -61,6 +62,62 @@ export default class FilesService {
       const file = await ProfileFile.findOrFail(fileId)
       await file.delete()
       logger.info('File deleted successfully: %s')
+    } catch (error) {
+      throw error
+    }
+  }
+
+  static async uploadFiles(files: any): Promise<ImageUploadInterface[]> {
+    return new Promise(async (resolve, reject) => {
+      try {
+        const filesToUpload: FileData[] = Array.isArray(files)
+          ? files.filter((file) => file.tmpPath)
+          : files.tmpPath
+            ? [files]
+            : []
+        const uploadPromises = filesToUpload.map((file) =>
+          azure.ImageUpload(file).catch((e): ImageUploadInterface => {
+            console.error(file, 'Failed to upload file: %s', e.message)
+            return {
+              filename: '',
+              url: '',
+              metaData: {
+                clientName: '',
+                name: '',
+                type: '',
+                lastModified: '',
+                size: 0,
+                lastModifiedDate: '',
+              },
+            }
+          })
+        )
+        const results = await Promise.all(uploadPromises)
+        resolve(results)
+      } catch (error) {
+        reject(error)
+      }
+    })
+  }
+
+  static async getUploadedFilesData(files: any, itemId: string) {
+    const uploadedFiles: any = []
+    try {
+      const results = await FilesService.uploadFiles(files)
+
+      results.forEach(({ filename, url, metaData }) => {
+        // console.log('metaData', metaData)
+        if (!url || !filename) return
+        uploadedFiles.push({
+          fileName: filename,
+          fileUrl: url,
+          fileType: metaData.type,
+          itemId: itemId,
+          meta: JSON.stringify(metaData),
+        })
+      })
+
+      return uploadedFiles
     } catch (error) {
       throw error
     }

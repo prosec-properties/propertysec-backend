@@ -7,7 +7,7 @@ export default class CategoriesController {
     try {
       const categories = await Category.query()
 
-      console.log(categories)
+      // console.log(categories)
 
       return response.json({
         status: 'success',

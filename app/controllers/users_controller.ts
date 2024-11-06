@@ -19,7 +19,7 @@ export default class UsersController {
         .preload('profileFiles')
         .first()
 
-      response.ok(user)
+      response.ok({ success: true, message: 'User data fetched successfully!', data: user })
     } catch (error) {
       console.error(error.message)
       response.badRequest('An error occurred while fetching the user data.')
@@ -85,7 +85,7 @@ export default class UsersController {
       fullName: payload?.fullName,
       phoneNumber: payload?.phoneNumber,
       homeAddress: payload?.homeAddress,
-      password: payload?.newPassword,
+      password: payload?.password,
       avatarUrl: payload?.avatarUrl,
       businessName: payload?.businessName,
       businessRegNo: payload?.businessRegNo,

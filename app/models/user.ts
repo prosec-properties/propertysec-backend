@@ -81,7 +81,7 @@ export default class User extends compose(BaseModel, AuthFinder) {
   declare bankAccountName: string
 
   @column()
-  declare nextOfKin: string
+  declare nextOfKinName: string
 
   @column()
   declare religion: string

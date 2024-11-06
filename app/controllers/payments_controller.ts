@@ -9,7 +9,6 @@ import { nanoid } from 'nanoid'
 
 export default class PaymentsController {
   async initializeSubscriptionPayment({ auth, request, response, logger }: HttpContext) {
-    console.log('hiii')
     try {
       await auth.authenticate()
       const { planId, type } = await request.all()
@@ -99,4 +98,9 @@ export default class PaymentsController {
       return response.badRequest(getErrorObject(error))
     }
   }
+
+  // async propertyInspectionPayment({ auth, request, response, logger }: HttpContext) {
+  //   try {
+  //   } catch (error) {}
+  // }
 }

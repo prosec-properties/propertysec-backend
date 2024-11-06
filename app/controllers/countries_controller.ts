@@ -7,10 +7,11 @@ export default class CountriesController {
   public async index({ response, logger }: HttpContext) {
     try {
       const countries = await Country.query().preload('states').orderBy('name', 'asc')
-      logger.info('Cities fetched successfully')
+      logger.info('Countries fetched successfully')
+
       return response.ok({
         success: true,
-        message: 'Cities fetched successfully',
+        message: 'Countries fetched successfully',
         data: countries,
       })
     } catch (error) {
@@ -28,11 +29,11 @@ export default class CountriesController {
         name,
       })
 
-      logger.info('City created successfully')
+      logger.info('Country created successfully')
 
       return response.created({
         success: true,
-        message: 'City created successfully',
+        message: 'Country created successfully',
       })
     } catch (error) {
       logger.error('Error creating city from CitiesController.store')
@@ -42,18 +43,17 @@ export default class CountriesController {
 
   public async show({ params, response, logger }: HttpContext) {
     try {
-      const { id } = params
-      const city = await Country.findByOrFail('id', id)
+      const country = await Country.query().where('id', params.id).preload('states').firstOrFail()
 
-      logger.info('City fetched successfully')
+      logger.info('Country fetched successfully')
 
       return response.ok({
         success: true,
-        message: 'City fetched successfully',
-        data: city,
+        message: 'Country fetched successfully',
+        data: country,
       })
     } catch (error) {
-      logger.error('Error fetching city from CitiesController.show')
+      logger.error('Error fetching city from CitiesController.show', error)
       return response.badRequest(getErrorObject(error))
     }
   }
