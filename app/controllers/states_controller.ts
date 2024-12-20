@@ -1,12 +1,12 @@
 import { getErrorObject } from '#helpers/error'
 import State from '#models/state'
-import { createStateValidator, updateStateValidator } from '#validators/location'
+// import { createStateValidator, updateStateValidator } from '#validators/location'
 import type { HttpContext } from '@adonisjs/core/http'
 
 export default class StatesController {
   public async index({ response, logger }: HttpContext) {
     try {
-      const states = await State.query().preload('cities').orderBy('name', 'asc')
+      const states = await State.query().where('countryCode', 'af').preload('cities').orderBy('name', 'asc')
       logger.info('States fetched successfully')
       return response.ok({
         success: true,
@@ -19,28 +19,28 @@ export default class StatesController {
     }
   }
 
-  public async store({ auth, request, response, logger }: HttpContext) {
-    try {
-      await auth.authenticate()
+  // public async store({ auth, request, response, logger }: HttpContext) {
+  //   try {
+  //     await auth.authenticate()
 
-      const { name, countryId } = await request.validateUsing(createStateValidator)
+  //     const { name, countryId } = await request.validateUsing(createStateValidator)
 
-      await State.create({
-        name,
-        countryId,
-      })
+  //     await State.create({
+  //       name,
+  //       countryId,
+  //     })
 
-      logger.info('State created successfully')
+  //     logger.info('State created successfully')
 
-      return response.created({
-        success: true,
-        message: 'State created successfully',
-      })
-    } catch (error) {
-      logger.error('Error creating state from StatesController.store')
-      return response.badRequest(getErrorObject(error))
-    }
-  }
+  //     return response.created({
+  //       success: true,
+  //       message: 'State created successfully',
+  //     })
+  //   } catch (error) {
+  //     logger.error('Error creating state from StatesController.store')
+  //     return response.badRequest(getErrorObject(error))
+  //   }
+  // }
 
   public async show({ params, response, logger }: HttpContext) {
     try {
@@ -60,33 +60,33 @@ export default class StatesController {
     }
   }
 
-  public async update({ auth, params, request, response, logger }: HttpContext) {
-    try {
-      await auth.authenticate()
+  // public async update({ auth, params, request, response, logger }: HttpContext) {
+  //   try {
+  //     await auth.authenticate()
 
-      const state = await State.findByOrFail('id', params.id)
+  //     const state = await State.findByOrFail('id', params.id)
 
-      const { name, countryId, isActive } = await request.validateUsing(updateStateValidator)
+  //     const { name, countryId, isActive } = await request.validateUsing(updateStateValidator)
 
-      const payload = {
-        name,
-        countryId,
-        isActive,
-      }
+  //     const payload = {
+  //       name,
+  //       countryId,
+  //       isActive,
+  //     }
 
-      await state.merge(payload).save()
+  //     await state.merge(payload).save()
 
-      logger.info('State updated successfully')
+  //     logger.info('State updated successfully')
 
-      return response.ok({
-        success: true,
-        message: 'State updated successfully',
-      })
-    } catch (error) {
-      logger.error('Error updating state from StatesController.update')
-      return response.badRequest(getErrorObject(error))
-    }
-  }
+  //     return response.ok({
+  //       success: true,
+  //       message: 'State updated successfully',
+  //     })
+  //   } catch (error) {
+  //     logger.error('Error updating state from StatesController.update')
+  //     return response.badRequest(getErrorObject(error))
+  //   }
+  // }
 
   public async destroy({ auth, params, response, logger }: HttpContext) {
     try {

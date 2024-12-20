@@ -6,11 +6,11 @@ export default class Loan extends BaseModel {
   @column({ isPrimary: true })
   declare id: string
 
-  @column()
-  declare loanType: 'personal' | 'business' | 'mortgage' | 'auto' | 'rent'
+  // @column()
+  // declare loanType: 'personal' | 'business' | 'mortgage' | 'auto' | 'rent'
 
   @column()
-  declare loanAmount: number
+  declare loanAmount: '1000' | '5000' | '10000' | '20000' | '30000' | '40000' | '50000' | '100000'
 
   @column()
   declare interestRate: number
@@ -20,6 +20,9 @@ export default class Loan extends BaseModel {
 
   @column()
   declare loanStatus: 'pending' | 'approved' | 'rejected' | 'disbursed'
+
+  @column()
+  declare hasCompletedForm: boolean
 
   @column()
   declare meta: string

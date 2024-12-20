@@ -12,7 +12,7 @@ export const updateProfileValidator = vine.compile(
         return isUserPhoneNumber || !user
       })
       .optional(),
-    newPassword: vine.string().minLength(6).nullable().optional(),
+    password: vine.string().minLength(6).nullable().optional(),
     oldPassword: vine.string().minLength(6).nullable().optional(),
     fullName: vine.string().trim().minLength(3).optional(),
 

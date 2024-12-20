@@ -197,7 +197,7 @@ export default class AuthController {
 
       return response.ok({
         success: true,
-        token,
+       token,
       })
     } catch (error) {
       return response.badRequest(getErrorObject(error))

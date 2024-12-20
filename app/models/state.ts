@@ -1,18 +1,35 @@
 import { DateTime } from 'luxon'
-import { BaseModel, beforeCreate, column, hasMany } from '@adonisjs/lucid/orm'
-import { v4 as uuidv4 } from 'uuid'
-import City from './city.js'
-import type { HasMany } from '@adonisjs/lucid/types/relations'
+import { BaseModel, column, hasOne } from '@adonisjs/lucid/orm'
+import type {  HasOne } from '@adonisjs/lucid/types/relations'
+import Country from './country.js'
 
+export interface ICities {
+  id: number
+  name: string
+  latitude: string
+  longitude: string
+}
 export default class State extends BaseModel {
   @column({ isPrimary: true })
-  declare id: string
+  declare id: number
 
   @column()
   declare name: string
 
   @column()
-  declare countryId: string
+  declare stateCode: string | null
+
+  @column()
+  declare latitude: string | null
+
+  @column()
+  declare longitude: string | null
+
+  @column()
+  declare cities: string
+
+  @column()
+  declare countryId: number
 
   @column()
   declare meta?: string
@@ -23,11 +40,6 @@ export default class State extends BaseModel {
   @column.dateTime({ autoCreate: true, autoUpdate: true })
   declare updatedAt: DateTime
 
-  @beforeCreate()
-  static generateId(property: State) {
-    property.id = uuidv4()
-  }
-
-  @hasMany(() => City)
-  declare cities: HasMany<typeof City>
+  @hasOne(() => Country)
+  declare country: HasOne<typeof Country>
 }
