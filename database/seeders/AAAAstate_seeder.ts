@@ -1,4 +1,4 @@
-import State, { ICities } from '#models/state'
+import State from '#models/state'
 import { BaseSeeder } from '@adonisjs/lucid/seeders'
 import fs from 'fs/promises'
 import path from 'path'
@@ -18,7 +18,7 @@ export default class extends BaseSeeder {
           stateCode: state.state_code,
           latitude: state.latitude,
           longitude: state.longitude,
-          cities: JSON.stringify(state.cities),
+          // cities: state.cities,
         }
       )
     }

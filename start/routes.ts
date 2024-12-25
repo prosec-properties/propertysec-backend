@@ -19,7 +19,6 @@ import PaymentsController from '#controllers/payments_controller'
 import PlansContoller from '#controllers/plans_controller'
 import TransactionsController from '#controllers/transactions_controller'
 import StatesController from '#controllers/states_controller'
-import Loan from '#models/loan'
 import LoansController from '#controllers/loan_controller'
 
 router.get('/', async () => {

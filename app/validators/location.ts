@@ -35,7 +35,7 @@ export const createStateValidator = vine.compile(
 export const updateCityValidator = vine.compile(
   vine.object({
     name: vine.string().optional(),
-    stateId: vine.string().optional(),
+    stateId: vine.number().optional(),
     isActive: vine.boolean().optional(),
     meta: vine.string().optional(),
   })
@@ -44,7 +44,7 @@ export const updateCityValidator = vine.compile(
 export const createCityValidator = vine.compile(
   vine.object({
     name: vine.string(),
-    stateId: vine.string(),
+    stateId: vine.number(),
     isActive: vine.boolean(),
     meta: vine.string(),
   })

@@ -1,7 +1,8 @@
 import { DateTime } from 'luxon'
-import { BaseModel, column, hasOne } from '@adonisjs/lucid/orm'
-import type {  HasOne } from '@adonisjs/lucid/types/relations'
+import { BaseModel, column, hasMany, hasOne } from '@adonisjs/lucid/orm'
+import type { HasMany, HasOne } from '@adonisjs/lucid/types/relations'
 import Country from './country.js'
+import City from './city.js'
 
 export interface ICities {
   id: number
@@ -26,9 +27,6 @@ export default class State extends BaseModel {
   declare longitude: string | null
 
   @column()
-  declare cities: string
-
-  @column()
   declare countryId: number
 
   @column()
@@ -42,4 +40,7 @@ export default class State extends BaseModel {
 
   @hasOne(() => Country)
   declare country: HasOne<typeof Country>
+
+  @hasMany(() => City)
+  declare cities: HasMany<typeof City>
 }
