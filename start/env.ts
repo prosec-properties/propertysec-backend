@@ -71,5 +71,5 @@ export default await Env.create(new URL('../', import.meta.url), {
   AZURE_STORAGE_CONNECTION_STRING: Env.schema.string(),
 
   PAYSTACK_PUBLIC_KEY: Env.schema.string(),
-  PAYSTACK_SECRET_KEY: Env.schema.string(),
+  // PAYSTACK_SECRET_KEY: Env.schema.string(),
 })
