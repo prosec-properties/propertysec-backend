@@ -26,6 +26,8 @@ export default class extends BaseSchema {
       table.boolean('email_verified').notNullable().defaultTo(false)
       table.string('phone_number').nullable().unique()
 
+      table.string('referrer_code').nullable().unique()
+
       table.boolean('has_completed_profile').defaultTo(false)
       table.boolean('has_completed_registration').notNullable()
 
