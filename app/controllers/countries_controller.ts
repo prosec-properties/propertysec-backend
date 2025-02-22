@@ -6,7 +6,11 @@ import type { HttpContext } from '@adonisjs/core/http'
 export default class CountriesController {
   public async index({ response, logger }: HttpContext) {
     try {
-      const countries = await Country.query().preload('states').orderBy('name', 'asc')
+      const countries = await Country.query()
+        .preload('states', (statesQuery) => {
+          statesQuery.preload('cities')
+        })
+        .orderBy('name', 'asc')
       logger.info('Countries fetched successfully')
 
       return response.ok({
@@ -43,7 +47,12 @@ export default class CountriesController {
 
   public async show({ params, response, logger }: HttpContext) {
     try {
-      const country = await Country.query().where('id', params.id).preload('states').firstOrFail()
+      const country = await Country.query()
+        .where('id', params.id)
+        .preload('states', (statesQuery) => {
+          statesQuery.preload('cities')
+        })
+        .firstOrFail()
 
       logger.info('Country fetched successfully')
 

@@ -99,8 +99,4 @@ export default class PaymentsController {
     }
   }
 
-  // async propertyInspectionPayment({ auth, request, response, logger }: HttpContext) {
-  //   try {
-  //   } catch (error) {}
-  // }
 }

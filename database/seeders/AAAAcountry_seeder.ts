@@ -3006,7 +3006,10 @@
 //       },
 //     ]
 
+//     let num = 0
+
 //     for (const country of countries) {
+//         console.log('country', num++, country.name)
 //       await Country.updateOrCreate(
 //         { name: country.name },
 //         {

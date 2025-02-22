@@ -8,8 +8,8 @@ export default class extends BaseSchema {
   async up() {
     this.schema.createTable(this.tableName, (table) => {
       table.uuid('id').primary().notNullable().unique().defaultTo(uuidv4())
-      table.uuid('state_of_residence').references('id').inTable('states')
-      table.uuid('city_of_residence').references('id').inTable('cities')
+      table.integer('state_of_residence').references('id').inTable('states')
+      table.integer('city_of_residence').references('id').inTable('cities')
       table.string('nationality').nullable()
 
       table.string('full_name').notNullable()
