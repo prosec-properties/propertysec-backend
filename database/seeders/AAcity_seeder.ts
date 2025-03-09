@@ -12,6 +12,7 @@ export default class extends BaseSeeder {
     for (const state of states) {
       for (const city of state.cities) {
         console.log('city', num++, city.name)
+        console.log('country from cities', state.country_id)
         await City.updateOrCreate(
           { name: city.name },
           {
