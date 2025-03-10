@@ -1,7 +1,7 @@
 import ProfileFile from '#models/profile_file'
 import PropertyFile from '#models/property_file'
 import logger from '@adonisjs/core/services/logger'
-import azure, { ImageUploadInterface } from './azure.js'
+import aws, { ImageUploadInterface } from './aws.js'
 import { FileData } from '#interfaces/file'
 
 export default class FilesService {
@@ -25,7 +25,7 @@ export default class FilesService {
   static async deletePropertyFile(fileId: string) {
     try {
       const file = await PropertyFile.findOrFail(fileId)
-      await azure.deleteFile(file.fileName)
+      await aws.deleteFile(file.fileName)
       await file.delete()
 
       logger.info('File deleted successfully: %s')
@@ -76,7 +76,7 @@ export default class FilesService {
             ? [files]
             : []
         const uploadPromises = filesToUpload.map((file) =>
-          azure.ImageUpload(file).catch((e): ImageUploadInterface => {
+          aws.ImageUpload(file).catch((e): ImageUploadInterface => {
             console.error(file, 'Failed to upload file: %s', e.message)
             return {
               filename: '',

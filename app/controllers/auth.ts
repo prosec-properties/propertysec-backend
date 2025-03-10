@@ -40,6 +40,7 @@ export default class AuthController {
       response.ok({
         success: true,
         message: 'Please verify your email',
+        email: user?.email || payload?.email
       })
     } catch (error) {
       return response.badRequest(getErrorObject(error))

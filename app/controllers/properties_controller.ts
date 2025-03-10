@@ -1,10 +1,7 @@
 import { getErrorObject } from '#helpers/error'
 import Property from '#models/property'
-// import azure, { ImageUploadInterface } from '#services/azure'
 import { createPropertyValidator, updatePropertyValidator } from '#validators/property'
 import type { HttpContext } from '@adonisjs/core/http'
-// import { FileData } from '../interfaces/file.js'
-// import { Logger } from '@adonisjs/core/logger'
 import FilesService from '#services/files'
 import PropertyFile from '#models/property_file'
 import { MultipartFile } from '@adonisjs/core/bodyparser'
@@ -29,15 +26,11 @@ export default class PropertiesController {
   async store({ auth, request, response, logger }: HttpContext) {
     try {
       await auth.authenticate()
-
       const user = auth.user!
-
       const { files, ...payload } = await request.validateUsing(createPropertyValidator)
-      const uploadedFiles: any = []
-
-      console.log('payload', payload)
-
+      
       if (files && Array.isArray(files)) {
+        // Validate file sizes
         files.forEach((file: MultipartFile) => {
           if (file.type === 'image' && file.size > 5 * 1024 * 1024) {
             return response.badRequest({
@@ -46,68 +39,66 @@ export default class PropertiesController {
             })
           }
         })
-        // const results = await PropertiesController.savedPropertyFiles(files, logger)
+
         const results = await FilesService.uploadFiles(files)
+            
 
-        const property = await Property.create({
-          ...payload,
-          status: 'pending',
-          userId: user.id,
-        })
+        if (!results.length) {
+          return response.badRequest({
+            success: false,
+            message: 'Failed to upload one or more property images',
+          })
+        }
 
-        if (!property) {
+        let property: Property | null = null
+        try {
+          property = await Property.create({
+            ...payload,
+            status: 'pending',
+            userId: user.id,
+            defaultImageUrl: results[0].url,
+          })
+
+          const uploadedFiles = results.map(({ filename, url, metaData }) => ({
+            fileName: filename,
+            fileUrl: url,
+            fileType: metaData.type,
+            propertyId: property?.id,
+            meta: JSON.stringify(metaData),
+          }))
+
+          try {
+            for (const fileInfo of uploadedFiles) {
+              await FilesService.createPropertyFile(fileInfo as PropertyFile)
+            }
+          } catch (error) {
+            // If file saving fails, delete the property and return error
+            if (property) {
+              await property.delete()
+            }
+            return response.badRequest({
+              success: false,
+              message: 'Failed to save property images',
+            })
+          }
+
+          logger.info('Property created successfully')
+          return response.created({
+            success: true,
+            message: 'Property created successfully',
+          })
+        } catch (error) {
+          // If property creation fails, return error
           return response.badRequest({
             success: false,
             message: 'Failed to create property',
           })
         }
-
-        results.forEach(({ filename, url, metaData }) => {
-          // console.log('metaData', metaData)
-          if (!url || !filename) return
-          uploadedFiles.push({
-            fileName: filename,
-            fileUrl: url,
-            fileType: metaData.type,
-            propertyId: property.id,
-            meta: JSON.stringify(metaData),
-          })
-        })
-        // const uploadedFiles = await FilesService.getUploadedFilesData(files, property.id)
-
-        property.defaultImageUrl = results[0].url
-        await property.save()
       }
 
-      // fileInfo {
-      //   userId: '757a5989-03dc-43e9-aab5-accc9412129a',
-      //   fileName: 'pro_sec_5e8230fd9f06f1e2a4a6e2cacc34aa5d22db8db31429ab0f03803a3083e9f155.jpg',
-      //   url: 'https://prosecblob.blob.core.windows.net/prosec-container/pro_sec_5e8230fd9f06f1e2a4a6e2cacc34aa5d22db8db31429ab0f03803a3083e9f155.jpg',
-      //   type: 'PRODUCT_PICTURE',
-      //   propertyId: '5181f897-4606-4dd9-a8b9-05749607315c',
-      //   metaData: {
-      //     clientName: 'chrome stuff.jpg',
-      //     name: undefined,
-      //     size: 80638,
-      //     type: 'image',
-      //     lastModifiedDate: undefined,
-      //     lastModified: undefined
-      //   }
-      // }
-      if (uploadedFiles.length > 0) {
-        for (const fileInfo of uploadedFiles) {
-          await FilesService.createPropertyFile(fileInfo as PropertyFile)
-        }
-      }
-
-      // return
-      console.log('files', files)
-      logger.info('Property created successfully')
-
-      return response.created({
-        success: true,
-        message: 'Property created successfully',
-        // data: property,
+      return response.badRequest({
+        success: false,
+        message: 'Property images are required',
       })
     } catch (error) {
       return response.badRequest(getErrorObject(error))

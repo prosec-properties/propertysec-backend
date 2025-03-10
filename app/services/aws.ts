@@ -1,121 +1,177 @@
-import { S3Client, PutObjectCommand, HeadObjectCommand, GetObjectCommand } from "@aws-sdk/client-s3";
-// import { getSignedUrl } from "@aws-sdk/s3-request-presigner";
-import axios from "axios";
+import env from '#start/env'
+import logger from '@adonisjs/core/services/logger'
+import { S3Client, PutObjectCommand, HeadObjectCommand, DeleteObjectCommand, GetObjectCommand } from '@aws-sdk/client-s3'
+import axios from 'axios'
+import { Readable } from 'stream'
+import fs from 'fs'
+import { FileMetaData } from '../interfaces/file.js'
+import { fileNameHash } from '#helpers/file'
 
-// Ensure environment variables are set
-if (!process.env.AWS_CLIENT_ACCESS_KEY || !process.env.AWS_SECRET_ACCESS_KEY || !process.env.AWS_REGION || !process.env.AWS_BUCKET) {
-  throw new Error("Missing AWS configuration environment variables");
+const BUCKET_NAME = env.get('AWS_BUCKET')
+
+export interface ImageUploadInterface {
+  url: string
+  filename: string
+  metaData: FileMetaData
 }
 
-// Create S3 instance
-const s3 = new S3Client({
-  region: process.env.AWS_REGION,
-  credentials: {
-    accessKeyId: process.env.AWS_CLIENT_ACCESS_KEY,
-    secretAccessKey: process.env.AWS_SECRET_ACCESS_KEY,
-  },
-});
+console.log({
+  accessKeyId: env.get('AWS_CLIENT_ACCESS_KEY'),
+  secretAccessKey: env.get('AWS_SECRET_ACCESS_KEY'),
+  region: env.get('AWS_REGION'),
+  bucket: env.get('AWS_BUCKET'),
+})
 
-interface File {
-  data: Buffer;
-  name: string;
-}
-
-export const moveToBucket = async (file: File, key: string): Promise<string> => {
-  const { data, name } = file;
-  const fileName = `${Date.now()}-${name}`;
-
-  console.log("Uploading file to fileName:", fileName);
-
-  const uploadParams = {
-    Bucket: process.env.AWS_BUCKET,
-    Key: `${key}${fileName}`,
-    Body: data,
-    ContentType: getContentType(name),
-  };
-
-  try {
-    const command = new PutObjectCommand(uploadParams);
-    await s3.send(command);
-    console.log("File uploaded successfully:", fileName);
-    return fileName;
-  } catch (err) {
-    console.error("Error in uploading file:", err);
-    throw err;
+class AWS {
+  private client: S3Client
+  constructor() {
+    this.client = new S3Client({
+      region: env.get('AWS_REGION') || '',
+      credentials: {
+        accessKeyId: env.get('AWS_CLIENT_ACCESS_KEY') || '',
+        secretAccessKey: env.get('AWS_SECRET_ACCESS_KEY') || '',
+      },
+    })
   }
-};
 
-export const uploadFromUrlToBucket = async (fileUrl: string, key: string): Promise<string> => {
-  try {
-    const response = await axios.get(fileUrl, { responseType: "arraybuffer" });
-    const fileName = fileUrl.split("/").pop() || "file";
+  private getContentType(filename: string): string {
+    const extension = filename.split('.').pop()?.toLowerCase() || ''
 
-    const file: File = {
-      data: Buffer.from(response.data),
-      name: fileName,
-    };
-
-    return await moveToBucket(file, key);
-  } catch (error) {
-    console.error("Error in uploading file from URL:", error);
-    throw error;
-  }
-};
-
-// Function to check if a file exists in S3
-export const checkFileExists = async (key: string): Promise<boolean> => {
-  const params = {
-    Bucket: process.env.AWS_BUCKET,
-    Key: key,
-  };
-
-  try {
-    const command = new HeadObjectCommand(params);
-    await s3.send(command);
-    return true;
-  } catch (error: any) {
-    if (error.name === "NotFound") {
-      return false;
+    switch (extension) {
+      case 'svg':
+        return 'image/svg+xml'
+      case 'png':
+        return 'image/png'
+      case 'jpeg':
+      case 'jpg':
+        return 'image/jpeg'
+      case 'gif':
+        return 'image/gif'
+      case 'mp4':
+        return 'video/mp4'
+      case 'webm':
+        return 'video/webm'
+      case 'avi':
+        return 'video/x-msvideo'
+      case 'mpeg':
+        return 'video/mpeg'
+      case 'mov':
+        return 'video/quicktime'
+      default:
+        return 'application/octet-stream'
     }
-    console.error("Error checking file existence:", error);
-    throw error;
   }
-};
 
-// export const generateSignedUrl = async (key: string): Promise<string> => {
-//   const params = {
-//     Bucket: process.env.AWS_BUCKET,
-//     Key: key,
-//   };
+  public async uploadFile(fileName: string, data: Buffer | Readable, contentType: string): Promise<string> {
+    const uploadParams = {
+      Bucket: BUCKET_NAME,
+      Key: fileName,
+      Body: data,
+      ContentType: contentType,
+    }
 
-//   const command = new GetObjectCommand(params);
-//   return getSignedUrl(s3, command, { expiresIn: 3600 }); // URL expires in 1 hour
-// };
-
-const getContentType = (filename: string): string => {
-  const extension = filename.split(".").pop()?.toLowerCase() || "";
-
-  switch (extension) {
-    case "svg":
-      return "image/svg+xml";
-    case "png":
-      return "image/png";
-    case "jpeg":
-    case "jpg":
-      return "image/jpeg";
-    case "gif":
-      return "image/gif";
-    case "mp4":
-      return "video/mp4";
-    case "webm":
-      return "video/webm";
-    case "avi":
-      return "video/x-msvideo";
-    case "mpeg":
-      return "video/mpeg";
-    case "mov":
-      return "video/quicktime";
-    default:
-      return "application/octet-stream";
+    try {
+      const command = new PutObjectCommand(uploadParams)
+      await this.client.send(command)
+      logger.info(`File uploaded successfully: ${fileName}`)
+      return `https://${BUCKET_NAME}.s3.amazonaws.com/${fileName}`
+    } catch (error) {
+      logger.error({ error }, 'Error uploading file to AWS S3')
+      throw error
+    }
   }
-};
+
+  public async uploadFromUrl(fileUrl: string, key: string): Promise<string> {
+    try {
+      const response = await axios.get(fileUrl, { responseType: 'arraybuffer' })
+      const fileName = fileUrl.split('/').pop() || 'file'
+      const hashedFileName = fileNameHash(fileName)
+
+      await this.uploadFile(`${key}${hashedFileName}`, Buffer.from(response.data), this.getContentType(fileName))
+      return hashedFileName
+    } catch (error) {
+      logger.error({ error }, 'Error uploading file from URL to AWS S3')
+      throw error
+    }
+  }
+
+  public async deleteFile(fileName: string): Promise<void> {
+    const deleteParams = {
+      Bucket: BUCKET_NAME,
+      Key: fileName,
+    }
+
+    try {
+      const command = new DeleteObjectCommand(deleteParams)
+      await this.client.send(command)
+      logger.info(`File deleted successfully: ${fileName}`)
+    } catch (error) {
+      logger.error({ error }, 'Error deleting file from AWS S3')
+      throw error
+    }
+  }
+
+  public async downloadFile(fileName: string): Promise<Readable> {
+    const downloadParams = {
+      Bucket: BUCKET_NAME,
+      Key: fileName,
+    }
+
+    try {
+      const command = new GetObjectCommand(downloadParams)
+      const response = await this.client.send(command)
+      return response.Body as Readable
+    } catch (error) {
+      logger.error({ error }, 'Error downloading file from AWS S3')
+      throw error
+    }
+  }
+
+  public async checkFileExists(key: string): Promise<boolean> {
+    const params = {
+      Bucket: BUCKET_NAME,
+      Key: key,
+    }
+
+    try {
+      const command = new HeadObjectCommand(params)
+      await this.client.send(command)
+      return true
+    } catch (error: any) {
+      if (error.name === 'NotFound') {
+        return false
+      }
+      logger.error({ error }, 'Error checking file existence in AWS S3')
+      throw error
+    }
+  }
+
+  public async ImageUpload(file: any): Promise<ImageUploadInterface> {
+    const filename = fileNameHash(file.clientName)
+    const fileData = fs.readFileSync(file.tmpPath)
+
+    try {
+      const url = await this.uploadFile(filename, fileData, this.getContentType(file.clientName))
+      return {
+        url,
+        filename,
+        metaData: {
+          clientName: file.clientName,
+          name: file.name,
+          size: file.size,
+          type: file.type,
+          lastModifiedDate: file.lastModifiedDate,
+          lastModified: file.lastModified,
+        },
+      }
+    } catch (error) {
+      logger.error(
+        { error, message: 'could not process upload data' },
+        'could not process upload data'
+      )
+      throw error
+    }
+  }
+}
+
+export default new AWS()

@@ -9,23 +9,27 @@ export default class extends BaseSeeder {
     const states = JSON.parse(statesString)
     let num = 0
 
+
     for (const state of states) {
       for (const city of state.cities) {
         console.log('city', num++, city.name)
-        console.log('country from cities', state.country_id)
-        await City.updateOrCreate(
-          { name: city.name },
-          {
-            id: city.id,
-            name: city.name,
-            countryId: state.country_id,
-            countryCode: state.country_code,
-            stateCode: state.state_code || null,
-            stateId: state.id,
-            latitude: city.latitude || null,
-            longitude: city.longitude || null,
-          }
-        )
+        try {
+          await City.updateOrCreate(
+            { id: city.id },  
+            {
+              name: city.name,
+              countryId: state.country_id,
+              stateId: state.id,
+              stateCode: state.state_code || null,
+              latitude: city.latitude || null,
+              longitude: city.longitude || null,
+            }
+          )
+        } catch (error) {
+          console.error(`Error inserting city ${city.name}:`, error)
+          // Continue with next city even if one fails
+          continue
+        }
       }
     }
   }

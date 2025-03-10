@@ -91,7 +91,13 @@
   "hotHook": {
     "boundaries": [
       "./app/controllers/**/*.ts",
-      "./app/middleware/*.ts"
+      "./app/middleware/*.ts",
+      "./app/services/**/*.ts",
+      "./app/models/**/*.ts",
+      "./app/validators/**/*.ts",
+      "./app/helpers/**/*.ts",
+      "./app/exceptions/**/*.ts",
+      "./app/policies/**/*.ts"
     ]
   },
   "eslintConfig": {

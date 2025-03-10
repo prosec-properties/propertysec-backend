@@ -76,7 +76,7 @@ router
         router.get('/:id', [PropertiesController, 'show'])
         router.get('/', [PropertiesController, 'index'])
         router.delete('/:id', [PropertiesController, 'destroy'])
-        // router.post('/', [PropertiesController, 'store'])
+        router.post('/', [PropertiesController, 'store'])
       })
       .prefix('properties')
 
