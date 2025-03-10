@@ -3,14 +3,25 @@ import Category from '#models/category'
 import type { HttpContext } from '@adonisjs/core/http'
 
 export default class CategoriesController {
-  async index({ response }: HttpContext) {
+  async index({ request, response }: HttpContext) {
     try {
-      const categories = await Category.query()
+      const sortBy = request.input('sortBy', 'created_at')
+      const order = request.input('order', 'desc')
+      const search = request.input('search', '')
 
-      // console.log(categories)
+      const query = Category.query()
 
-      return response.json({
-        status: 'success',
+      if (search) {
+        query.whereILike('name', `%${search}%`)
+      }
+
+      query.orderBy(sortBy, order)
+
+      const categories = await query
+
+      return response.ok({
+        success: true,
+        message: 'Categories fetched successfully',
         data: categories,
       })
     } catch (error) {
