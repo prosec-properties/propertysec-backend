@@ -7,15 +7,18 @@ import PropertyFile from '#models/property_file'
 import { MultipartFile } from '@adonisjs/core/bodyparser'
 
 export default class PropertiesController {
-  async index({ response, logger }: HttpContext) {
+  async index({ response, request, logger }: HttpContext) {
     try {
-      const properties = await Property.query().preload('files').orderBy('created_at', 'desc')
+      const page = request.input('page', 1)
+      const limit = request.input('limit', 20)
+
+      const properties = await Property.query().preload('files').orderBy('created_at', 'desc').paginate(page, limit)
 
       logger.info('Properties fetched successfully')
       return response.ok({
         success: true,
         message: 'Properties fetched successfully',
-        data: properties,
+        data: properties.toJSON(),
       })
     } catch (error) {
       console.error(error)
@@ -178,19 +181,24 @@ export default class PropertiesController {
     }
   }
 
-  async myProperties({ auth, response, logger }: HttpContext) {
+  async myProperties({ auth, response, request, logger }: HttpContext) {
+
     try {
       await auth.authenticate()
       const user = auth.user!
 
-      const properties = await Property.query().where('userId', user.id).preload('files')
+      const page = request.input('page', 1)
+      const limit = request.input('limit', 10)
+
+      const properties = await Property.query().where('userId', user.id).preload('files').orderBy('created_at', 'desc').paginate(page, limit)
 
       logger.info('Properties fetched successfully')
+      console.log('properties', properties.toJSON())
 
       return response.ok({
         success: true,
         message: 'Properties fetched successfully',
-        data: properties,
+        data: properties.toJSON(),
       })
     } catch (error) {
       response.badRequest(getErrorObject(error))
