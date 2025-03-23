@@ -35,7 +35,7 @@ router
   .group(() => {
     router
       .group(() => {
-        router.post('/login', [AuthController, 'login'])
+        router.post('/login', [AuthController, 'login']).use(middleware.rateLimit(['5', '900']))
         router.post('/register', [AuthController, 'register'])
         router.post('/verify-otp', [AuthController, 'verifyOtp'])
         router.post('/resend-otp', [AuthController, 'resendOtp'])
@@ -77,6 +77,7 @@ router
         router.get('/', [PropertiesController, 'index'])
         router.delete('/:id', [PropertiesController, 'destroy'])
         router.post('/', [PropertiesController, 'store'])
+        router.patch('/:id', [PropertiesController, 'update'])
       })
       .prefix('properties')
 
@@ -109,8 +110,9 @@ router
 
     router
       .group(() => {
-        router.post('/request', [LoansController, 'initializeObtainLoan'])
+        router.post('/request', [LoansController, 'processLoanStep'])
       })
       .prefix('loans')
   })
   .prefix('api/v1')
+  // .use(middleware.rateLimit(['100', '900']))

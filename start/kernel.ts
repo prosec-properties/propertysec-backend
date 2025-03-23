@@ -26,6 +26,7 @@ server.use([
   () => import('#middleware/container_bindings_middleware'),
   () => import('#middleware/force_json_response_middleware'),
   () => import('@adonisjs/cors/cors_middleware'),
+  // () => import('#middleware/rate_limit_middleware')
 ])
 // app/middleware/logger_middleware.ts
 /**
@@ -45,4 +46,5 @@ router.use([
  */
 export const middleware = router.named({
   auth: () => import('#middleware/auth_middleware'),
+  rateLimit: () => import('#middleware/rate_limit_middleware')
 })

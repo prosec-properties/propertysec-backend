@@ -4,13 +4,21 @@ import { createCountryValidator, updateCountryValidator } from '#validators/loca
 import type { HttpContext } from '@adonisjs/core/http'
 
 export default class CountriesController {
-  public async index({ response, logger }: HttpContext) {
+  public async index({ request, response, logger }: HttpContext) {
     try {
-      const countries = await Country.query()
+      const page = request.input('page', 1)
+      const limit = request.input('limit', 20)
+
+      let query = Country.query()
         .preload('states', (statesQuery) => {
           statesQuery.preload('cities')
         })
-        .orderBy('name', 'asc')
+        .orderBy('created_at', 'desc')
+
+      const countries = await query.paginate(page, limit)
+
+      console.log(countries.toJSON())
+
       logger.info('Countries fetched successfully')
 
       return response.ok({
@@ -19,7 +27,7 @@ export default class CountriesController {
         data: countries,
       })
     } catch (error) {
-      logger.error('Error fetching cities from CitiesController.index')
+      logger.error('Error fetching countries from CountriesController.index', error)
       return response.badRequest(getErrorObject(error))
     }
   }
@@ -62,7 +70,7 @@ export default class CountriesController {
         data: country,
       })
     } catch (error) {
-      logger.error('Error fetching city from CitiesController.show', error)
+      logger.error('Error fetching country from CountriesController.show', error)
       return response.badRequest(getErrorObject(error))
     }
   }
@@ -71,7 +79,7 @@ export default class CountriesController {
     try {
       await auth.authenticate()
 
-      const city = await Country.findByOrFail('id', params.id)
+      const country = await Country.findByOrFail('id', params.id)
 
       const { name } = await request.validateUsing(updateCountryValidator)
 
@@ -79,16 +87,16 @@ export default class CountriesController {
         name,
       }
 
-      await city.merge(payload).save()
+      await country.merge(payload).save()
 
-      logger.info('City updated successfully')
+      logger.info('Country updated successfully')
 
       return response.ok({
         success: true,
-        message: 'City updated successfully',
+        message: 'Country updated successfully',
       })
     } catch (error) {
-      logger.error('Error updating city from CitiesController.update')
+      logger.error('Error updating country from CountriesController.update')
       return response.badRequest(getErrorObject(error))
     }
   }
@@ -96,18 +104,18 @@ export default class CountriesController {
   public async destroy({ auth, params, response, logger }: HttpContext) {
     try {
       await auth.authenticate()
-      const city = await Country.findByOrFail('id', params.id)
+      const country = await Country.findByOrFail('id', params.id)
 
-      await city.delete()
+      await country.delete()
 
-      logger.info('City deleted successfully')
+      logger.info('Country deleted successfully')
 
       return response.ok({
         success: true,
-        message: 'City deleted successfully',
+        message: 'Country deleted successfully',
       })
     } catch (error) {
-      logger.error('Error deleting city from CitiesController.destroy')
+      logger.error('Error deleting country from CountriesController.destroy')
       return response.badRequest(getErrorObject(error))
     }
   }

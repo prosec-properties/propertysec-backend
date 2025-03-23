@@ -12,7 +12,10 @@ export default class PropertiesController {
       const page = request.input('page', 1)
       const limit = request.input('limit', 20)
 
-      const properties = await Property.query().preload('files').orderBy('created_at', 'desc').paginate(page, limit)
+      const properties = await Property.query()
+        .preload('files')
+        .orderBy('created_at', 'desc')
+        .paginate(page, limit)
 
       logger.info('Properties fetched successfully')
       return response.ok({
@@ -31,7 +34,7 @@ export default class PropertiesController {
       await auth.authenticate()
       const user = auth.user!
       const { files, ...payload } = await request.validateUsing(createPropertyValidator)
-      
+
       if (files && Array.isArray(files)) {
         // Validate file sizes
         files.forEach((file: MultipartFile) => {
@@ -44,7 +47,6 @@ export default class PropertiesController {
         })
 
         const results = await FilesService.uploadFiles(files)
-            
 
         if (!results.length) {
           return response.badRequest({
@@ -89,6 +91,7 @@ export default class PropertiesController {
           return response.created({
             success: true,
             message: 'Property created successfully',
+            data: property,
           })
         } catch (error) {
           // If property creation fails, return error
@@ -122,67 +125,164 @@ export default class PropertiesController {
     }
   }
 
+  // async update({ logger, response, request, params }: HttpContext) {
+  //   try {
+  //     const property = await Property.findOrFail(params.id)
+  //     const payload = await request.validateUsing(updatePropertyValidator)
+  //     if (!payload) {
+  //       return response.badRequest({
+  //         success: false,
+  //         message: 'Invalid payload',
+  //       })
+  //     }
+
+  //     if (payload?.files && Array.isArray(payload.files)) {
+  //       payload.files.forEach((file: MultipartFile) => {
+  //         if (file.type === 'image' && file.size > 5 * 1024 * 1024) {
+  //           return response.badRequest({
+  //             success: false,
+  //             message: 'Image file size should not exceed 5mb',
+  //           })
+  //         }
+  //       })
+
+  //       const results = await FilesService.uploadFiles(payload.files)
+
+  //       const uploadedFiles: any = []
+
+  //       results.forEach(({ filename, url, metaData }) => {
+  //         // console.log('metaData', metaData)
+  //         if (!url || !filename) return
+  //         uploadedFiles.push({
+  //           fileName: filename,
+  //           fileUrl: url,
+  //           fileType: metaData.type,
+  //           propertyId: property.id,
+  //           meta: JSON.stringify(metaData),
+  //         })
+  //       })
+
+  //       if (uploadedFiles.length > 0) {
+  //         for (const fileInfo of uploadedFiles) {
+  //           await FilesService.createPropertyFile(fileInfo as PropertyFile)
+  //         }
+  //       }
+
+  //       property.defaultImageUrl = results[0].url
+  //     }
+
+  //     await property.merge(payload).save()
+
+  //     logger.info('Property updated successfully')
+  //     return response.ok({
+  //       success: true,
+  //       message: 'Property updated successfully',
+  //       data: property,
+  //     })
+  //   } catch (error) {
+  //     response.badRequest(getErrorObject(error))
+  //   }
+  // }
+
   async update({ logger, response, request, params }: HttpContext) {
     try {
-      const property = await Property.findOrFail(params.id)
-      const payload = await request.validateUsing(updatePropertyValidator)
+      const property = await Property.findOrFail(params.id);
+      const payload = await request.validateUsing(updatePropertyValidator);
+      
       if (!payload) {
         return response.badRequest({
           success: false,
           message: 'Invalid payload',
-        })
+        });
       }
+  
+      const existingFiles = await property.related('files').query();
+  
+      // Array to store new files to be uploaded
+      const newFiles: MultipartFile[] = [];
 
-      if (payload?.files && Array.isArray(payload.files)) {
-        payload.files.forEach((file: MultipartFile) => {
-          if (file.type === 'image' && file.size > 5 * 1024 * 1024) {
+      // console.log('existingFiles', existingFiles)
+      // console.log('payload.files', payload?.files)
+      // return
+      // Check if files are provided in the payload
+      if (payload.files && Array.isArray(payload.files)) {
+        // Validate and process each incoming file
+        for (const file of payload.files) {
+          // Validate file size for images
+          if (file.type?.startsWith('image/') && file.size > 5 * 1024 * 1024) {
             return response.badRequest({
               success: false,
-              message: 'Image file size should not exceed 5mb',
-            })
+              message: 'Image file size should not exceed 5MB',
+            });
           }
-        })
-
-        const results = await FilesService.uploadFiles(payload.files)
-
-        const uploadedFiles: any = []
-
-        results.forEach(({ filename, url, metaData }) => {
-          // console.log('metaData', metaData)
-          if (!url || !filename) return
-          uploadedFiles.push({
-            fileName: filename,
-            fileUrl: url,
-            fileType: metaData.type,
-            propertyId: property.id,
-            meta: JSON.stringify(metaData),
-          })
-        })
-
-        if (uploadedFiles.length > 0) {
-          for (const fileInfo of uploadedFiles) {
-            await FilesService.createPropertyFile(fileInfo as PropertyFile)
+  
+          // Validate file size for videos
+          if (file.type?.startsWith('video/') && file.size > 10 * 1024 * 1024) {
+            return response.badRequest({
+              success: false,
+              message: 'Video file size should not exceed 10MB',
+            });
+          }
+  
+          // Check if the file already exists
+          const fileExists = existingFiles.some(
+            (existingFile) => existingFile.fileName === file.clientName
+          );
+  
+          // If the file does not exist, add it to the newFiles array
+          if (!fileExists) {
+            newFiles.push(file);
           }
         }
-
-        property.defaultImageUrl = results[0].url
+  
+        // Upload only new files
+        if (newFiles.length > 0) {
+          const results = await FilesService.uploadFiles(newFiles);
+  
+          const uploadedFiles: any = [];
+  
+          results.forEach(({ filename, url, metaData }) => {
+            if (!url || !filename) return;
+            uploadedFiles.push({
+              fileName: filename,
+              fileUrl: url,
+              fileType: metaData.type,
+              propertyId: property.id,
+              meta: JSON.stringify(metaData),
+            });
+          });
+  
+          // Save new files to the database
+          if (uploadedFiles.length > 0) {
+            for (const fileInfo of uploadedFiles) {
+              await FilesService.createPropertyFile(fileInfo as PropertyFile);
+            }
+          }
+  
+          // Set the default image URL if new files were uploaded
+          if (results.length > 0) {
+            property.defaultImageUrl = results[0].url;
+          }
+        }
       }
-
-      await property.merge(payload).save()
-
-      logger.info('Property updated successfully')
+  
+      // Update the property with the payload (excluding files)
+      const { files: _, ...restPayload } = payload;
+      await property.merge(restPayload).save();
+  
+      logger.info('Property updated successfully');
       return response.ok({
         success: true,
         message: 'Property updated successfully',
         data: property,
-      })
+      });
     } catch (error) {
-      response.badRequest(getErrorObject(error))
+      logger.error(error);
+      return response.badRequest(getErrorObject(error));
     }
   }
 
   async myProperties({ auth, response, request, logger }: HttpContext) {
-
     try {
       await auth.authenticate()
       const user = auth.user!
@@ -190,10 +290,14 @@ export default class PropertiesController {
       const page = request.input('page', 1)
       const limit = request.input('limit', 10)
 
-      const properties = await Property.query().where('userId', user.id).preload('files').orderBy('created_at', 'desc').paginate(page, limit)
+      const properties = await Property.query()
+        .where('userId', user.id)
+        .preload('files')
+        .orderBy('created_at', 'desc')
+        .paginate(page, limit)
 
       logger.info('Properties fetched successfully')
-      console.log('properties', properties.toJSON())
+      // console.log('properties', properties.toJSON())
 
       return response.ok({
         success: true,

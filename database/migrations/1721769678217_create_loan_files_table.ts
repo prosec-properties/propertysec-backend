@@ -7,9 +7,21 @@ export default class extends BaseSchema {
   async up() {
     this.schema.createTable(this.tableName, (table) => {
       table.uuid('id').primary().notNullable().unique().defaultTo(uuidv4())
-      table.uuid('loan_applicant_id').references('id').inTable('loan_applicants')
+      table.uuid('loan_id').references('id').inTable('loans').nullable()
+      table.uuid('application_id').references('id').inTable('loan_applications').nullable()
+      table
+        .enum('file_type', [
+          'passport',
+          'utility_bill',
+          'bank_statement',
+          'nin',
+          'bvn',
+          'salary_slip',
+        ])
+        .notNullable()
+      table.enum('media_type', ['image', 'other']).notNullable().defaultTo('image')
       table.string('file_url').notNullable()
-      table.enum('file_type', ['image', 'other']).notNullable().defaultTo('image')
+      table.string('file_name').nullable()
       table.text('meta').nullable()
 
       table.timestamp('created_at')
