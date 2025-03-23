@@ -3,6 +3,7 @@ import { BaseModel, beforeCreate, belongsTo, column } from '@adonisjs/lucid/orm'
 import { v4 as uuidv4 } from 'uuid'
 import type { BelongsTo } from '@adonisjs/lucid/types/relations'
 import User from './user.js'
+import type { ILoanContextType } from '#interfaces/loan'
 
 export default class Employment extends BaseModel {
   @column({ isPrimary: true })
@@ -28,6 +29,12 @@ export default class Employment extends BaseModel {
 
   @column()
   declare monthlySalary: string
+
+  @column()
+  declare contextId: string
+
+  @column()
+  declare contextType: ILoanContextType
 
   @column.dateTime({ autoCreate: true })
   declare createdAt: DateTime

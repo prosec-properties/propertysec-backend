@@ -12,6 +12,8 @@ export default class extends BaseSchema {
       table.string('salary_account_number').notNullable()
       table.string('nin').notNullable()
       table.string('bvn').notNullable()
+      table.uuid('context_id').notNullable()
+      table.string('context_type').notNullable()
       table.timestamp('created_at').notNullable()
       table.timestamp('updated_at').notNullable()
     })

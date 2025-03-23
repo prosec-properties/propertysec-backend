@@ -5,3 +5,5 @@ export type ILoanDuration = '1 month' | '3 months' | '6 months' | '12 months'
 export type ILoanStatus = 'pending' | 'approved' | 'rejected' | 'disbursed'
 
 export type ILoanReasonForFunds = 'business_expansion' | 'personal_use' | 'emergency_fund' | 'other'
+
+export type ILoanContextType = 'loan' | 'other'

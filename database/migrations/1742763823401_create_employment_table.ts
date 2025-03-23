@@ -13,6 +13,8 @@ export default class extends BaseSchema {
       table.string('office_contact').notNullable()
       table.string('office_address').notNullable()
       table.string('monthly_salary').notNullable()
+      table.uuid('context_id').notNullable()
+      table.string('context_type').notNullable()
       table.timestamp('created_at', { useTz: true })
       table.timestamp('updated_at', { useTz: true })
     })

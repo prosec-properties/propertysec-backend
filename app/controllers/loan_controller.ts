@@ -80,29 +80,24 @@ export default class LoansController {
 
   private async handleBankInfo({ request, response, user }: HandleStepParams) {
     const payload = await request.validateUsing(bankInfoValidator)
-    const existingBank = await Bank.findBy('userId', user.id)
-    let bank
+    const loanRequest = await LoanRequest.findBy('userId', user.id)
+    if (!loanRequest) {
+      return response.notFound(errorResponse('Loan request not found'))
+    }
 
-    if (existingBank) {
-      bank = await existingBank
-        .merge({
-          averageSalary: payload.averageSalary,
-          bankName: payload.bankName,
-          salaryAccountNumber: payload.salaryAccountNumber,
-          nin: payload.nin,
-          bvn: payload.bvn,
-        })
-        .save()
-    } else {
-      bank = await Bank.create({
+    const bank = await Bank.updateOrCreate(
+      { userId: user.id },
+      {
         userId: user.id,
         averageSalary: payload.averageSalary,
         bankName: payload.bankName,
         salaryAccountNumber: payload.salaryAccountNumber,
         nin: payload.nin,
         bvn: payload.bvn,
-      })
-    }
+        contextId: loanRequest.id,
+        contextType: 'loan',
+      }
+    )
 
     return response.ok({
       status: 'success',
@@ -113,29 +108,24 @@ export default class LoansController {
 
   private async handleOfficeInfo({ request, response, user }: HandleStepParams) {
     const payload = await request.validateUsing(officeInfoValidator)
-    const existingEmployment = await Employment.findBy('userId', user.id)
-    let employment
+    const loanRequest = await LoanRequest.findBy('userId', user.id)
+    if (!loanRequest) {
+      return response.notFound(errorResponse('Loan request not found'))
+    }
 
-    if (existingEmployment) {
-      employment = await existingEmployment
-        .merge({
-          officeName: payload.officeName,
-          employerName: payload.employerName,
-          positionInOffice: payload.positionInOffice,
-          officeContact: payload.officeContact,
-          officeAddress: payload.officeAddress,
-        })
-        .save()
-    } else {
-      employment = await Employment.create({
+    const employment = await Employment.updateOrCreate(
+      { userId: user.id },
+      {
         userId: user.id,
         officeName: payload.officeName,
         employerName: payload.employerName,
         positionInOffice: payload.positionInOffice,
         officeContact: payload.officeContact,
         officeAddress: payload.officeAddress,
-      })
-    }
+        contextId: loanRequest.id,
+        contextType: 'loan',
+      }
+    )
 
     return response.ok({
       status: 'success',
@@ -168,29 +158,24 @@ export default class LoansController {
 
   private async handleLandlordInfo({ request, response, user }: HandleStepParams) {
     const payload = await request.validateUsing(landlordInfoValidator)
-    const existingLandlord = await Landlord.findBy('userId', user.id)
-    let landlord
+    const loanRequest = await LoanRequest.findBy('userId', user.id)
+    if (!loanRequest) {
+      return response.notFound(errorResponse('Loan request not found'))
+    }
 
-    if (existingLandlord) {
-      landlord = await existingLandlord
-        .merge({
-          name: payload.landlordName,
-          bankName: payload.landlordBankName,
-          accountNumber: payload.landlordAccountNumber,
-          address: payload.landlordAddress,
-          phoneNumber: payload.landlordPhoneNumber,
-        })
-        .save()
-    } else {
-      landlord = await Landlord.create({
+    const landlord = await Landlord.updateOrCreate(
+      { userId: user.id },
+      {
         userId: user.id,
         name: payload.landlordName,
         bankName: payload.landlordBankName,
         accountNumber: payload.landlordAccountNumber,
         address: payload.landlordAddress,
         phoneNumber: payload.landlordPhoneNumber,
-      })
-    }
+        contextId: loanRequest.id,
+        contextType: 'loan',
+      }
+    )
 
     return response.ok({
       status: 'success',
@@ -201,35 +186,24 @@ export default class LoansController {
 
   private async handleGuarantorInfo({ request, response, user }: HandleStepParams) {
     const payload = await request.validateUsing(guarantorInfoValidator)
-    const existingGuarantor = await Guarantor.findBy('userId', user.id)
-    let guarantor
+    const loanRequest = await LoanRequest.findBy('userId', user.id)
+    if (!loanRequest) {
+      return response.notFound(errorResponse('Loan request not found'))
+    }
 
-    if (existingGuarantor) {
-      guarantor = await existingGuarantor
-        .merge({
-          name: payload.guarantorName,
-          email: payload.guarantorEmail,
-          homeAddress: payload.guarantorHomeAddress,
-          officeAddress: payload.guarantorOfficeAddress,
-          phoneNumber: payload.guarantorPhoneNumber,
-        })
-        .save()
-    } else {
-      guarantor = await Guarantor.create({
+    const guarantor = await Guarantor.updateOrCreate(
+      { userId: user.id },
+      {
         userId: user.id,
         name: payload.guarantorName,
         email: payload.guarantorEmail,
         homeAddress: payload.guarantorHomeAddress,
         officeAddress: payload.guarantorOfficeAddress,
         phoneNumber: payload.guarantorPhoneNumber,
-      })
-    }
-
-    const loanRequest = await LoanRequest.findBy('userId', user.id)
-
-    if (!loanRequest) {
-      return response.notFound(errorResponse('Loan request not found'))
-    }
+        contextId: loanRequest.id,
+        contextType: 'loan',
+      }
+    )
 
     await Loan.create({
       userId: user.id,

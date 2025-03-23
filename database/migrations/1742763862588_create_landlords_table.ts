@@ -12,6 +12,8 @@ export default class extends BaseSchema {
       table.string('account_number').notNullable()
       table.string('address').notNullable()
       table.string('phone_number').notNullable()
+      table.uuid('context_id').notNullable()
+      table.string('context_type').notNullable()
       table.timestamp('created_at', { useTz: true })
       table.timestamp('updated_at', { useTz: true })
     })
