@@ -7,8 +7,8 @@ export default class extends BaseSchema {
   async up() {
     this.schema.createTable(this.tableName, (table) => {
       table.uuid('id').primary().notNullable().unique().defaultTo(uuidv4())
-      table.uuid('loan_id').references('id').inTable('loans').nullable()
-      table.uuid('application_id').references('id').inTable('loan_applications').nullable()
+      table.uuid('loan_id').references('id').inTable('loan_requests').nullable()
+      table.uuid('user_id').references('id').inTable('users').nullable()
       table
         .enum('file_type', [
           'passport',
@@ -17,6 +17,8 @@ export default class extends BaseSchema {
           'nin',
           'bvn',
           'salary_slip',
+          'personal_photo',
+          'other',
         ])
         .notNullable()
       table.enum('media_type', ['image', 'other']).notNullable().defaultTo('image')

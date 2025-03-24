@@ -17,7 +17,7 @@ export const personalInfoValidator = vine.compile(
     nationality: nameRule,
     homeAddress: addressRule,
     religion: vine.enum(['Christian', 'Muslim', 'Traditional', 'Other']),
-    nextOfKin: nameRule,
+    nextOfKinName: nameRule,
 
     amount: vine.enum(['1000', '5000', '10000', '20000', '30000', '40000', '50000', '100000']),
     duration: vine.enum(['1 month', '3 months', '6 months', '12 months']),
@@ -39,6 +39,12 @@ export const bankInfoValidator = vine.compile(
     salaryAccountNumber: vine.string().minLength(10),
     nin: vine.string().minLength(11),
     bvn: vine.string().minLength(11),
+    bankStatement: vine.array(
+      vine.file({
+        size: '5mb',
+        extnames: [...ACCEPTED_IMAGE_TYPES],
+      })
+    ),
   })
 )
 
@@ -50,17 +56,22 @@ export const officeInfoValidator = vine.compile(
     positionInOffice: nameRule,
     officeContact: phoneNumberRule,
     officeAddress: addressRule,
+
   })
 )
 
 // Step 4: Loan Details Validator
 export const loanDetailsValidator = vine.compile(
   vine.object({
-    amount: vine.enum(['1000', '5000', '10000', '20000', '30000', '40000', '50000', '100000']),
-    duration: vine.enum(['1 month', '3 months', '6 months', '12 months']),
     noOfRooms: vine.number().min(1),
     noOfYears: vine.number().min(0),
     reasonForLoanRequest: vine.string().minLength(10),
+    files: vine.array(
+      vine.file({
+        size: '5mb',
+        extnames: [...ACCEPTED_IMAGE_TYPES],
+      })
+    ),
   })
 )
 

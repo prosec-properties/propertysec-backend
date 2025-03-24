@@ -28,9 +28,6 @@ export default class Employment extends BaseModel {
   declare officeAddress: string
 
   @column()
-  declare monthlySalary: string
-
-  @column()
   declare contextId: string
 
   @column()

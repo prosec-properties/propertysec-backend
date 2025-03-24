@@ -3,8 +3,9 @@ import { BaseModel, beforeCreate, column, hasOne } from '@adonisjs/lucid/orm'
 import { v4 as uuidv4 } from 'uuid'
 import Loan from './loan.js'
 import type { HasOne } from '@adonisjs/lucid/types/relations'
+import type { ILoanFileType } from '#interfaces/loan'
 
-export default class LoanDocument extends BaseModel {
+export default class LoanFile extends BaseModel {
   @column({ isPrimary: true })
   declare id: string
 
@@ -12,16 +13,10 @@ export default class LoanDocument extends BaseModel {
   declare loanId?: string
 
   @column()
-  declare applicationId?: string
+  declare userId?: string
 
   @column()
-  declare fileType:
-    | 'national_id'
-    | 'passport'
-    | 'utility_bill'
-    | 'bank_statement'
-    | 'company_id'
-    | 'other'
+  declare fileType: ILoanFileType
 
   @column()
   declare mediaType: 'image' | 'other'
@@ -42,11 +37,10 @@ export default class LoanDocument extends BaseModel {
   declare updatedAt: DateTime
 
   @beforeCreate()
-  static generateUUID(model: LoanDocument) {
+  static generateUUID(model: LoanFile) {
     model.id = uuidv4()
   }
 
   @hasOne(() => Loan)
   declare loan: HasOne<typeof Loan>
-
 }

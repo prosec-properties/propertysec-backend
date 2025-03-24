@@ -7,3 +7,5 @@ export type ILoanStatus = 'pending' | 'approved' | 'rejected' | 'disbursed'
 export type ILoanReasonForFunds = 'business_expansion' | 'personal_use' | 'emergency_fund' | 'other'
 
 export type ILoanContextType = 'loan' | 'other'
+
+export type ILoanFileType = 'passport' | 'utility_bill' | 'bank_statement' | 'nin' | 'bvn' | 'salary_slip' | 'personal_photo' | 'other'

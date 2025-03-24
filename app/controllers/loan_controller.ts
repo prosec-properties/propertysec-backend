@@ -1,5 +1,5 @@
 import { errorResponse, getErrorObject } from '#helpers/error'
-import { ILoanAmount, ILoanDuration } from '#interfaces/loan'
+import { ILoanAmount, ILoanDuration, ILoanFileType } from '#interfaces/loan'
 import Loan from '#models/loan'
 import LoanFile from '#models/loan_file'
 import User from '#models/user'
@@ -25,26 +25,19 @@ export default class LoansController {
     try {
       await auth.authenticate()
       const step = request.input('step')
-      const data = request.all()
 
       switch (step) {
         case '1':
-          await personalInfoValidator.validate(data)
           return await this.handlePersonalInfo({ request, response, user: auth.user! })
         case '2':
-          await bankInfoValidator.validate(data)
           return await this.handleBankInfo({ request, response, user: auth.user! })
         case '3':
-          await officeInfoValidator.validate(data)
           return await this.handleOfficeInfo({ request, response, user: auth.user! })
         case '4':
-          await loanDetailsValidator.validate(data)
           return await this.handleLoanDetails({ request, response, user: auth.user! })
         case '5':
-          await landlordInfoValidator.validate(data)
           return await this.handleLandlordInfo({ request, response, user: auth.user! })
         case '6':
-          await guarantorInfoValidator.validate(data)
           return await this.handleGuarantorInfo({ request, response, user: auth.user! })
         default:
           return response.badRequest(errorResponse('Invalid step'))
@@ -69,7 +62,7 @@ export default class LoansController {
       duration: payload.duration,
     })
 
-    await this.saveLoanFiles(loanRequest.id, uploadFiles)
+    await this.saveLoanFiles(loanRequest.id, uploadFiles, 'personal_photo', user.id)
 
     return response.created({
       status: 'success',
@@ -80,6 +73,8 @@ export default class LoansController {
 
   private async handleBankInfo({ request, response, user }: HandleStepParams) {
     const payload = await request.validateUsing(bankInfoValidator)
+    const bankStatement = await FilesService.uploadFiles(payload.bankStatement)
+
     const loanRequest = await LoanRequest.findBy('userId', user.id)
     if (!loanRequest) {
       return response.notFound(errorResponse('Loan request not found'))
@@ -98,6 +93,8 @@ export default class LoansController {
         contextType: 'loan',
       }
     )
+
+    await this.saveLoanFiles(loanRequest.id, bankStatement, 'bank_statement', user.id)
 
     return response.ok({
       status: 'success',
@@ -136,6 +133,7 @@ export default class LoansController {
 
   private async handleLoanDetails({ request, response, user }: HandleStepParams) {
     const payload = await request.validateUsing(loanDetailsValidator)
+    const uploadFiles = await FilesService.uploadFiles(payload.files)
 
     const loanRequest = await LoanRequest.findBy('userId', user.id)
     if (!loanRequest) {
@@ -149,6 +147,8 @@ export default class LoansController {
         reasonForLoanRequest: payload.reasonForLoanRequest,
       })
       .save()
+
+    await this.saveLoanFiles(loanRequest.id, uploadFiles, 'other', user.id)
 
     return response.ok({
       status: 'success',
@@ -220,14 +220,22 @@ export default class LoansController {
     })
   }
 
-  private async saveLoanFiles(loanId: string, files: ImageUploadInterface[]): Promise<void> {
+  private async saveLoanFiles(
+    loanId: string,
+    files: ImageUploadInterface[],
+    fileType: ILoanFileType,
+    userId: string
+  ): Promise<void> {
     if (files.length > 0) {
       await Promise.all(
         files.map((file) =>
           LoanFile.create({
             loanId,
+            userId,
+            fileName: file.metaData.name,
             fileUrl: file.url,
             mediaType: file.metaData.type as 'image' | 'other',
+            fileType,
             meta: JSON.stringify(file.metaData),
           })
         )
