@@ -1,4 +1,12 @@
-export type ILoanAmount = '1000' | '5000' | '10000' | '20000' | '30000' | '40000' | '50000' | '100000'
+export type ILoanAmount =
+  | '1000'
+  | '5000'
+  | '10000'
+  | '20000'
+  | '30000'
+  | '40000'
+  | '50000'
+  | '100000'
 
 export type ILoanDuration = '1 month' | '3 months' | '6 months' | '12 months'
 
@@ -8,4 +16,14 @@ export type ILoanReasonForFunds = 'business_expansion' | 'personal_use' | 'emerg
 
 export type ILoanContextType = 'loan' | 'other'
 
-export type ILoanFileType = 'passport' | 'utility_bill' | 'bank_statement' | 'nin' | 'bvn' | 'salary_slip' | 'personal_photo' | 'other'
+export type ILoanFileType =
+  | 'passport'
+  | 'utility_bill'
+  | 'bank_statement'
+  | 'nin'
+  | 'bvn'
+  | 'salary_slip'
+  | 'personal_photo'
+  | 'other'
+
+export type ILoanRequestStatus = 'completed' | 'ongoing'

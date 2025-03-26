@@ -54,15 +54,34 @@ export default class LoansController {
 
   private async handlePersonalInfo({ request, response, user }: HandleStepParams) {
     const payload = await request.validateUsing(personalInfoValidator)
-    const uploadFiles = await FilesService.uploadFiles(payload.personalImages)
 
-    const loanRequest = await LoanRequest.create({
-      userId: user.id,
-      amount: payload.amount,
-      duration: payload.duration,
-    })
+    const ongoingLoanRequest = await LoanRequest.query()
+      .where('userId', user.id)
+      .orderBy('createdAt', 'desc')
+      .first()
 
-    await this.saveLoanFiles(loanRequest.id, uploadFiles, 'personal_photo', user.id)
+    console.log('ongoingLoanRequest', ongoingLoanRequest?.toJSON())
+
+    let loanRequest
+
+    if (!ongoingLoanRequest || ongoingLoanRequest.status === 'completed') {
+      const uploadFiles = await FilesService.uploadFiles(payload.personalImages)
+      loanRequest = await LoanRequest.create({
+        userId: user.id,
+        amount: payload.amount,
+        duration: payload.duration,
+        status: 'ongoing',
+      })
+
+      await this.saveLoanFiles(loanRequest.id, uploadFiles, 'personal_photo', user.id)
+    } else {
+      loanRequest = await ongoingLoanRequest
+        .merge({
+          amount: payload.amount,
+          duration: payload.duration,
+        })
+        .save()
+    }
 
     return response.created({
       status: 'success',
@@ -81,7 +100,7 @@ export default class LoansController {
     }
 
     const bank = await Bank.updateOrCreate(
-      { userId: user.id },
+      { userId: user.id, contextId: loanRequest.id },
       {
         userId: user.id,
         averageSalary: payload.averageSalary,
@@ -111,7 +130,7 @@ export default class LoansController {
     }
 
     const employment = await Employment.updateOrCreate(
-      { userId: user.id },
+      { userId: user.id, contextId: loanRequest.id },
       {
         userId: user.id,
         officeName: payload.officeName,
@@ -164,7 +183,7 @@ export default class LoansController {
     }
 
     const landlord = await Landlord.updateOrCreate(
-      { userId: user.id },
+      { userId: user.id, contextId: loanRequest.id },
       {
         userId: user.id,
         name: payload.landlordName,
@@ -186,13 +205,16 @@ export default class LoansController {
 
   private async handleGuarantorInfo({ request, response, user }: HandleStepParams) {
     const payload = await request.validateUsing(guarantorInfoValidator)
+    // console.log('user from guarantor info', user.id)
     const loanRequest = await LoanRequest.findBy('userId', user.id)
     if (!loanRequest) {
       return response.notFound(errorResponse('Loan request not found'))
     }
 
+    // console.log('got here 203')
+
     const guarantor = await Guarantor.updateOrCreate(
-      { userId: user.id },
+      { userId: user.id, contextId: loanRequest.id },
       {
         userId: user.id,
         name: payload.guarantorName,
@@ -205,6 +227,9 @@ export default class LoansController {
       }
     )
 
+
+    console.log('userIfd', user.id)
+
     await Loan.create({
       userId: user.id,
       loanAmount: loanRequest.amount as ILoanAmount,
@@ -212,6 +237,8 @@ export default class LoansController {
       interestRate: 5,
       loanStatus: 'pending',
     })
+
+    await loanRequest.merge({ status: 'completed' }).save()
 
     return response.ok({
       status: 'success',

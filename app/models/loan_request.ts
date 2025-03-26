@@ -3,6 +3,7 @@ import { BaseModel, beforeCreate, belongsTo, column } from '@adonisjs/lucid/orm'
 import { v4 as uuidv4 } from 'uuid'
 import type { BelongsTo } from '@adonisjs/lucid/types/relations'
 import User from './user.js'
+import type { ILoanRequestStatus } from '#interfaces/loan'
 
 export default class LoanRequest extends BaseModel {
   @column({ isPrimary: true })
@@ -26,6 +27,8 @@ export default class LoanRequest extends BaseModel {
   @column()
   declare reasonForLoanRequest: string
 
+  @column()
+  declare status: ILoanRequestStatus
 
   @column.dateTime({ autoCreate: true })
   declare createdAt: DateTime
@@ -36,8 +39,8 @@ export default class LoanRequest extends BaseModel {
   @beforeCreate()
   static async createUUID(loanRequest: LoanRequest) {
     loanRequest.id = uuidv4()
-    }
+  } 
 
   @belongsTo(() => User)
   declare user: BelongsTo<typeof User>
-} 
+}

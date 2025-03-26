@@ -7,6 +7,7 @@ export default class extends BaseSchema {
   async up() {
     this.schema.createTable(this.tableName, (table) => {
       table.uuid('id').primary().notNullable().unique().defaultTo(uuidv4())
+      table.uuid('user_id').references('id').inTable('users')
       table.enum('loan_amount', ['1000', '5000', '10000', '20000', '30000', '40000', '50000', '100000'])
       table.float('interest_rate')
       table.enum('loan_duration', ['1 month', '3 months', '6 months', '12 months'])

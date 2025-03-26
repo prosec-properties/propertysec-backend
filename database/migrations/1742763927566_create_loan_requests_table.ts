@@ -9,6 +9,7 @@ export default class extends BaseSchema {
       table.uuid('user_id').references('id').inTable('users').onDelete('CASCADE')
       table.string('amount')
       table.string('duration')
+      table.enum('status', ['completed', 'ongoing'])
       table.string('no_of_rooms')
       table.string('no_of_years')
       table.text('reason_for_loan_request')
