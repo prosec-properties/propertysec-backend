@@ -9,6 +9,9 @@ export default class ProductFile extends BaseModel {
   declare productId: string
 
   @column()
+  declare fileName: string
+
+  @column()
   declare fileUrl: string
 
   @column()

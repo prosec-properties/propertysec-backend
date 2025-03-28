@@ -4,18 +4,27 @@ import { createProductValidator, updateProductValidator } from '#validators/prod
 import type { HttpContext } from '@adonisjs/core/http'
 import FilesService from '#services/files'
 import ProductFile from '#models/product_file'
-import { MultipartFile } from '@adonisjs/core/bodyparser'
+import db from '@adonisjs/lucid/services/db'
 
 export default class ProductsController {
   async index({ response, request, logger }: HttpContext) {
     try {
       const page = request.input('page', 1)
       const limit = request.input('limit', 20)
+      const categoryId = request.input('categoryId')
 
-      const products = await Product.query()
+      const query = Product.query()
         .preload('files')
+        .preload('user')
+        .preload('category')
+        .preload('subCategory')
         .orderBy('created_at', 'desc')
-        .paginate(page, limit)
+
+      if (categoryId) {
+        query.where('category_id', categoryId)
+      }
+
+      const products = await query.paginate(page, limit)
 
       logger.info('Products fetched successfully')
       return response.ok({
@@ -24,7 +33,6 @@ export default class ProductsController {
         data: products.toJSON(),
       })
     } catch (error) {
-      console.error(error)
       return response.badRequest(getErrorObject(error))
     }
   }
@@ -35,15 +43,71 @@ export default class ProductsController {
       const user = auth.user!
       const { files, ...payload } = await request.validateUsing(createProductValidator)
 
-      // Validate and upload files
-      // ... similar logic as in PropertiesController.store ...
+      // Validate files if present
+      if (files && Array.isArray(files)) {
+        for (const file of files) {
+          if (file.type !== 'image' || file.size > 5 * 1024 * 1024) {
+            return response.badRequest({
+              success: false,
+              message: 'Invalid file type or size exceeds 5MB',
+            })
+          }
+        }
+      }
 
-      logger.info('Product created successfully')
-      return response.created({
-        success: true,
-        message: 'Product created successfully',
-        data: product,
-      })
+      let product: Product | null = null
+      try {
+        product = await Product.create({
+          ...payload,
+          userId: user.id,
+          views: 0,
+          negotiable: payload.negotiable ?? true,
+          quantity: payload.quantity ?? 1,
+          status: 'pending',
+        })
+
+        // Handle file uploads if present
+        if (files && files.length > 0) {
+          const results = await FilesService.uploadFiles(files)
+
+          if (!results.length) {
+            await product.delete()
+            return response.badRequest({
+              success: false,
+              message: 'Failed to upload product images',
+            })
+          }
+
+          const uploadedFiles = results.map((result, index) => ({
+            fileName: result.filename,
+            fileUrl: result.url,
+            fileType: result.metaData.type,
+            productId: product!.id,
+            meta: JSON.stringify({
+              ...result.metaData,
+              isMain: index === 0,
+            }),
+          }))
+
+          await Promise.all(
+            uploadedFiles.map((fileInfo) => FilesService.createProductFile(fileInfo as ProductFile))
+          )
+        }
+
+        await product.load('files')
+        
+        logger.info('Product created successfully')
+        return response.created({
+          success: true,
+          message: 'Product created successfully',
+          data: product,
+        })
+      } catch (error) {
+        if (product) {
+          await product.delete()
+        }
+        throw error
+      }
     } catch (error) {
       return response.badRequest(getErrorObject(error))
     }
@@ -51,7 +115,17 @@ export default class ProductsController {
 
   async show({ logger, response, params }: HttpContext) {
     try {
-      const product = await Product.query().where('id', params.id).preload('files').firstOrFail()
+      const product = await Product.query()
+        .where('id', params.id)
+        .preload('files')
+        .preload('user')
+        .preload('category')
+        .preload('subCategory')
+        .firstOrFail()
+
+      // Increment views
+      await product.merge({ views: product.views + 1 }).save()
+
       logger.info('Product fetched successfully')
       return response.ok({
         success: true,
@@ -59,17 +133,45 @@ export default class ProductsController {
         data: product,
       })
     } catch (error) {
-      response.badRequest(getErrorObject(error))
+      return response.badRequest(getErrorObject(error))
     }
   }
 
-  async update({ logger, response, request, params }: HttpContext) {
+  async update({ auth, logger, response, request, params }: HttpContext) {
     try {
+      await auth.authenticate()
       const product = await Product.findOrFail(params.id)
-      const payload = await request.validateUsing(updateProductValidator)
 
-      // Update logic similar to PropertiesController.update
-      // ... handle file uploads and updates ...
+      // Check if user owns the product
+      if (product.userId !== auth.user!.id) {
+        return response.forbidden({
+          success: false,
+          message: 'Unauthorized to update this product',
+        })
+      }
+
+      const { files, ...payload } = await request.validateUsing(updateProductValidator)
+
+      // Handle new file uploads
+      if (files && files.length > 0) {
+        const results = await FilesService.uploadFiles(files)
+
+        const uploadedFiles = results.map((result) => ({
+          fileName: result.filename,
+          fileUrl: result.url,
+          fileType: result.metaData.type,
+          productId: product.id,
+          meta: JSON.stringify(result.metaData),
+        }))
+
+        await Promise.all(
+          uploadedFiles.map((fileInfo) => FilesService.createProductFile(fileInfo as ProductFile))
+        )
+      }
+
+      // Update product
+      await product.merge(payload).save()
+      await product.load('files')
 
       logger.info('Product updated successfully')
       return response.ok({
@@ -78,22 +180,81 @@ export default class ProductsController {
         data: product,
       })
     } catch (error) {
-      logger.error(error)
       return response.badRequest(getErrorObject(error))
     }
   }
 
-  async destroy({ logger, response, params }: HttpContext) {
+  async myProducts({ auth, response, request, logger }: HttpContext) {
     try {
+      await auth.authenticate()
+      const user = auth.user!
+
+      const page = request.input('page', 1)
+      const limit = request.input('limit', 10)
+      const status = request.input('status')
+
+      const query = Product.query()
+        .where('user_id', user.id)
+        .preload('files')
+        .preload('category')
+        .preload('subCategory')
+        .orderBy('created_at', 'desc')
+
+      if (status) {
+        query.where('status', status)
+      }
+
+      const products = await query.paginate(page, limit)
+
+      const statusCounts = await db
+        .from('products')
+        .select('status')
+        .count('* as total')
+        .where('user_id', user.id)
+        .groupBy('status')
+
+      logger.info('Products fetched successfully')
+      return response.ok({
+        success: true,
+        message: 'Products fetched successfully',
+        data: {
+          products: products.toJSON(),
+          statusCounts,
+        },
+      })
+    } catch (error) {
+      return response.badRequest(getErrorObject(error))
+    }
+  }
+
+  async destroy({ auth, logger, response, params }: HttpContext) {
+    try {
+      await auth.authenticate()
       const product = await Product.findOrFail(params.id)
+
+      // Check if user owns the product
+      if (product.userId !== auth.user!.id) {
+        return response.forbidden({
+          success: false,
+          message: 'Unauthorized to delete this product',
+        })
+      }
+
+      // Delete associated files
+      const files = await product.related('files').query()
+      await Promise.all(
+        files.map((file) => FilesService.deleteProductFile(file.fileName))
+      )
+
       await product.delete()
+
       logger.info('Product deleted successfully')
       return response.ok({
         success: true,
         message: 'Product deleted successfully',
       })
     } catch (error) {
-      response.badRequest(getErrorObject(error))
+      return response.badRequest(getErrorObject(error))
     }
   }
-} 
+}

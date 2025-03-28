@@ -3,6 +3,7 @@ import PropertyFile from '#models/property_file'
 import logger from '@adonisjs/core/services/logger'
 import aws, { ImageUploadInterface } from './aws.js'
 import { FileData } from '#interfaces/file'
+import ProductFile from '#models/product_file'
 
 export default class FilesService {
   static async createPropertyFile({ fileType, fileUrl, propertyId, meta, fileName }: PropertyFile) {
@@ -22,6 +23,21 @@ export default class FilesService {
     }
   }
 
+  static async createProductFile({ fileType, fileUrl, productId, meta }: ProductFile) {
+    console.log('Yayy file created')
+    try {
+      await ProductFile.create({
+        fileUrl,
+        fileType,
+        productId,
+        meta,
+      })
+      logger.info('File created successfully: %s')
+    } catch (error) {
+      throw error
+    }
+  }
+
   static async deletePropertyFile(fileId: string) {
     try {
       const file = await PropertyFile.findOrFail(fileId)
@@ -30,6 +46,19 @@ export default class FilesService {
 
       logger.info('File deleted successfully: %s')
     } catch (error) {
+      throw error
+    }
+  }
+
+  static async deleteProductFile(fileId: string) {
+    try { 
+      const file = await ProductFile.findOrFail(fileId)
+      await aws.deleteFile(file.fileName)
+      await file.delete()
+
+      logger.info('File deleted successfully: %s')
+    }
+    catch (error) {
       throw error
     }
   }

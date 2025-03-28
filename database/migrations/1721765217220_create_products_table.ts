@@ -6,29 +6,32 @@ export default class extends BaseSchema {
 
   async up() {
     this.schema.createTable(this.tableName, (table) => {
-      table.uuid('id').primary().notNullable().unique().defaultTo(uuidv4())
+      table.uuid('id').primary().defaultTo(uuidv4())
+      table.uuid('country').references('id').inTable('countries').onDelete('CASCADE')
+      table.uuid('state').references('id').inTable('states').onDelete('CASCADE')
+      table.uuid('city').references('id').inTable('cities').onDelete('CASCADE')      
       table.uuid('user_id').references('id').inTable('users').onDelete('CASCADE')
-      table.uuid('category_id').references('id').inTable('categories')
-      table.uuid('subcategory_id').references('id').inTable('subcategories')
-      table.string('name').notNullable()
-      table.string('location').nullable()
-      table.bigInteger('price').notNullable()
-      table.text('description').nullable()
-      table.text('meta').nullable()
-      table
-        .enum('status', ['active', 'inactive', 'cancelled', 'draft', 'unsubscribed', 'other'])
-        .defaultTo('ACTIVE')
-      table.string('slug').notNullable().unique()
-      /**
-       * Uses timestamptz for PostgreSQL and DATETIME2 for MSSQL
-       */
-      table.timestamp('created_at', { useTz: true })
-      table.timestamp('updated_at', { useTz: true })
+      table.uuid('category_id').references('id').inTable('categories').onDelete('CASCADE')
+      table.uuid('sub_category_id').references('id').inTable('sub_categories').onDelete('CASCADE')
+
+      table.string('title').notNullable()
+      table.text('description').notNullable()
+      table.decimal('price', 12, 2).notNullable()
+      table.enum('condition', ['new', 'used', 'refurbished']).notNullable()
+      table.enum('status', ['active', 'sold', 'inactive']).defaultTo('active')
+      table.string('brand')
+      table.string('model')
+      table.string('specifications')
+      table.boolean('negotiable').defaultTo(true)
+      table.integer('quantity').defaultTo(1)
+      table.integer('views').defaultTo(0)
+      table.timestamp('created_at')
+      table.timestamp('updated_at')
 
       table.index(['category_id'], 'category_id_index')
       table.index(['user_id'], 'user_id_index')
       table.index(['location'], 'price_index')
-      table.index(['name', 'location'], 'name_location_index')
+      table.index(['title'], 'name_index')
     })
   }
 

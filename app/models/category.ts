@@ -16,6 +16,9 @@ export default class Category extends BaseModel {
   declare description: string
 
   @column()
+  declare type: "product" | "property"
+
+  @column()
   declare status: 'active' | 'inactive'
 
   @column()
