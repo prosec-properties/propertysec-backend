@@ -9,12 +9,20 @@ export interface FileMetaData {
 }
 
 export interface FileData {
-  tmpPath: string;
-  size: number;
-  clientName: string;
-  type: string;
-  subtype: string;
-  fieldName: string;
-  fileName: string;
-  mimeType: string;
+  tmpPath: string
+  size: number
+  clientName: string
+  type: string
+  subtype: string
+  fieldName: string
+  fileName: string
+  mimeType: string
 }
+
+export enum FILETYPE_ENUM {
+  IMAGE = 'image',
+  VIDEO = 'video',
+  OTHER = 'other',
+}
+
+export type IFileType = `${FILETYPE_ENUM}`

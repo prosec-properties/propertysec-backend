@@ -1,5 +1,6 @@
 import { DateTime } from 'luxon'
 import { BaseModel, column } from '@adonisjs/lucid/orm'
+import type { IFileType } from '#interfaces/file'
 
 export default class ProductFile extends BaseModel {
   @column({ isPrimary: true })
@@ -15,7 +16,7 @@ export default class ProductFile extends BaseModel {
   declare fileUrl: string
 
   @column()
-  declare fileType: 'image' | 'other'
+  declare fileType: IFileType
 
   @column()
   declare meta?: string

@@ -13,6 +13,5 @@ export enum PRODUCT_STATUS_ENUMS {
   REJECTED = 'rejected',
 }
 
-export type IProductStatus =  'draft' | 'published' | 'pending' | 'closed' | 'rejected'
-
-export type IProductCondition = 'new' | 'used' | 'refurbished' | 'not_applicable'
+export type IProductStatus = `${PRODUCT_STATUS_ENUMS}`
+export type IProductCondition = `${PRODUCT_CONDITION_ENUMS}`

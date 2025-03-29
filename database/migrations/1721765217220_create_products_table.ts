@@ -1,3 +1,4 @@
+import { PRODUCT_CONDITION_ENUMS, PRODUCT_STATUS_ENUMS } from '#interfaces/product'
 import { BaseSchema } from '@adonisjs/lucid/schema'
 import { v4 as uuidv4 } from 'uuid'
 
@@ -17,8 +18,8 @@ export default class extends BaseSchema {
       table.string('title').notNullable()
       table.text('description').notNullable()
       table.decimal('price').notNullable()
-      table.enum('condition', ['new', 'used', 'refurbished', 'not_applicable']).defaultTo('not_applicable')
-      table.enum('status', ['active', 'sold', 'inactive']).defaultTo('active')
+      table.enum('condition', Object.values(PRODUCT_CONDITION_ENUMS)).defaultTo('not_applicable')
+      table.enum('status', Object.values(PRODUCT_STATUS_ENUMS)).defaultTo('active')
       table.string('brand').nullable()
       table.string('model').nullable()
       table.string('specifications').nullable()

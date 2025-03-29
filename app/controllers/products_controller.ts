@@ -6,6 +6,7 @@ import FilesService from '#services/files'
 import ProductFile from '#models/product_file'
 import db from '@adonisjs/lucid/services/db'
 import { MultipartFile } from '@adonisjs/core/bodyparser'
+import { NIGERIA_COUNTRY_ID } from '#constants/general'
 
 export default class ProductsController {
   async index({ response, request, logger }: HttpContext) {
@@ -51,7 +52,10 @@ export default class ProductsController {
         })
       }
 
+      // console.log('Filessss:', files)
+
       for (const file of files) {
+        // console.log('File:', file)
         if (file.type === 'image' && file.size > 5 * 1024 * 1024) {
           return response.badRequest({
             success: false,
@@ -75,6 +79,7 @@ export default class ProductsController {
           ...payload,
           userId: user.id,
           views: 0,
+          countryId: NIGERIA_COUNTRY_ID,
           negotiable: payload.negotiable ?? true,
           quantity: payload.quantity ?? 1,
           status: 'pending',
@@ -92,18 +97,21 @@ export default class ProductsController {
         }))
 
         try {
-          await Promise.all(
-            uploadedFiles.map((fileInfo) => FilesService.createProductFile(fileInfo as ProductFile))
-          )
+          for (const fileInfo of uploadedFiles) {
+            await FilesService.createProductFile(fileInfo as ProductFile)
+          }
         } catch (error) {
           // If file saving fails, delete the product and return error
           if (product) {
+            console.log('Deleting product due to file save error:', product.id)
             await product.delete()
           }
-          return response.badRequest({
-            success: false,
-            message: 'Failed to save product images',
-          })
+          // return response.badRequest({
+          //   success: false,
+          //   message: 'Failed to save product images',
+          // })
+          return response.badRequest(getErrorObject(error))
+
         }
 
         await product.load('files')

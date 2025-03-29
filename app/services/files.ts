@@ -23,15 +23,19 @@ export default class FilesService {
     }
   }
 
-  static async createProductFile({ fileType, fileUrl, productId, meta }: ProductFile) {
-    console.log('Yayy file created')
+  static async createProductFile({ fileType, fileUrl, productId, meta, fileName }: ProductFile) {
+    console.log('Creating product file')
+
     try {
-      await ProductFile.create({
+      const gg = await ProductFile.create({
         fileUrl,
         fileType,
         productId,
+        fileName,
         meta,
       })
+
+      console.log('gg', gg)
       logger.info('File created successfully: %s')
     } catch (error) {
       throw error
@@ -51,14 +55,13 @@ export default class FilesService {
   }
 
   static async deleteProductFile(fileId: string) {
-    try { 
+    try {
       const file = await ProductFile.findOrFail(fileId)
       await aws.deleteFile(file.fileName)
       await file.delete()
 
       logger.info('File deleted successfully: %s')
-    }
-    catch (error) {
+    } catch (error) {
       throw error
     }
   }
