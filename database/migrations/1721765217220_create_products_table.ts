@@ -1,4 +1,4 @@
-import { PRODUCT_CONDITION_ENUMS, PRODUCT_STATUS_ENUMS } from '#interfaces/product'
+import { PRODUCT_AVAILABILITY_ENUMS, PRODUCT_CONDITION_ENUMS, PRODUCT_STATUS_ENUMS } from '#interfaces/product'
 import { BaseSchema } from '@adonisjs/lucid/schema'
 import { v4 as uuidv4 } from 'uuid'
 
@@ -14,6 +14,7 @@ export default class extends BaseSchema {
       table.uuid('user_id').references('id').inTable('users').onDelete('CASCADE')
       table.uuid('category_id').references('id').inTable('categories').onDelete('CASCADE')
       table.uuid('subcategory_id').references('id').inTable('subcategories').onDelete('CASCADE')
+      table.string('affiliate_id').nullable()
 
       table.string('title').notNullable()
       table.text('description').notNullable()
@@ -26,6 +27,7 @@ export default class extends BaseSchema {
       table.boolean('negotiable').defaultTo(true)
       table.integer('quantity').defaultTo(1)
       table.integer('views').defaultTo(0)
+      table.enum('availability', Object.values(PRODUCT_AVAILABILITY_ENUMS)).defaultTo('open')
       table.timestamp('created_at')
       table.timestamp('updated_at')
 

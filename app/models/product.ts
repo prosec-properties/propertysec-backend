@@ -4,7 +4,7 @@ import type { BelongsTo, HasMany } from '@adonisjs/lucid/types/relations'
 import User from './user.js'
 import Category from './category.js'
 import SubCategory from './subcategory.js'
-import type { IProductCondition, IProductStatus } from '#interfaces/product'
+import type { IProductAvailability, IProductCondition, IProductStatus } from '#interfaces/product'
 import ProductFile from './product_file.js'
 
 export default class Product extends BaseModel {
@@ -63,7 +63,13 @@ export default class Product extends BaseModel {
   declare quantity: number
 
   @column()
+  declare availability: IProductAvailability
+
+  @column()
   declare views: number
+
+  @column()
+  declare affiliateId?: string
 
   @column.dateTime({ autoCreate: true })
   declare createdAt: DateTime

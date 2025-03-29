@@ -6,7 +6,7 @@ import Category from './category.js'
 import { v4 as uuidv4 } from 'uuid'
 import type { IPropertyType } from '../interfaces/property.js'
 import PropertyFile from './property_file.js'
-import type { IProductStatus } from '#interfaces/product'
+import type { IProductAvailability, IProductStatus } from '#interfaces/product'
 
 export default class Property extends BaseModel {
   @column({ isPrimary: true })
@@ -49,6 +49,9 @@ export default class Property extends BaseModel {
   declare append?: string
 
   @column()
+  declare countryId: string
+
+  @column()
   declare stateId: string
 
   @column()
@@ -59,6 +62,15 @@ export default class Property extends BaseModel {
 
   @column()
   declare status: IProductStatus
+
+  @column()
+  declare affiliateId?: string
+
+  @column()
+  declare views: number
+
+  @column()
+  declare availability: IProductAvailability
 
   @column()
   declare defaultImageUrl?: string

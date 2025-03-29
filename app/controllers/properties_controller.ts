@@ -5,6 +5,7 @@ import type { HttpContext } from '@adonisjs/core/http'
 import FilesService from '#services/files'
 import PropertyFile from '#models/property_file'
 import { MultipartFile } from '@adonisjs/core/bodyparser'
+import { NIGERIA_COUNTRY_ID } from '#constants/general'
 
 export default class PropertiesController {
   async index({ response, request, logger }: HttpContext) {
@@ -61,6 +62,9 @@ export default class PropertiesController {
             ...payload,
             status: 'pending',
             userId: user.id,
+            availability: 'available',
+            views: 0,
+            countryId: NIGERIA_COUNTRY_ID,
             defaultImageUrl: results[0].url,
           })
 
@@ -111,10 +115,15 @@ export default class PropertiesController {
     }
   }
 
-  async show({ logger, response, params }: HttpContext) {
+  async show({ logger, response, params, auth }: HttpContext) {
     try {
       const property = await Property.query().where('id', params.id).preload('files').firstOrFail()
+
+      if (property.status === 'published' && property.userId !== auth.user?.id) {
+        await property.merge({ views: property.views + 1 }).save()
+      }
       logger.info('Property fetched successfully')
+
       return response.ok({
         success: true,
         message: 'Property fetched sucessfully',
@@ -125,160 +134,94 @@ export default class PropertiesController {
     }
   }
 
-  // async update({ logger, response, request, params }: HttpContext) {
-  //   try {
-  //     const property = await Property.findOrFail(params.id)
-  //     const payload = await request.validateUsing(updatePropertyValidator)
-  //     if (!payload) {
-  //       return response.badRequest({
-  //         success: false,
-  //         message: 'Invalid payload',
-  //       })
-  //     }
-
-  //     if (payload?.files && Array.isArray(payload.files)) {
-  //       payload.files.forEach((file: MultipartFile) => {
-  //         if (file.type === 'image' && file.size > 5 * 1024 * 1024) {
-  //           return response.badRequest({
-  //             success: false,
-  //             message: 'Image file size should not exceed 5mb',
-  //           })
-  //         }
-  //       })
-
-  //       const results = await FilesService.uploadFiles(payload.files)
-
-  //       const uploadedFiles: any = []
-
-  //       results.forEach(({ filename, url, metaData }) => {
-  //         // console.log('metaData', metaData)
-  //         if (!url || !filename) return
-  //         uploadedFiles.push({
-  //           fileName: filename,
-  //           fileUrl: url,
-  //           fileType: metaData.type,
-  //           propertyId: property.id,
-  //           meta: JSON.stringify(metaData),
-  //         })
-  //       })
-
-  //       if (uploadedFiles.length > 0) {
-  //         for (const fileInfo of uploadedFiles) {
-  //           await FilesService.createPropertyFile(fileInfo as PropertyFile)
-  //         }
-  //       }
-
-  //       property.defaultImageUrl = results[0].url
-  //     }
-
-  //     await property.merge(payload).save()
-
-  //     logger.info('Property updated successfully')
-  //     return response.ok({
-  //       success: true,
-  //       message: 'Property updated successfully',
-  //       data: property,
-  //     })
-  //   } catch (error) {
-  //     response.badRequest(getErrorObject(error))
-  //   }
-  // }
-
   async update({ logger, response, request, params }: HttpContext) {
     try {
-      const property = await Property.findOrFail(params.id);
-      const payload = await request.validateUsing(updatePropertyValidator);
-      
+      const property = await Property.findOrFail(params.id)
+      const payload = await request.validateUsing(updatePropertyValidator)
+
       if (!payload) {
         return response.badRequest({
           success: false,
           message: 'Invalid payload',
-        });
+        })
       }
-  
-      const existingFiles = await property.related('files').query();
-  
-      // Array to store new files to be uploaded
-      const newFiles: MultipartFile[] = [];
 
-      // console.log('existingFiles', existingFiles)
-      // console.log('payload.files', payload?.files)
-      // return
-      // Check if files are provided in the payload
+      const existingFiles = await property.related('files').query()
+
+      const newFiles: MultipartFile[] = []
+
       if (payload.files && Array.isArray(payload.files)) {
-        // Validate and process each incoming file
         for (const file of payload.files) {
-          // Validate file size for images
           if (file.type?.startsWith('image/') && file.size > 5 * 1024 * 1024) {
             return response.badRequest({
               success: false,
               message: 'Image file size should not exceed 5MB',
-            });
+            })
           }
-  
+
           // Validate file size for videos
           if (file.type?.startsWith('video/') && file.size > 10 * 1024 * 1024) {
             return response.badRequest({
               success: false,
               message: 'Video file size should not exceed 10MB',
-            });
+            })
           }
-  
+
           // Check if the file already exists
           const fileExists = existingFiles.some(
             (existingFile) => existingFile.fileName === file.clientName
-          );
-  
+          )
+
           // If the file does not exist, add it to the newFiles array
           if (!fileExists) {
-            newFiles.push(file);
+            newFiles.push(file)
           }
         }
-  
+
         // Upload only new files
         if (newFiles.length > 0) {
-          const results = await FilesService.uploadFiles(newFiles);
-  
-          const uploadedFiles: any = [];
-  
+          const results = await FilesService.uploadFiles(newFiles)
+
+          const uploadedFiles: any = []
+
           results.forEach(({ filename, url, metaData }) => {
-            if (!url || !filename) return;
+            if (!url || !filename) return
             uploadedFiles.push({
               fileName: filename,
               fileUrl: url,
               fileType: metaData.type,
               propertyId: property.id,
               meta: JSON.stringify(metaData),
-            });
-          });
-  
+            })
+          })
+
           // Save new files to the database
           if (uploadedFiles.length > 0) {
             for (const fileInfo of uploadedFiles) {
-              await FilesService.createPropertyFile(fileInfo as PropertyFile);
+              await FilesService.createPropertyFile(fileInfo as PropertyFile)
             }
           }
-  
+
           // Set the default image URL if new files were uploaded
           if (results.length > 0) {
-            property.defaultImageUrl = results[0].url;
+            property.defaultImageUrl = results[0].url
           }
         }
       }
-  
+
       // Update the property with the payload (excluding files)
-      const { files: _, ...restPayload } = payload;
-      await property.merge(restPayload).save();
-  
-      logger.info('Property updated successfully');
+      const { files: _, ...restPayload } = payload
+      await property.merge(restPayload).save()
+
+      logger.info('Property updated successfully')
       return response.ok({
         success: true,
         message: 'Property updated successfully',
         data: property,
-      });
+      })
     } catch (error) {
-      logger.error(error);
-      return response.badRequest(getErrorObject(error));
+      logger.error(error)
+      return response.badRequest(getErrorObject(error))
     }
   }
 

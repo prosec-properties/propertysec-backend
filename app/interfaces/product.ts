@@ -13,5 +13,11 @@ export enum PRODUCT_STATUS_ENUMS {
   REJECTED = 'rejected',
 }
 
+export enum PRODUCT_AVAILABILITY_ENUMS {
+  AVAILABLE = 'available',
+  SOLD = 'sold',
+}
+
 export type IProductStatus = `${PRODUCT_STATUS_ENUMS}`
 export type IProductCondition = `${PRODUCT_CONDITION_ENUMS}`
+export type IProductAvailability = `${PRODUCT_AVAILABILITY_ENUMS}`

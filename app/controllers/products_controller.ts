@@ -52,10 +52,7 @@ export default class ProductsController {
         })
       }
 
-      // console.log('Filessss:', files)
-
       for (const file of files) {
-        // console.log('File:', file)
         if (file.type === 'image' && file.size > 5 * 1024 * 1024) {
           return response.badRequest({
             success: false,
@@ -80,6 +77,7 @@ export default class ProductsController {
           userId: user.id,
           views: 0,
           countryId: NIGERIA_COUNTRY_ID,
+          availability: 'available',
           negotiable: payload.negotiable ?? true,
           quantity: payload.quantity ?? 1,
           status: 'pending',
@@ -106,12 +104,7 @@ export default class ProductsController {
             console.log('Deleting product due to file save error:', product.id)
             await product.delete()
           }
-          // return response.badRequest({
-          //   success: false,
-          //   message: 'Failed to save product images',
-          // })
           return response.badRequest(getErrorObject(error))
-
         }
 
         await product.load('files')
@@ -143,7 +136,6 @@ export default class ProductsController {
         .preload('subCategory')
         .firstOrFail()
 
-      // Increment views
       await product.merge({ views: product.views + 1 }).save()
 
       logger.info('Product fetched successfully')
@@ -176,7 +168,6 @@ export default class ProductsController {
       const newFiles: MultipartFile[] = []
 
       if (files && Array.isArray(files)) {
-        // Validate and process each incoming file
         for (const file of files) {
           if (file.type?.startsWith('image/') && file.size > 5 * 1024 * 1024) {
             return response.badRequest({
@@ -185,7 +176,6 @@ export default class ProductsController {
             })
           }
 
-          // Check if the file already exists
           const fileExists = existingFiles.some(
             (existingFile) => existingFile.fileName === file.clientName
           )
