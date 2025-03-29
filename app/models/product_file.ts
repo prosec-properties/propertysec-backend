@@ -1,6 +1,8 @@
 import { DateTime } from 'luxon'
-import { BaseModel, column } from '@adonisjs/lucid/orm'
+import { BaseModel, beforeCreate, column } from '@adonisjs/lucid/orm'
 import type { IFileType } from '#interfaces/file'
+import { v4 as uuidv4 } from 'uuid'
+
 
 export default class ProductFile extends BaseModel {
   @column({ isPrimary: true })
@@ -26,4 +28,9 @@ export default class ProductFile extends BaseModel {
 
   @column.dateTime({ autoCreate: true, autoUpdate: true })
   declare updatedAt: DateTime
+
+  @beforeCreate()
+  static generateUUID(model: ProductFile) {
+    model.id = uuidv4()
+  }  
 }

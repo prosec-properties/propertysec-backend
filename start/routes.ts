@@ -21,6 +21,7 @@ import TransactionsController from '#controllers/transactions_controller'
 import StatesController from '#controllers/states_controller'
 import LoansController from '#controllers/loan_controller'
 import ProductsController from '#controllers/products_controller'
+import AffiliatesController from '#controllers/affiliates_controller'
 
 router.get('/', async () => {
   return {
@@ -91,6 +92,14 @@ router
         router.delete('/:id', [ProductsController, 'destroy'])
       })
       .prefix('products')
+
+    router
+      .group(() => {
+        router.get('/myshop', [AffiliatesController, 'myShop'])
+        router.post('/add-to-shop', [AffiliatesController, 'saveToShop'])
+        router.post('/remove-from-shop', [AffiliatesController, 'removeFromShop'])
+      })
+      .prefix('affiliates')
 
     router
       .group(() => {

@@ -3,6 +3,7 @@ import { BaseModel, beforeCreate, column, hasOne } from '@adonisjs/lucid/orm'
 import { v4 as uuidv4 } from 'uuid'
 import Property from './property.js'
 import type { HasOne } from '@adonisjs/lucid/types/relations'
+import type { IFileType } from '#interfaces/file'
 
 export default class PropertyFile extends BaseModel {
   @column({ isPrimary: true })
@@ -18,7 +19,7 @@ export default class PropertyFile extends BaseModel {
   declare fileUrl: string
 
   @column()
-  declare fileType: 'image' | 'video' | 'other'
+  declare fileType: IFileType
 
   @column()
   declare meta?: string

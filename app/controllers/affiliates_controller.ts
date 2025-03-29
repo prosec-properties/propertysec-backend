@@ -1,6 +1,9 @@
+import { getErrorObject } from '#helpers/error'
 import { propertyCommission } from '#helpers/general'
 import Affiliate from '#models/affiliate_property'
+import Product from '#models/product'
 import Property from '#models/property'
+import { addToAffiliateShopValidator } from '#validators/affiliate'
 import type { HttpContext } from '@adonisjs/core/http'
 
 export default class AffiliatesController {
@@ -8,34 +11,123 @@ export default class AffiliatesController {
     try {
       await auth.authenticate()
       const user = auth.user!
-      const { propertyId } = request.body()
+
+      const { propertyId } = await request.validateUsing(addToAffiliateShopValidator)
 
       const property = await Property.findBy('id', propertyId)
+
       if (!property) {
-        return response.badRequest({
+        return response.notFound({
           status: 'error',
           message: 'Property not found',
         })
       }
 
-      const getCommission = propertyCommission(property.price)
+      const existingAffiliate = await Affiliate.query()
+        .where('affiliateUserId', user.id)
+        .where('propertyId', propertyId)
+        .first()
+
+      if (existingAffiliate) {
+        return response.conflict({
+          status: 'error',
+          message: 'Property already exists in your shop',
+        })
+      }
+
+      const commission = propertyCommission(property.price)
 
       await Affiliate.create({
         affiliateUserId: user.id,
         propertyId,
-        commission: getCommission,
+        commission,
         isActive: true,
       })
 
-      return response.json({
+      return response.created({
         status: 'success',
-        message: 'Property saved to shop',
-        data: [],
+        message: 'Property saved to shop successfully',
+        data: {
+          property,
+          commission,
+        },
       })
-
-      console.log('saveToShop')
     } catch (error) {
-      console.log(error)
+      console.error('Error in saveToShop:', error)
+      return response.internalServerError(getErrorObject(error))
+    }
+  }
+
+  async myShop({ auth, response }: HttpContext) {
+    try {
+      await auth.authenticate()
+      const user = auth.user!
+
+      const properties = await Property.query()
+        .where('status', 'published')
+        .where('affiliate_id', user.id)
+        .preload('files')
+        .orderBy('created_at', 'desc')
+
+      const myProducts = await Product.query()
+        // .where('status', 'published')
+        .where('userId', user.id)
+        .preload('files')
+        .orderBy('created_at', 'desc')
+
+      console.log('myProducts', myProducts)
+
+      return response.ok({
+        success: true,
+        message: 'Shop items fetched successfully',
+        data: {
+          properties,
+          products: myProducts,
+          totalItems: properties.length + myProducts.length,
+        },
+      })
+    } catch (error) {
+      console.error('Error in myShop:', error)
+      return response.internalServerError(getErrorObject(error))
+    }
+  }
+
+  async removeFromShop({ auth, request, response }: HttpContext) {
+    try {
+      await auth.authenticate()
+      const user = auth.user!
+
+      const { itemId, itemType } = request.only(['itemId', 'itemType'])
+
+      if (!itemId || !itemType) {
+        return response.badRequest({
+          status: 'error',
+          message: 'Item ID and type are required',
+        })
+      }
+
+      if (itemType === 'property') {
+        await Affiliate.query()
+          .where('affiliateUserId', user.id)
+          .where('propertyId', itemId)
+          .delete()
+      } else if (itemType === 'product') {
+        // Handle product removal logic if needed
+        // This would depend on your product-affiliate relationship
+      } else {
+        return response.badRequest({
+          status: 'error',
+          message: 'Invalid item type',
+        })
+      }
+
+      return response.ok({
+        status: 'success',
+        message: 'Item removed from shop successfully',
+      })
+    } catch (error) {
+      console.error('Error in removeFromShop:', error)
+      return response.internalServerError(getErrorObject(error))
     }
   }
 }

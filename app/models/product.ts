@@ -1,11 +1,12 @@
 import { DateTime } from 'luxon'
-import { BaseModel, belongsTo, column, hasMany } from '@adonisjs/lucid/orm'
+import { BaseModel, beforeCreate, belongsTo, column, hasMany } from '@adonisjs/lucid/orm'
 import type { BelongsTo, HasMany } from '@adonisjs/lucid/types/relations'
 import User from './user.js'
 import Category from './category.js'
 import SubCategory from './subcategory.js'
 import type { IProductAvailability, IProductCondition, IProductStatus } from '#interfaces/product'
 import ProductFile from './product_file.js'
+import { v4 as uuidv4 } from 'uuid'
 
 export default class Product extends BaseModel {
   @column({ isPrimary: true })
@@ -54,7 +55,7 @@ export default class Product extends BaseModel {
   declare categoryId: string
 
   @column()
-  declare subCategoryId: string
+  declare subcategoryId: string
 
   @column()
   declare negotiable: boolean
@@ -84,8 +85,13 @@ export default class Product extends BaseModel {
   declare category: BelongsTo<typeof Category>
 
   @belongsTo(() => SubCategory)
-  declare subCategory: BelongsTo<typeof SubCategory>
+  declare subcategory: BelongsTo<typeof SubCategory>
 
   @hasMany(() => ProductFile)
   declare files: HasMany<typeof ProductFile>
+
+  @beforeCreate()
+  static generateUUID(model: Product) {
+    model.id = uuidv4()
+  }
 }

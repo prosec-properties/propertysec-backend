@@ -15,12 +15,7 @@ export default class ProductsController {
       const limit = request.input('limit', 20)
       const categoryId = request.input('categoryId')
 
-      const query = Product.query()
-        .preload('files')
-        .preload('user')
-        .preload('category')
-        .preload('subCategory')
-        .orderBy('created_at', 'desc')
+      const query = Product.query().preload('files').preload('user').orderBy('created_at', 'desc')
 
       if (categoryId) {
         query.where('category_id', categoryId)
@@ -132,8 +127,6 @@ export default class ProductsController {
         .where('id', params.id)
         .preload('files')
         .preload('user')
-        .preload('category')
-        .preload('subCategory')
         .firstOrFail()
 
       await product.merge({ views: product.views + 1 }).save()
@@ -233,8 +226,6 @@ export default class ProductsController {
       const query = Product.query()
         .where('user_id', user.id)
         .preload('files')
-        .preload('category')
-        .preload('subCategory')
         .orderBy('created_at', 'desc')
 
       if (status) {

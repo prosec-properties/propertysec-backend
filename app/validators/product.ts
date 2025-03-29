@@ -38,8 +38,8 @@ export const createProductValidator = vine.compile(
       const exists = await db.from('categories').where('id', value).first()
       return !!exists
     }),
-    subCategoryId: vine.string().exists(async (db, value) => {
-      const exists = await db.from('sub_categories').where('id', value).first()
+    subcategoryId: vine.string().exists(async (db, value) => {
+      const exists = await db.from('subcategories').where('id', value).first()
       return !!exists
     }),
 
@@ -71,21 +71,21 @@ export const updateProductValidator = vine.compile(
     quantity: vine.number().min(1).optional(),
 
     // Location Information
-    country: vine
-      .string()
-      .exists(async (db, value) => {
-        const exists = await db.from('countries').where('id', value).first()
-        return !!exists
-      })
-      .optional(),
-    state: vine
+    // countryId: vine
+    //   .string()
+    //   .exists(async (db, value) => {
+    //     const exists = await db.from('countries').where('id', value).first()
+    //     return !!exists
+    //   })
+    //   .optional(),
+    stateId: vine
       .string()
       .exists(async (db, value) => {
         const exists = await db.from('states').where('id', value).first()
         return !!exists
       })
       .optional(),
-    city: vine
+    cityId: vine
       .string()
       .exists(async (db, value) => {
         const exists = await db.from('cities').where('id', value).first()
@@ -101,7 +101,7 @@ export const updateProductValidator = vine.compile(
         return !!exists
       })
       .optional(),
-    subCategoryId: vine
+    subcategoryId: vine
       .string()
       .exists(async (db, value) => {
         const exists = await db.from('sub_categories').where('id', value).first()

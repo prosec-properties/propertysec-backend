@@ -186,6 +186,7 @@ export default class PropertiesController {
 
           results.forEach(({ filename, url, metaData }) => {
             if (!url || !filename) return
+            console.log('metaData', metaData)
             uploadedFiles.push({
               fileName: filename,
               fileUrl: url,
