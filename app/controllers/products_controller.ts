@@ -5,6 +5,7 @@ import type { HttpContext } from '@adonisjs/core/http'
 import FilesService from '#services/files'
 import ProductFile from '#models/product_file'
 import db from '@adonisjs/lucid/services/db'
+import { MultipartFile } from '@adonisjs/core/bodyparser'
 
 export default class ProductsController {
   async index({ response, request, logger }: HttpContext) {
@@ -43,16 +44,29 @@ export default class ProductsController {
       const user = auth.user!
       const { files, ...payload } = await request.validateUsing(createProductValidator)
 
-      // Validate files if present
-      if (files && Array.isArray(files)) {
-        for (const file of files) {
-          if (file.type !== 'image' || file.size > 5 * 1024 * 1024) {
-            return response.badRequest({
-              success: false,
-              message: 'Invalid file type or size exceeds 5MB',
-            })
-          }
+      if (!files || !Array.isArray(files)) {
+        return response.badRequest({
+          success: false,
+          message: 'Product images are required',
+        })
+      }
+
+      for (const file of files) {
+        if (file.type === 'image' && file.size > 5 * 1024 * 1024) {
+          return response.badRequest({
+            success: false,
+            message: 'Image file size should not exceed 5MB',
+          })
         }
+      }
+
+      const results = await FilesService.uploadFiles(files)
+
+      if (!results.length) {
+        return response.badRequest({
+          success: false,
+          message: 'Failed to upload product images',
+        })
       }
 
       let product: Product | null = null
@@ -66,36 +80,34 @@ export default class ProductsController {
           status: 'pending',
         })
 
-        // Handle file uploads if present
-        if (files && files.length > 0) {
-          const results = await FilesService.uploadFiles(files)
+        const uploadedFiles = results.map(({ filename, url, metaData }, index) => ({
+          fileName: filename,
+          fileUrl: url,
+          fileType: metaData.type,
+          productId: product!.id,
+          meta: JSON.stringify({
+            ...metaData,
+            isMain: index === 0,
+          }),
+        }))
 
-          if (!results.length) {
-            await product.delete()
-            return response.badRequest({
-              success: false,
-              message: 'Failed to upload product images',
-            })
-          }
-
-          const uploadedFiles = results.map((result, index) => ({
-            fileName: result.filename,
-            fileUrl: result.url,
-            fileType: result.metaData.type,
-            productId: product!.id,
-            meta: JSON.stringify({
-              ...result.metaData,
-              isMain: index === 0,
-            }),
-          }))
-
+        try {
           await Promise.all(
             uploadedFiles.map((fileInfo) => FilesService.createProductFile(fileInfo as ProductFile))
           )
+        } catch (error) {
+          // If file saving fails, delete the product and return error
+          if (product) {
+            await product.delete()
+          }
+          return response.badRequest({
+            success: false,
+            message: 'Failed to save product images',
+          })
         }
 
         await product.load('files')
-        
+
         logger.info('Product created successfully')
         return response.created({
           success: true,
@@ -152,21 +164,47 @@ export default class ProductsController {
 
       const { files, ...payload } = await request.validateUsing(updateProductValidator)
 
-      // Handle new file uploads
-      if (files && files.length > 0) {
-        const results = await FilesService.uploadFiles(files)
+      const existingFiles = await product.related('files').query()
+      const newFiles: MultipartFile[] = []
 
-        const uploadedFiles = results.map((result) => ({
-          fileName: result.filename,
-          fileUrl: result.url,
-          fileType: result.metaData.type,
-          productId: product.id,
-          meta: JSON.stringify(result.metaData),
-        }))
+      if (files && Array.isArray(files)) {
+        // Validate and process each incoming file
+        for (const file of files) {
+          if (file.type?.startsWith('image/') && file.size > 5 * 1024 * 1024) {
+            return response.badRequest({
+              success: false,
+              message: 'Image file size should not exceed 5MB',
+            })
+          }
 
-        await Promise.all(
-          uploadedFiles.map((fileInfo) => FilesService.createProductFile(fileInfo as ProductFile))
-        )
+          // Check if the file already exists
+          const fileExists = existingFiles.some(
+            (existingFile) => existingFile.fileName === file.clientName
+          )
+
+          // If the file does not exist, add it to the newFiles array
+          if (!fileExists) {
+            newFiles.push(file)
+          }
+        }
+
+        // Upload only new files
+        if (newFiles.length > 0) {
+          const results = await FilesService.uploadFiles(newFiles)
+
+          const uploadedFiles = results.map(({ filename, url, metaData }) => ({
+            fileName: filename,
+            fileUrl: url,
+            fileType: metaData.type,
+            productId: product.id,
+            meta: JSON.stringify(metaData),
+          }))
+
+          // Save new files to the database
+          await Promise.all(
+            uploadedFiles.map((fileInfo) => FilesService.createProductFile(fileInfo as ProductFile))
+          )
+        }
       }
 
       // Update product
@@ -180,6 +218,7 @@ export default class ProductsController {
         data: product,
       })
     } catch (error) {
+      logger.error(error)
       return response.badRequest(getErrorObject(error))
     }
   }
@@ -242,9 +281,7 @@ export default class ProductsController {
 
       // Delete associated files
       const files = await product.related('files').query()
-      await Promise.all(
-        files.map((file) => FilesService.deleteProductFile(file.fileName))
-      )
+      await Promise.all(files.map((file) => FilesService.deleteProductFile(file.fileName)))
 
       await product.delete()
 

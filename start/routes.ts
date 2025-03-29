@@ -20,6 +20,7 @@ import PlansContoller from '#controllers/plans_controller'
 import TransactionsController from '#controllers/transactions_controller'
 import StatesController from '#controllers/states_controller'
 import LoansController from '#controllers/loan_controller'
+import ProductsController from '#controllers/products_controller'
 
 router.get('/', async () => {
   return {
@@ -83,6 +84,16 @@ router
 
     router
       .group(() => {
+        router.get('/:id', [ProductsController, 'show'])
+        router.get('/', [ProductsController, 'index'])
+        router.post('/', [ProductsController, 'store'])
+        router.patch('/:id', [ProductsController, 'update'])
+        router.delete('/:id', [ProductsController, 'destroy'])
+      })
+      .prefix('products')
+
+    router
+      .group(() => {
         router.get('/', [CategoriesController, 'index'])
       })
       .prefix('categories')
@@ -115,4 +126,4 @@ router
       .prefix('loans')
   })
   .prefix('api/v1')
-  // .use(middleware.rateLimit(['100', '900']))
+// .use(middleware.rateLimit(['100', '900']))

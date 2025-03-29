@@ -50,7 +50,7 @@ export const createProductValidator = vine.compile(
         size: '5mb',
         extnames: ACCEPTED_IMAGE_TYPES,
       })
-    ).optional(),
+    ),
   })
 )
 

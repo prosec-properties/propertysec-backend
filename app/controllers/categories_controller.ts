@@ -5,9 +5,24 @@ import type { HttpContext } from '@adonisjs/core/http'
 export default class CategoriesController {
   async index({ request, response }: HttpContext) {
     try {
-      const sortBy = request.input('sortBy', 'created_at')
-      const order = request.input('order', 'desc')
-      const search = request.input('search', '')
+      const { sortBy = 'created_at', order = 'desc', search = '', type } = request.qs()
+
+      console.log('query params:', request.qs())
+      const validOrders = ['asc', 'desc']
+      if (!validOrders.includes(order.toLowerCase())) {
+        return response.badRequest({
+          success: false,
+          message: 'Invalid order parameter. Use "asc" or "desc"',
+        })
+      }
+
+      const sortableColumns = ['name', 'created_at', 'updated_at', 'status']
+      if (!sortableColumns.includes(sortBy)) {
+        return response.badRequest({
+          success: false,
+          message: `Invalid sortBy parameter. Use one of: ${sortableColumns.join(', ')}`,
+        })
+      }
 
       const query = Category.query()
 
@@ -15,9 +30,14 @@ export default class CategoriesController {
         query.whereILike('name', `%${search}%`)
       }
 
-      query.orderBy(sortBy, order)
+      if (type) {
+        console.log('Type:', type)
+        query.where('type', type)
+      }
 
-      const categories = await query
+      query.preload('subcategories').orderBy(sortBy, order)
+
+      const categories = await query.exec()
 
       return response.ok({
         success: true,
@@ -25,6 +45,7 @@ export default class CategoriesController {
         data: categories,
       })
     } catch (error) {
+      console.error('Error fetching categories:', error)
       return response.badRequest(getErrorObject(error))
     }
   }

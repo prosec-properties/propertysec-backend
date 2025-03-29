@@ -132,6 +132,7 @@ export default class extends BaseSeeder {
         { id: category.id },
         {
           id: category.id,
+          status: 'active',
           name: category.name,
           type: category.type,
         }

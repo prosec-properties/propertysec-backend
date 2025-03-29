@@ -36,17 +36,16 @@ export default class Product extends BaseModel {
   declare specifications?: string | null
 
   @column()
-  declare country: string
+  declare countryId: string
 
   @column()
-  declare state: string
+  declare stateId: string
 
   @column()
-  declare city: string
+  declare cityId: string
 
   @column()
   declare address: string
-
 
   @column()
   declare userId: string

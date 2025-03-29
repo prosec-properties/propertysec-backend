@@ -8,9 +8,12 @@ export default class extends BaseSchema {
     this.schema.createTable(this.tableName, (table) => {
       table.uuid('id').primary().notNullable().unique().defaultTo(uuidv4())
       table.string('category_id').notNullable()
-      table.string('category_name').notNullable()
       table.string('name').notNullable()
-      table.string('slug').unique().nullable()
+      table.string('description').nullable()
+      table.string('slug').notNullable().unique()
+      table.enum('status', ['active', 'inactive']).defaultTo('active')
+      table.string('image').nullable()
+      table.string('meta').nullable()
       /**
        * Uses timestamptz for PostgreSQL and DATETIME2 for MSSQL
        */

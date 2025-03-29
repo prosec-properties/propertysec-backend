@@ -1,6 +1,6 @@
 import SubCategory from '#models/subcategory'
 import { BaseSeeder } from '@adonisjs/lucid/seeders'
-import { CATEGORY_IDS } from './category_seeder.js'
+import { CATEGORY_IDS } from './AAAcategory_seeder.js'
 
 export default class extends BaseSeeder {
   async run() {
@@ -265,6 +265,7 @@ export default class extends BaseSeeder {
         {
           id: subcategory.id,
           name: subcategory.name,
+          status: 'active',
           categoryId: subcategory.categoryId,
         }
       )

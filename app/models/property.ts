@@ -6,6 +6,7 @@ import Category from './category.js'
 import { v4 as uuidv4 } from 'uuid'
 import type { IPropertyType } from '../interfaces/property.js'
 import PropertyFile from './property_file.js'
+import type { IProductStatus } from '#interfaces/product'
 
 export default class Property extends BaseModel {
   @column({ isPrimary: true })
@@ -57,7 +58,7 @@ export default class Property extends BaseModel {
   declare description: string
 
   @column()
-  declare status: 'draft' | 'published' | 'pending' | 'closed' | 'rejected'
+  declare status: IProductStatus
 
   @column()
   declare defaultImageUrl?: string

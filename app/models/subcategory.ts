@@ -1,9 +1,10 @@
 import { DateTime } from 'luxon'
-import { BaseModel, beforeCreate, column, hasOne } from '@adonisjs/lucid/orm'
+import { BaseModel, beforeCreate, beforeUpdate, column, hasOne } from '@adonisjs/lucid/orm'
 import { v4 as uuidv4 } from 'uuid'
 import string from '@adonisjs/core/helpers/string'
 import Category from './category.js'
 import type { HasOne } from '@adonisjs/lucid/types/relations'
+import type { IStatus } from '#interfaces/general'
 
 export default class Subcategory extends BaseModel {
   @column({ isPrimary: true })
@@ -13,10 +14,19 @@ export default class Subcategory extends BaseModel {
   declare categoryId: string
 
   @column()
-  declare categoryName: string
+  declare name: string
 
   @column()
-  declare name: string
+  declare status: IStatus
+
+  @column()
+  declare image?: string | null
+
+  @column()
+  declare meta?: string | null
+
+  @column()
+  declare description: string | null  
 
   @column()
   declare slug: string
@@ -28,13 +38,42 @@ export default class Subcategory extends BaseModel {
   declare updatedAt: DateTime
 
   @beforeCreate()
-  static generateUUID(model: Subcategory) {
-    model.id = uuidv4()
+  static async generateUUID(model: Subcategory) {
+    if (!model.id) {
+      model.id = uuidv4()
+    }
   }
 
   @beforeCreate()
-  static generateSlug(model: Subcategory) {
-    model.slug = string.slug(model.name)
+  static async generateSlug(model: Subcategory) {
+    await this.ensureUniqueSlug(model)
+  }
+
+  @beforeUpdate()
+  static async updateSlug(model: Subcategory) {
+    if (model.$dirty.name) {
+      await this.ensureUniqueSlug(model)
+    }
+  }
+
+  private static async ensureUniqueSlug(model: Subcategory) {
+    const baseSlug = string.slug(model.name)
+    let slug = baseSlug
+    let counter = 1
+
+    while (true) {
+      const existing = await Subcategory.query()
+        .where('slug', slug)
+        .andWhereNot('id', model.id || '')
+        .first()
+
+      if (!existing) break
+
+      slug = `${baseSlug}-${counter}`
+      counter++
+    }
+
+    model.slug = slug
   }
 
   @hasOne(() => Category)
