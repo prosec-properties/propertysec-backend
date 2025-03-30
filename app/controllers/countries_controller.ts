@@ -4,20 +4,9 @@ import { createCountryValidator, updateCountryValidator } from '#validators/loca
 import type { HttpContext } from '@adonisjs/core/http'
 
 export default class CountriesController {
-  public async index({ request, response, logger }: HttpContext) {
+  public async index({ response, logger }: HttpContext) {
     try {
-      const page = request.input('page', 1)
-      const limit = request.input('limit', 20)
-
-      let query = Country.query()
-        .preload('states', (statesQuery) => {
-          statesQuery.preload('cities')
-        })
-        .orderBy('created_at', 'desc')
-
-      const countries = await query.paginate(page, limit)
-
-      console.log(countries.toJSON())
+      const countries = await Country.query().orderBy('created_at', 'desc')
 
       logger.info('Countries fetched successfully')
 
@@ -27,8 +16,8 @@ export default class CountriesController {
         data: countries,
       })
     } catch (error) {
-      logger.error('Error fetching countries from CountriesController.index', error)
-      return response.badRequest(getErrorObject(error))
+      logger.error({ error }, 'Error fetching countries from CountriesController.index')
+      return response.internalServerError(getErrorObject(error))
     }
   }
 
@@ -37,18 +26,19 @@ export default class CountriesController {
       await auth.authenticate()
       const { name } = await request.validateUsing(createCountryValidator)
 
-      await Country.create({
+      const country = await Country.create({
         name,
       })
 
-      logger.info('Country created successfully')
+      logger.info(`Country created successfully with ID: ${country.id}`)
 
       return response.created({
         success: true,
         message: 'Country created successfully',
+        data: { id: country.id },
       })
     } catch (error) {
-      logger.error('Error creating city from CitiesController.store')
+      logger.error({ error }, 'Error creating country from CountriesController.store')
       return response.badRequest(getErrorObject(error))
     }
   }
@@ -58,11 +48,13 @@ export default class CountriesController {
       const country = await Country.query()
         .where('id', params.id)
         .preload('states', (statesQuery) => {
-          statesQuery.preload('cities')
+          statesQuery.orderBy('name').preload('cities', (citiesQuery) => {
+            citiesQuery.orderBy('name')
+          })
         })
         .firstOrFail()
 
-      logger.info('Country fetched successfully')
+      logger.info(`Country fetched successfully with ID: ${params.id}`)
 
       return response.ok({
         success: true,
@@ -70,8 +62,11 @@ export default class CountriesController {
         data: country,
       })
     } catch (error) {
-      logger.error('Error fetching country from CountriesController.show', error)
-      return response.badRequest(getErrorObject(error))
+      logger.error(
+        { error },
+        `Error fetching country with ID: ${params.id} from CountriesController.show`
+      )
+      return response.notFound(getErrorObject(error))
     }
   }
 
@@ -80,23 +75,22 @@ export default class CountriesController {
       await auth.authenticate()
 
       const country = await Country.findByOrFail('id', params.id)
-
       const { name } = await request.validateUsing(updateCountryValidator)
 
-      const payload = {
-        name,
-      }
+      await country.merge({ name }).save()
 
-      await country.merge(payload).save()
-
-      logger.info('Country updated successfully')
+      logger.info(`Country updated successfully with ID: ${params.id}`)
 
       return response.ok({
         success: true,
         message: 'Country updated successfully',
+        data: { id: country.id },
       })
     } catch (error) {
-      logger.error('Error updating country from CountriesController.update')
+      logger.error(
+        { error },
+        `Error updating country with ID: ${params.id} from CountriesController.update`
+      )
       return response.badRequest(getErrorObject(error))
     }
   }
@@ -108,14 +102,18 @@ export default class CountriesController {
 
       await country.delete()
 
-      logger.info('Country deleted successfully')
+      logger.info(`Country deleted successfully with ID: ${params.id}`)
 
       return response.ok({
         success: true,
         message: 'Country deleted successfully',
+        data: { id: params.id },
       })
     } catch (error) {
-      logger.error('Error deleting country from CountriesController.destroy')
+      logger.error(
+        { error },
+        `Error deleting country with ID: ${params.id} from CountriesController.destroy`
+      )
       return response.badRequest(getErrorObject(error))
     }
   }

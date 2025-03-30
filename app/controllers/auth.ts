@@ -213,6 +213,8 @@ export default class AuthController {
 
       const user = auth.user!
 
+      console.log('user', user)
+
       await AuthToken.revokeAuthToken(user)
 
       logger.info('User logged out successfully, from AuthController.logout')

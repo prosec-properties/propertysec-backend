@@ -1,5 +1,5 @@
 import { DateTime } from 'luxon'
-import { BaseModel, beforeCreate, column, hasMany } from '@adonisjs/lucid/orm'
+import { BaseModel, beforeCreate, beforeUpdate, column, hasMany } from '@adonisjs/lucid/orm'
 import hash from '@adonisjs/core/services/hash'
 import { AccessToken, DbAccessTokensProvider } from '@adonisjs/auth/access_tokens'
 import { withAuthFinder } from '@adonisjs/auth/mixins/lucid'
@@ -67,6 +67,61 @@ export default class User extends compose(BaseModel, AuthFinder) {
   @column()
   declare hasCompletedRegistration: boolean
 
+  // Business information
+  @column()
+  declare businessName: string | null
+
+  @column()
+  declare businessRegNo: string | null
+
+  @column()
+  declare businessAddress: string | null
+
+  // Personal information
+  @column()
+  declare nationality: string | null
+
+  @column()
+  declare stateOfResidence: string | null
+
+  @column()
+  declare cityOfResidence: string | null
+
+  @column()
+  declare homeAddress: string | null
+
+  @column()
+  declare stateOfOrigin: string | null
+
+  @column()
+  declare nin: string | null
+
+  @column()
+  declare bvn: string | null
+
+  @column()
+  declare nextOfKin: string | null
+
+  @column()
+  declare religion: string | null
+
+  // Financial information
+  @column()
+  declare monthlySalary: number | null
+
+  @column()
+  declare bankName: string | null
+
+  @column()
+  declare bankAccountNumber: string | null
+
+  @column()
+  declare bankAccountName: string | null
+
+  // Metadata
+  @column()
+  declare meta: string | null
+
   @column.dateTime({ autoCreate: true })
   declare createdAt: DateTime
 
@@ -113,4 +168,35 @@ export default class User extends compose(BaseModel, AuthFinder) {
 
   @hasMany(() => Bank)
   declare banks: HasMany<typeof Bank>
+
+  @beforeCreate()
+  static async createSlug(user: User) {
+    user.id = uuidv4()
+    await this.generateSlug(user)
+  }
+
+  @beforeUpdate()
+  static async updateSlug(user: User) {
+    if (user.$dirty.fullName) {
+      await this.generateSlug(user)
+    }
+  }
+
+  private static async generateSlug(user: User) {
+    const baseSlug = stringHelpers.slug(user.fullName.toLowerCase())
+    let slug = `${baseSlug}-${nanoid(5)}`
+
+    const query = User.query().where('slug', slug)
+    if (user.$isPersisted) {
+      query.whereNot('id', user.id)
+    }
+
+    const existingUser = await query.first()
+
+    if (existingUser) {
+      slug = `${baseSlug}-${nanoid(8)}`
+    }
+
+    user.slug = slug
+  }
 }
