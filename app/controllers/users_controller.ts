@@ -5,6 +5,7 @@ import ProfileFile from '#models/profile_file'
 import { updateProfileValidator } from '#validators/user_profile'
 import type { HttpContext } from '@adonisjs/core/http'
 import hash from '@adonisjs/core/services/hash'
+import { FILE_CATEGORY_ENUM } from '#interfaces/file'
 
 export default class UsersController {
   async me({ auth, response, logger }: HttpContext) {
@@ -101,11 +102,12 @@ export default class UsersController {
 
   private async handleFileUploads(payload: any, userId: string) {
     const fileCategories = {
-      avatarUrl: 'avatar',
-      approvalAgreement: 'approval_agreement',
-      identificationCard: 'identification',
-      powerOfAttorney: 'power_of_attorney',
-    }
+      approvalAgreement: FILE_CATEGORY_ENUM.APPROVAL_AGREEMENT,
+      identificationCard: FILE_CATEGORY_ENUM.ID_CARD,
+      powerOfAttorney: FILE_CATEGORY_ENUM.POWER_OF_ATTORNEY,
+      profileImage: FILE_CATEGORY_ENUM.PROFILE_IMAGE,
+      passport: FILE_CATEGORY_ENUM.PASSPORT,
+    } as const
 
     for (const [field, category] of Object.entries(fileCategories)) {
       if (payload[field]) {
@@ -146,6 +148,7 @@ export default class UsersController {
 
       const { id } = params
       await FilesService.deleteProfileFile(id)
+      await user.load('profileFiles')
 
       return response.ok({
         success: true,

@@ -55,17 +55,27 @@ export const updateProfileValidator = vine.compile(
       .optional(),
     powerOfAttorney: vine
       .array(
-      vine.file({
+        vine.file({
+          size: '10mb',
+          extnames: ACCEPTED_IMAGE_TYPES,
+        })
+      ) 
+      .optional(),
+    profileImage: vine
+      .array(
+        vine.file({
           size: '10mb',
           extnames: ACCEPTED_IMAGE_TYPES,
         })
       )
       .optional(),
-    avatarUrl: vine
-      .file({
-        size: '10mb',
-        extnames: ACCEPTED_IMAGE_TYPES,
-      })
+    idCard: vine
+      .array(
+        vine.file({
+          size: '10mb',
+          extnames: ACCEPTED_IMAGE_TYPES,
+        })
+      )
       .optional(),
   })
 )
