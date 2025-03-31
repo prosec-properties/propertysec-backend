@@ -51,11 +51,18 @@ router
 
     router
       .group(() => {
+        router.get('/users', [UsersController, 'fetchAllUsers'])
+      })
+      .prefix('admin')
+
+    router
+      .group(() => {
         router.get('/me', [UsersController, 'me'])
         router.patch('/update-profile', [UsersController, 'updateProfile'])
         router.delete('/delete-file/:id', [UsersController, 'deleteFile'])
+        router.get('/:id', [UsersController, 'showAUser'])
       })
-      .use(middleware.auth())
+      // .use(middleware.auth())
       .prefix('users')
 
     router

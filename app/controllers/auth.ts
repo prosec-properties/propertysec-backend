@@ -40,7 +40,7 @@ export default class AuthController {
       response.ok({
         success: true,
         message: 'Please verify your email',
-        data: user
+        data: user,
       })
     } catch (error) {
       return response.badRequest(getErrorObject(error))
@@ -74,7 +74,7 @@ export default class AuthController {
 
     try {
       console.log('email', email)
-      
+
       const user = await User.findByOrFail('email', email)
 
       const storedOtp = await Otp.findByOrFail('userId', user.id)
@@ -200,7 +200,8 @@ export default class AuthController {
 
       return response.ok({
         success: true,
-       token,
+        message: 'Registration completed successfully',
+        data: token,
       })
     } catch (error) {
       return response.badRequest(getErrorObject(error))
