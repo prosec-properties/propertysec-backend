@@ -98,11 +98,7 @@ export default class PropertiesController {
             data: property,
           })
         } catch (error) {
-          // If property creation fails, return error
-          return response.badRequest({
-            success: false,
-            message: 'Failed to create property',
-          })
+          return response.badRequest(getErrorObject(error))
         }
       }
 

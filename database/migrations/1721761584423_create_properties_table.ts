@@ -12,6 +12,7 @@ export default class extends BaseSchema {
       table.uuid('id').primary().notNullable().unique().defaultTo(uuidv4())
       table.uuid('user_id').references('id').inTable('users').onDelete('CASCADE')
       table.string('affiliate_id').nullable()
+      table.integer('country_id').references('id').inTable('countries').onDelete('CASCADE')
       table.integer('state_id').references('id').inTable('states')
       table.integer('city_id').references('id').inTable('cities')
       table.string('address').notNullable()
