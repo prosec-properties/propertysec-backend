@@ -30,7 +30,9 @@ export default class AuthController {
 
       const user = await User.create({
         ...payload,
-        emailVerified: false,
+        // emailVerified: false,
+        // disabled for testing
+        emailVerified: true,
         hasCompletedProfile: false,
         hasCompletedRegistration: true,
       })
@@ -213,8 +215,6 @@ export default class AuthController {
       await auth.authenticate()
 
       const user = auth.user!
-
-      console.log('user', user)
 
       await AuthToken.revokeAuthToken(user)
 

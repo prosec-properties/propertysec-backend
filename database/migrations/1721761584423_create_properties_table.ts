@@ -14,7 +14,7 @@ export default class extends BaseSchema {
       table.string('affiliate_id').nullable()
       table.integer('country_id').references('id').inTable('countries').onDelete('CASCADE')
       table.integer('state_id').references('id').inTable('states')
-      table.integer('city_id').references('id').inTable('cities')
+      table.integer('city_id').references('id').inTable('cities').nullable()
       table.string('address').notNullable()
 
       table.string('title').notNullable()

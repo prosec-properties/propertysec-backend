@@ -22,6 +22,7 @@ import StatesController from '#controllers/states_controller'
 import LoansController from '#controllers/loan_controller'
 import ProductsController from '#controllers/products_controller'
 import AffiliatesController from '#controllers/affiliates_controller'
+import CitiesController from '#controllers/cities_controller'
 
 router.get('/', async () => {
   return {
@@ -76,6 +77,7 @@ router
       .group(() => {
         // router.get('/:id', [StatesController, 'show'])
         router.get('/', [StatesController, 'index'])
+        router.get('/cities/:id', [CitiesController, 'getCitiesByCountry'])
       })
       .prefix('states')
 

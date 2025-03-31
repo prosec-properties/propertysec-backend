@@ -16,7 +16,7 @@ export const createPropertyValidator = vine.compile(
     bathrooms: vine.number(),
     toilets: vine.number(),
     street: vine.string(),
-    append: vine.string(),
+    // append: vine.string().nullable(),
 
     stateId: vine.string().exists(async (db, value) => {
       const state = await db.from('states').where('id', value).first()

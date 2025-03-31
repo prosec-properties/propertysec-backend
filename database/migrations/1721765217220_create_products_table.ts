@@ -10,7 +10,7 @@ export default class extends BaseSchema {
       table.uuid('id').primary().defaultTo(uuidv4())
       table.integer('country_id').references('id').inTable('countries').onDelete('CASCADE')
       table.integer('state_id').references('id').inTable('states')
-      table.integer('city_id').references('id').inTable('cities')
+      table.integer('city_id').references('id').inTable('cities').nullable()
       table.uuid('user_id').references('id').inTable('users').onDelete('CASCADE')
       table.uuid('category_id').references('id').inTable('categories').onDelete('CASCADE')
       table.uuid('subcategory_id').references('id').inTable('subcategories').onDelete('CASCADE')
