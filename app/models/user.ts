@@ -1,10 +1,10 @@
 import { DateTime } from 'luxon'
-import { BaseModel, beforeCreate, beforeUpdate, column, hasMany, hasOne } from '@adonisjs/lucid/orm'
+import { BaseModel, beforeCreate, beforeUpdate, column, hasMany } from '@adonisjs/lucid/orm'
 import hash from '@adonisjs/core/services/hash'
 import { AccessToken, DbAccessTokensProvider } from '@adonisjs/auth/access_tokens'
 import { withAuthFinder } from '@adonisjs/auth/mixins/lucid'
 import { compose } from '@adonisjs/core/helpers'
-import type { HasMany, HasOne } from '@adonisjs/lucid/types/relations'
+import type { HasMany } from '@adonisjs/lucid/types/relations'
 import type { IUserRole } from '../interfaces/user.js'
 import { v4 as uuidv4 } from 'uuid'
 import stringHelpers from '@adonisjs/core/helpers/string'
@@ -21,9 +21,7 @@ import Employment from './employment.js'
 import Landlord from './landlord.js'
 import LoanRequest from './loan_request.js'
 import Bank from './bank.js'
-import Country from './country.js'
-import State from './state.js'
-import City from './city.js'
+
 import { IStatus } from '#interfaces/general'
 
 const AuthFinder = withAuthFinder(() => hash.use('scrypt'), {
