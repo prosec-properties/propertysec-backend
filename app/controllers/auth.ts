@@ -54,10 +54,10 @@ export default class AuthController {
     const user = await User.verifyCredentials(payload.email, payload.password)
 
     try {
-      const isEmailVerified = user.emailVerified
-      if (!isEmailVerified) {
-        return response.badRequest(errorResponse('Please verify your email'))
-      }
+      // const isEmailVerified = user.emailVerified
+      // if (!isEmailVerified) {
+      //   return response.badRequest(errorResponse('Please verify your email'))
+      // }
 
       const token = await AuthToken.generateAuthToken(user)
 
