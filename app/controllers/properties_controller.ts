@@ -30,6 +30,64 @@ export default class PropertiesController {
     }
   }
 
+  // async index({ response, request, logger }: HttpContext) {
+  //   try {
+  //     const page = request.input('page', 1)
+  //     const limit = request.input('limit', 20)
+  //     const categories = request.input('categories', '').split(',').filter(Boolean)
+  //     const locations = request.input('locations', '').split(',').filter(Boolean)
+  //     const pricing = request.input('pricing', '').split(',').filter(Boolean)
+
+  //     console.log('pricing', pricing)
+
+  //     const query = Property.query()
+  //       .preload('files')
+  //       .orderBy('created_at', 'desc')
+
+  //     // Apply category filter if provided
+  //     if (categories.length > 0) {
+  //       query.whereIn('category_id', categories)
+  //     }
+
+  //     // Apply location filter if provided
+  //     if (locations.length > 0) {
+  //       query.whereIn('state_id', locations)
+  //     }
+
+  //     // Apply pricing filter if provided
+  //     if (pricing.length > 0) {
+  //       pricing.forEach((priceId: string) => {
+  //         switch (priceId) {
+  //           case '11': // Under ₦100,000
+  //             query.where('price', '<', 100000)
+  //             break
+  //           case '12': // Under ₦150,000
+  //             query.where('price', '<', 150000)
+  //             break
+  //           case '13': // Under ₦200,000
+  //             query.where('price', '<', 200000)
+  //             break
+  //           case '14': // Over ₦200,000
+  //             query.where('price', '>', 200000)
+  //             break
+  //         }
+  //       })
+  //     }
+
+  //     const properties = await query.paginate(page, limit)
+
+  //     logger.info('Properties fetched successfully')
+  //     return response.ok({
+  //       success: true,
+  //       message: 'Properties fetched successfully',
+  //       data: properties.toJSON(),
+  //     })
+  //   } catch (error) {
+  //     console.error(error)
+  //     return response.badRequest(getErrorObject(error))
+  //   }
+  // }
+
   async store({ auth, request, response, logger }: HttpContext) {
     try {
       await auth.authenticate()
@@ -262,4 +320,55 @@ export default class PropertiesController {
       response.badRequest(getErrorObject(error))
     }
   }
+
+  // async search({ response, request, logger }: HttpContext) {
+  //   try {
+  //     const page = request.input('page', 1)
+  //     const limit = request.input('limit', 20)
+  //     const categories = request.input('categories', '').split(',').filter(Boolean)
+  //     const locations = request.input('locations', '').split(',').filter(Boolean)
+  //     const price = request.input('price', '').split(',').filter(Boolean)
+
+  //     const query = Property.query()
+  //       .preload('files')
+  //       .where('status', 'published') // Only show published properties
+  //       .orderBy('created_at', 'desc')
+
+  //     // Apply filters
+  //     if (categories.length) query.whereIn('category_id', categories)
+  //     if (locations.length) query.whereIn('state_id', locations)
+
+  //     if (price.length) {
+  //       const priceConditions = price.map((priceId: any) => {
+  //         switch (priceId) {
+  //           case '11': return ['price', '<', 100000]
+  //           case '12': return ['price', '<', 150000]
+  //           case '13': return ['price', '<', 200000]
+  //           case '14': return ['price', '>', 200000]
+  //           default: return null
+  //         }
+  //       }).filter(Boolean)
+
+  //       if (priceConditions.length) {
+  //         query.where(q => {
+  //           priceConditions.forEach(cond => {
+  //             q.orWhere(...cond)
+  //           })
+  //         })
+  //       }
+  //     }
+
+  //     const properties = await query.paginate(page, limit)
+
+  //     logger.info('Filtered properties fetched successfully')
+  //     return response.ok({
+  //       success: true,
+  //       message: 'Filtered properties fetched successfully',
+  //       data: properties.toJSON(),
+  //     })
+  //   } catch (error) {
+  //     logger.error(error)
+  //     return response.badRequest(getErrorObject(error))
+  //   }
+  // }
 }

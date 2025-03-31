@@ -31,7 +31,6 @@ export default class CategoriesController {
       }
 
       if (type) {
-        console.log('Type:', type)
         query.where('type', type)
       }
 

@@ -105,4 +105,42 @@ export default class CitiesController {
       return response.badRequest(getErrorObject(error))
     }
   }
+
+  public async getCitiesByState({ params, response, logger }: HttpContext) {
+    try {
+      const { stateId } = params
+      const cities = await City.query().where('state_id', stateId).orderBy('name', 'asc')
+
+      logger.info('Cities fetched successfully')
+
+      return response.ok({
+        success: true,
+        message: 'Cities fetched successfully',
+        data: cities,
+      })
+    } catch (error) {
+      logger.error('Error fetching cities from CitiesController.getCitiesByState')
+      return response.badRequest(getErrorObject(error))
+    }
+  }
+
+  public async getCitiesByCountry({ params, response, logger }: HttpContext) {
+    try {
+      // const { countryId } = params
+        console.log('countryId', params.id)
+        // return
+      const cities = await City.query().where('country_id', params.id ).orderBy('name', 'asc')
+
+      logger.info('Cities fetched successfully')
+
+      return response.ok({
+        success: true,
+        message: 'Cities fetched successfully',
+        data: cities,
+      })
+    } catch (error) {
+      logger.error('Error fetching cities from CitiesController.getCitiesByCountry')
+      return response.badRequest(getErrorObject(error))
+    }
+  }
 }
