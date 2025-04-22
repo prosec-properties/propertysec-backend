@@ -19,6 +19,7 @@ import {
 } from '#validators/loan'
 import type { HttpContext } from '@adonisjs/core/http'
 import Bank from '#models/bank'
+import db from '@adonisjs/lucid/services/db'
 
 export default class LoansController {
   async processLoanStep({ auth, request, response, logger }: HttpContext) {
@@ -227,7 +228,6 @@ export default class LoansController {
       }
     )
 
-
     console.log('userIfd', user.id)
 
     await Loan.create({
@@ -267,6 +267,60 @@ export default class LoansController {
           })
         )
       )
+    }
+  }
+
+  async fetchedLoanRequests({ response, request, auth, bouncer }: HttpContext) {
+    try {
+      await auth.authenticate()
+      await bouncer.with('UserPolicy').authorize('isAdmin')
+      const { page = 1, limit = 10 } = request.qs()
+
+      const loans = await Loan.query().preload('user').paginate(page, limit)
+
+      return response.ok({
+        success: true,
+        message: 'Loan users fetched successfully',
+        data: loans,
+      })
+    } catch (error) {
+      return response.badRequest(getErrorObject(error))
+    }
+  }
+
+  async loanStats({ response, auth, bouncer }: HttpContext) {
+    try {
+      await auth.authenticate()
+      await bouncer.with('UserPolicy').authorize('isAdmin')
+
+      const loanStats = await db.from('loans').count('* as totalLoans').first()
+
+      const approvedLoans = await db
+        .query()
+        .from('loans')
+        .where('loan_status', 'approved')
+        .select(db.raw('SUM(CAST(loan_amount AS INTEGER)) as amount'))
+        .first()
+
+      const statusCounts = await db
+        .from('loans')
+        .select('loan_status')
+        .count('* as count')
+        .select(db.raw('SUM(CAST(loan_amount AS INTEGER)) as totalAmount'))
+        .groupBy('loan_status')
+
+      return response.ok({
+        success: true,
+        message: 'Loan stats fetched successfully',
+        data: {
+          totalLoans: loanStats.totalLoans,
+          totalAmount: loanStats.totalAmount,
+          statusCounts,
+          approvedLoans: approvedLoans.amount || 0,
+        },
+      })
+    } catch (error) {
+      return response.badRequest(getErrorObject(error))
     }
   }
 }

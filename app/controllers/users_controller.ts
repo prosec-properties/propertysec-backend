@@ -6,6 +6,7 @@ import { updateProfileValidator } from '#validators/user_profile'
 import type { HttpContext } from '@adonisjs/core/http'
 import hash from '@adonisjs/core/services/hash'
 import { FILE_CATEGORY_ENUM } from '#interfaces/file'
+import db from '@adonisjs/lucid/services/db'
 
 export default class UsersController {
   async me({ auth, response, logger }: HttpContext) {
@@ -166,9 +167,8 @@ export default class UsersController {
       await auth.authenticate()
       await bouncer.with('UserPolicy').authorize('isAdmin')
 
-      // Get query parameters with defaults
-      const page = request.input('page', 1)
-      const perPage = request.input('per_page', 20)
+      const page = Number(request.input('page', 1))
+      const perPage = Number(request.input('per_page', 20))
       const sortBy = request.input('sort_by', 'created_at')
       const order = request.input('order', 'desc')
 
@@ -182,12 +182,22 @@ export default class UsersController {
         .orderBy(validSortBy, orderDirection)
         .paginate(page, perPage)
 
+      const totalUsersCount = await db.from('users').count('* as total').first()
+
+      const activeUsersCount = await db
+        .from('users')
+        .where('email_verified', true)
+        .count('* as total')
+        .first()
+
       return response.ok({
         success: true,
         message: 'Users fetched successfully',
         data: {
           users: users.toJSON().data,
           meta: users.toJSON().meta,
+          totalUsers: totalUsersCount?.total || 0,
+          activeUsers: activeUsersCount?.total || 0,
         },
       })
     } catch (error) {

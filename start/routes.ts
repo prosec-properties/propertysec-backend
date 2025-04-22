@@ -23,6 +23,7 @@ import LoansController from '#controllers/loan_controller'
 import ProductsController from '#controllers/products_controller'
 import AffiliatesController from '#controllers/affiliates_controller'
 import CitiesController from '#controllers/cities_controller'
+import SubscriptionsController from '#controllers/subscriptions_controller'
 
 router.get('/', async () => {
   return {
@@ -124,6 +125,12 @@ router
       .prefix('payment')
 
     router
+      .group(() =>
+        router.get('/subscribed-users', [SubscriptionsController, 'fetchSubscribedUsers'])
+      )
+      .prefix('subscriptions')
+
+    router
       .group(() => {
         router.get('/', [PlansContoller, 'index'])
       })
@@ -140,6 +147,8 @@ router
     router
       .group(() => {
         router.post('/request', [LoansController, 'processLoanStep'])
+        router.get('/loan-requests', [LoansController, 'fetchedLoanRequests'])
+        router.get('/loan-stats', [LoansController, 'loanStats'])
       })
       .prefix('loans')
   })
