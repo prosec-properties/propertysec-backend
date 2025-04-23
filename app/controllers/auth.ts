@@ -19,9 +19,24 @@ import Otp from '#models/otp'
 import { DateTime } from 'luxon'
 
 export default class AuthController {
-  async register({ request, response }: HttpContext) {
+  async register({ request, response, auth }: HttpContext) {
     const payload = await request.validateUsing(registerUserValidator)
+    let isAddedByAdmin = false
+    let meta
+
     try {
+      if (auth.user) {
+        await auth.authenticate()
+        const isAdmin = auth.user?.role === 'admin'
+        if (!isAdmin) {
+          return response.badRequest(errorResponse('You are not authorized to perform this action'))
+        }
+        isAddedByAdmin = true
+        meta = {
+          addedByAdmin: true,
+          addedBy: auth.user?.id,
+        }
+      }
       const userExists = await User.findBy('email', payload.email)
 
       if (userExists) {
@@ -35,6 +50,7 @@ export default class AuthController {
         emailVerified: true,
         hasCompletedProfile: false,
         hasCompletedRegistration: true,
+        meta: JSON.stringify(meta),
       })
 
       await UserService.verifyEmail(user)
@@ -75,7 +91,6 @@ export default class AuthController {
     const { email } = request.body()
 
     try {
-      console.log('email', email)
 
       const user = await User.findByOrFail('email', email)
 

@@ -36,4 +36,28 @@ export default class AdminController {
       return response.internalServerError(getErrorObject(error))
     }
   }
+
+  async deleteUser({ auth, response, params, bouncer }: HttpContext) {
+    try {
+      await auth.authenticate()
+      await bouncer.with('UserPolicy').authorize('isAdmin')
+      const { userId } = params
+      const user = await User.findOrFail(userId)
+
+      const isAdmin = user.role === 'admin'
+      if (isAdmin) {
+        return response.badRequest({
+          success: false,
+          message: 'Cannot delete admin user',
+        })
+      }
+      await user.delete()
+      return response.ok({
+        success: true,
+        message: 'User deleted successfully',
+      })
+    } catch (error) {
+      return response.badRequest(getErrorObject(error))
+    }
+  }
 }

@@ -24,6 +24,7 @@ import ProductsController from '#controllers/products_controller'
 import AffiliatesController from '#controllers/affiliates_controller'
 import CitiesController from '#controllers/cities_controller'
 import SubscriptionsController from '#controllers/subscriptions_controller'
+import AdminController from '#controllers/admin_controller'
 
 router.get('/', async () => {
   return {
@@ -63,8 +64,8 @@ router
         router.patch('/update-profile', [UsersController, 'updateProfile'])
         router.delete('/delete-file/:id', [UsersController, 'deleteFile'])
         router.get('/:id', [UsersController, 'showAUser'])
+        router.delete('/:userId', [AdminController, 'deleteUser'])
       })
-      // .use(middleware.auth())
       .prefix('users')
 
     router
