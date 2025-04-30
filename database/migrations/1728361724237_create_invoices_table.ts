@@ -9,6 +9,7 @@ export default class extends BaseSchema {
     this.schema.createTable(this.tableName, (table) => {
       table.uuid('id').primary().notNullable().unique().defaultTo(uuidv4())
       table.uuid('user_id').references('id').inTable('users').onDelete('CASCADE')
+      table.uuid('plan_id').references('id').inTable('plans').onDelete('CASCADE')
       table.bigint('amount').notNullable()
       table.bigint('vat').notNullable()
       table.bigint('discount').nullable()

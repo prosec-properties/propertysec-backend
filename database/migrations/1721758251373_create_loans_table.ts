@@ -1,4 +1,4 @@
-import { LOAN_AMOUNT_ENUM, LOAN_DURATION_ENUM } from '#interfaces/loan'
+import { LOAN_AMOUNT_ENUM, LOAN_DURATION_ENUM, LOAN_STATUS_ENUM } from '#interfaces/loan'
 import { BaseSchema } from '@adonisjs/lucid/schema'
 import { v4 as uuidv4 } from 'uuid'
 
@@ -12,7 +12,7 @@ export default class extends BaseSchema {
       table.enum('loan_amount', Object.values(LOAN_AMOUNT_ENUM))
       table.float('interest_rate')
       table.enum('loan_duration', Object.values(LOAN_DURATION_ENUM))
-      table.enum('loan_status', ['pending', 'approved', 'rejected', 'disbursed'])
+     table.enum('loan_status', Object.values(LOAN_STATUS_ENUM))
       table.string('reason_for_funds')
       table.boolean('has_completed_form').defaultTo(false)
       table.text('meta').nullable()

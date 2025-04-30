@@ -1,8 +1,9 @@
 import { DateTime } from 'luxon'
-import { afterFetch, BaseModel, beforeCreate, column } from '@adonisjs/lucid/orm'
+import { afterFetch, BaseModel, beforeCreate, column, hasMany } from '@adonisjs/lucid/orm'
 import type { AcceptedCurrencies, PlanName } from '#interfaces/payment'
-// import type { Status } from '#interfaces/general'
 import { v4 as uuidv4 } from 'uuid'
+import type { HasMany } from '@adonisjs/lucid/types/relations'
+import Subscription from './subscription.js'
 
 export default class Plan extends BaseModel {
   @column({ isPrimary: true })
@@ -57,4 +58,7 @@ export default class Plan extends BaseModel {
       }
     })
   }
+
+  @hasMany(() => Subscription)
+  declare subscriptions: HasMany<typeof Subscription>
 }

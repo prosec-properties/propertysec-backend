@@ -1,0 +1,68 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="UTF-8">
+  <title>Invoice {{invoiceNo}}</title>
+  <style>{{styles}}</style>
+</head>
+<body>
+  <div class="header">
+    <h1>INVOICE #{{invoiceNo}}</h1>
+    <p>Issued: {{invoiceDate}}</p>
+  </div>
+
+  <div class="details">
+    <div>
+      <div class="detail-group">
+        <span class="detail-label">BILL TO:</span>
+        <div>{{name}}</div>
+        <div>{{phone}}</div>
+      </div>
+    </div>
+    <div>
+      <div class="detail-group">
+        <span class="detail-label">DUE DATE:</span>
+        <div>{{dueDate}}</div>
+      </div>
+      <div class="detail-group">
+        <span class="detail-label">PAYMENT ID:</span>
+        <div>{{paymentId}}</div>
+      </div>
+    </div>
+  </div>
+
+  <table>
+    <thead>
+      <tr>
+        <th>Description</th>
+        <th>Qty</th>
+        <th>Unit Price</th>
+        <th>Amount</th>
+      </tr>
+    </thead>
+    <tbody>
+      {{tableData}}
+    </tbody>
+  </table>
+
+  <div class="totals">
+    <div class="total-row">
+      <span class="total-label">Subtotal:</span>
+      <span>{{totalNoVat}}</span>
+    </div>
+    <div class="total-row">
+      <span class="total-label">VAT (7.5%):</span>
+      <span>{{vat}}</span>
+    </div>
+    <div class="total-row grand-total">
+      <span class="total-label">TOTAL:</span>
+      <span>{{totalAmountDue}}</span>
+    </div>
+  </div>
+
+  <div class="footer">
+    <p>Please make payment to: {{bankName}} - {{accountName}} ({{accountNo}})</p>
+    <p>Thank you for your business!</p>
+  </div>
+</body>
+</html>

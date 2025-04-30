@@ -1,13 +1,14 @@
 import { DateTime } from 'luxon'
-import { afterCreate, afterFetch, afterFind, afterUpdate, BaseModel, belongsTo, column } from '@adonisjs/lucid/orm'
+import { afterCreate, afterFetch, afterFind, afterUpdate, BaseModel, beforeCreate, belongsTo, column } from '@adonisjs/lucid/orm'
 import { TransferInvoicePdfContentTable } from '#interfaces/transactionPdf'
 import type { BelongsTo } from '@adonisjs/lucid/types/relations'
 import User from './user.js'
 import Subscription from './subscription.js'
+import { v4 as uuidv4 } from 'uuid'
 
 export default class Invoice extends BaseModel {
   @column({ isPrimary: true })
-  declare id: number
+  declare id: string
 
   @column({ serializeAs: 'userId' })
   declare userId: string
@@ -68,6 +69,11 @@ export default class Invoice extends BaseModel {
 
   @column.dateTime({ autoCreate: true, autoUpdate: true })
   declare updatedAt: DateTime
+
+   @beforeCreate()
+   static async createUUID(invoice: Invoice) {
+     invoice.id = uuidv4()
+   }
 
   @afterFetch()
    static async afterFetchHook(_: Invoice[]) {
