@@ -67,7 +67,7 @@ export default class PaymentsController {
                 },
                 user,
               })
-            ).toString('base64'),
+            ),
           }
         } else {
           const totalAmountToPay = Math.floor(

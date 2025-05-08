@@ -25,6 +25,7 @@ import AffiliatesController from '#controllers/affiliates_controller'
 import CitiesController from '#controllers/cities_controller'
 import SubscriptionsController from '#controllers/subscriptions_controller'
 import AdminController from '#controllers/admin_controller'
+import InvoicesController from '#controllers/invoices_controller'
 
 router.get('/', async () => {
   return {
@@ -124,6 +125,13 @@ router
       })
       .use(middleware.auth())
       .prefix('payment')
+
+    router
+      .group(() => {
+        router.get('/:invoiceId', [InvoicesController, 'getInvoice'])
+      })
+      .use(middleware.auth())
+      .prefix('invoices')
 
     router
       .group(() =>

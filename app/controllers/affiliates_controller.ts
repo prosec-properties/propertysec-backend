@@ -63,11 +63,21 @@ export default class AffiliatesController {
       await auth.authenticate()
       const user = auth.user!
 
-      const properties = await Property.query()
-        .where('status', 'published')
-        .where('affiliate_id', user.id)
-        .preload('files')
-        .orderBy('created_at', 'desc')
+      // Get all active affiliate entries for the current user
+      const affiliateEntries = await Affiliate.query()
+        .where('affiliateUserId', user.id)
+        .where('isActive', true)
+
+      const propertyIds = affiliateEntries.map(entry => entry.propertyId)
+
+      let affiliatedProperties: Property[] = []
+      if (propertyIds.length > 0) {
+        affiliatedProperties = await Property.query()
+          .whereIn('id', propertyIds)
+          .where('status', 'published') // Assuming properties have their own published status
+          .preload('files')
+          .orderBy('created_at', 'desc')
+      }
 
       const myProducts = await Product.query()
         // .where('status', 'published')
@@ -75,15 +85,13 @@ export default class AffiliatesController {
         .preload('files')
         .orderBy('created_at', 'desc')
 
-      console.log('myProducts', myProducts)
-
       return response.ok({
         success: true,
         message: 'Shop items fetched successfully',
         data: {
-          properties,
+          properties: affiliatedProperties, 
           products: myProducts,
-          totalItems: properties.length + myProducts.length,
+          totalItems: affiliatedProperties.length + myProducts.length,
         },
       })
     } catch (error) {
