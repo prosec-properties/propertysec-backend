@@ -149,7 +149,10 @@ router
     router
       .group(() => {
         router.post('/', [TransactionsController, 'store'])
+        router.get('/', [TransactionsController, 'index'])
+        router.get('/:reference', [TransactionsController, 'show'])
       })
+
       .use(middleware.auth())
       .prefix('transactions')
 

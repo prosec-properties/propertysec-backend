@@ -5,6 +5,7 @@ import type { BelongsTo } from '@adonisjs/lucid/types/relations'
 import User from './user.js'
 import Subscription from './subscription.js'
 import { v4 as uuidv4 } from 'uuid'
+import Transaction from './transaction.js'
 
 export default class Invoice extends BaseModel {
   @column({ isPrimary: true })
@@ -110,9 +111,9 @@ export default class Invoice extends BaseModel {
   })
   declare admin: BelongsTo<typeof User>
 
-  // @belongsTo(() => Plan)
-  // declare plan: BelongsTo<typeof Plan>
-
   @belongsTo(() => Subscription)
   declare subscription: BelongsTo<typeof Subscription>
+
+  @belongsTo(() => Transaction)
+  declare transaction: BelongsTo<typeof Transaction>
 }

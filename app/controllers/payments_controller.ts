@@ -67,7 +67,7 @@ export default class PaymentsController {
                 },
                 user,
               })
-            ),
+            ).toString(),
           }
         } else {
           const totalAmountToPay = Math.floor(
@@ -142,7 +142,7 @@ export default class PaymentsController {
             acctName: invoice.accountName,
             planName: plan.name,
             planDuration: String(plan.duration),
-            pdfUrl: `data:application/pdf;base64,${pdfBuffer.toString('base64')}`,
+            pdfUrl: `data:application/pdf;base64,${pdfBuffer.toString()}`,
           }
         }
         logger.info('Payment credentials saved to the database')

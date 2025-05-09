@@ -49,15 +49,18 @@ export default class TransactionsController {
   public async show({ auth, request, response, bouncer }: HttpContext) {
     try {
       await auth.authenticate()
-      const { id } = request.params()
+      const { reference } = request.params()
 
-      const transaction = await Transaction.query().where('id', id).firstOrFail()
+      const transaction = await Transaction.query()
+        .where('reference', reference)
+        .preload('invoice')
+        .firstOrFail()
 
       await bouncer.with('TransactionPolicy').authorize('view', transaction)
 
       return response.ok({
         message: 'Transaction fetched successfully!',
-        transaction,
+        data: transaction,
       })
     } catch (error) {
       return response.badRequest(getErrorObject(error))

@@ -5,12 +5,20 @@ import path from 'node:path'
 import { formatPrice } from '#helpers/payment'
 import User from '#models/user'
 import Invoice from '#models/invoice'
+import Transaction from '#models/transaction'
 import app from '@adonisjs/core/services/app'
 import logger from '@adonisjs/core/services/logger'
 
 type IGeneratePDF =
   | {
       type: 'transfer-invoice'
+      user: User
+      data: {
+        invoice: Invoice
+      }
+    }
+  | {
+      type: 'receipt'
       user: User
       data: {
         invoice: Invoice
@@ -77,7 +85,7 @@ class PdfService {
     }
   }
 
-  public async generatePDF(params: IGeneratePDF){
+  public async generatePDF(params: IGeneratePDF) {
     await this.initialize()
     if (!this.browser) throw new Error('Browser initialization failed')
 
@@ -107,6 +115,8 @@ class PdfService {
     switch (params.type) {
       case 'transfer-invoice':
         return this.generateTransferInvoiceHtml(params.user, params.data.invoice)
+      case 'receipt':
+        return this.generateReceiptHtml(params.user, params.data.invoice)
       case 'table':
         return this.generateTableHtml(params)
       default:
@@ -116,19 +126,338 @@ class PdfService {
 
   private async generateTransferInvoiceHtml(user: User, invoice: Invoice): Promise<string> {
     const templatePath = path.join(this.TEMPLATE_DIR, this.DEFAULT_TEMPLATE)
-    
+
     try {
       await this.ensureTemplateExists(templatePath)
       let html = await fs.readFile(templatePath, 'utf-8')
-      
+
       const replacements = {
         ...this.getInvoiceReplacements(user, invoice),
         '{{styles}}': this.DEFAULT_STYLES,
       }
-      
+
       return this.applyReplacements(html, replacements)
     } catch (error) {
       logger.error('Invoice HTML generation failed', { error, user, invoice })
+      throw error
+    }
+  }
+
+  private async generateReceiptHtml(user: User, invoice: Invoice): Promise<string> {
+    try {
+      if (!invoice.transaction) {
+        await invoice.load('transaction')
+      }
+
+      const transaction = invoice.transaction
+      const transactionPlan = invoice.subscription?.plan
+
+      // Also load the plan data if applicable
+      // if (invoice.planId && transaction) {
+      //   await transaction.load('plan')
+      // }
+
+      const receiptStyles = `
+        body { 
+          font-family: Arial, sans-serif; 
+          margin: 20px; 
+          color: #333; 
+          line-height: 1.6;
+        }
+        .container {
+          max-width: 800px;
+          margin: 0 auto;
+          padding: 20px;
+          background-color: white;
+          box-shadow: 0 0 10px rgba(0,0,0,0.1);
+          border-radius: 8px;
+        }
+        h1 {
+          text-align: center;
+          font-size: 24px;
+          color: #333;
+          margin-bottom: 10px;
+        }
+        p.thank-you {
+          text-align: center;
+          color: #666;
+          margin-bottom: 30px;
+        }
+        .grid {
+          display: grid;
+          grid-template-columns: 1fr 1fr;
+          gap: 20px;
+          margin-bottom: 20px;
+        }
+        .grid-item {
+          margin-bottom: 15px;
+        }
+        .label {
+          font-size: 12px;
+          font-weight: bold;
+          color: #666;
+          margin-bottom: 5px;
+          text-transform: uppercase;
+        }
+        .value {
+          font-size: 16px;
+          color: #333;
+        }
+        .success {
+          color: #2ecc71;
+          font-weight: bold;
+        }
+        .warning {
+          color: #f39c12;
+          font-weight: bold;
+        }
+        .error {
+          color: #e74c3c;
+          font-weight: bold;
+        }
+        .narration {
+          background-color: #f8f9fa;
+          padding: 15px;
+          border-radius: 6px;
+          margin-bottom: 20px;
+        }
+        .features {
+          margin-top: 20px;
+          margin-bottom: 20px;
+        }
+        .features h2 {
+          font-size: 18px;
+          color: #444;
+          margin-bottom: 10px;
+        }
+        .features ul {
+          list-style-type: disc;
+          padding-left: 20px;
+          color: #555;
+        }
+        .footer {
+          text-align: center;
+          margin-top: 30px;
+          color: #777;
+        }
+      `
+
+      const formatDate = (date: string | DateTime | Date): string => {
+        if (!date) return 'N/A'
+        try {
+          if (typeof date === 'string') {
+            return DateTime.fromISO(date).setZone('Africa/Lagos').toFormat('dd MMM yyyy, hh:mm a')
+          }
+          const dt = date instanceof DateTime ? date : DateTime.fromJSDate(date)
+          return dt.setZone('Africa/Lagos').toFormat('dd MMM yyyy, hh:mm a')
+        } catch (e) {
+          return date.toString()
+        }
+      }
+
+      let featuresHtml = ''
+      if (transactionPlan?.features && transactionPlan.features.length > 0) {
+        const featuresList = JSON.parse(transactionPlan.features)
+          .map((feature: string) => `<li>${feature}</li>`)
+          .join('')
+
+        featuresHtml = `
+          <div class="features">
+            <h2>Plan Features</h2>
+            <ul>${featuresList}</ul>
+          </div>
+        `
+      }
+
+      let narrationHtml = ''
+      if (transaction?.narration) {
+        narrationHtml = `
+          <div class="narration">
+            <div class="label">Narration</div>
+            <p>${transaction.narration}</p>
+          </div>
+        `
+      }
+
+      let verifyNarrationHtml = ''
+      if (transaction?.verifyNarration) {
+        verifyNarrationHtml = `
+          <div class="narration">
+            <div class="label">Verification Notes</div>
+            <p>${transaction.verifyNarration}</p>
+          </div>
+        `
+      }
+
+      let statusClass = ''
+      if (transaction?.status === 'SUCCESS') {
+        statusClass = 'success'
+      } else if (transaction?.status === 'PENDING') {
+        statusClass = 'warning'
+      } else {
+        statusClass = 'error'
+      }
+
+      // Handle different amount display
+      let originalAmountHtml = ''
+      if (
+        transaction &&
+        typeof transaction.amount === 'number' &&
+        transaction.amount !== transaction.actualAmount
+      ) {
+        originalAmountHtml = `
+          <div class="grid-item">
+            <div class="label">Original Amount</div>
+            <div class="value">${formatPrice(transaction.amount)}</div>
+          </div>
+        `
+      }
+
+      // Handle discount display
+      let discountHtml = ''
+      if (transactionPlan?.discountPercentage && transactionPlan.discountPercentage > 0) {
+        discountHtml = `
+          <div class="grid-item">
+            <div class="label">Discount</div>
+            <div class="value">${transactionPlan.discountPercentage}%</div>
+          </div>
+        `
+      }
+
+      // Handle session ID display
+      let sessionIdHtml = ''
+      if (transaction?.sessionId) {
+        sessionIdHtml = `
+          <div class="grid-item">
+            <div class="label">Session ID</div>
+            <div class="value">${transaction.sessionId}</div>
+          </div>
+        `
+      }
+
+      // Handle plan details
+      let planNameHtml = ''
+      if (transactionPlan?.name) {
+        planNameHtml = `
+          <div class="grid-item">
+            <div class="label">Plan Name</div>
+            <div class="value">${transactionPlan?.name}</div>
+          </div>
+        `
+      }
+
+      let planDurationHtml = ''
+      if (transactionPlan?.duration) {
+        planDurationHtml = `
+          <div class="grid-item">
+            <div class="label">Plan Duration</div>
+            <div class="value">${transactionPlan?.duration} days</div>
+          </div>
+        `
+      }
+
+      // Handle verification status
+      let verificationStatusHtml = ''
+      if (transaction?.isVerified !== undefined) {
+        const verificationClass = transaction.isVerified ? 'success' : 'error'
+        verificationStatusHtml = `
+          <div class="grid-item">
+            <div class="label">Verification Status</div>
+            <div class="value ${verificationClass}">
+              ${transaction.isVerified ? 'Verified' : 'Not Verified'}
+            </div>
+          </div>
+        `
+      }
+
+      // Create the currency display
+      let currencyHtml = ''
+      if (transaction?.currency) {
+        currencyHtml = `
+          <div class="grid-item">
+            <div class="label">Currency</div>
+            <div class="value">${transaction.currency}</div>
+          </div>
+        `
+      }
+
+      // Generate the HTML
+      const receiptHtml = `
+        <!DOCTYPE html>
+        <html>
+        <head>
+          <meta charset="UTF-8">
+          <title>Payment Receipt</title>
+          <style>${receiptStyles}</style>
+        </head>
+        <body>
+          <div class="container">
+            <h1>Payment Receipt</h1>
+            <p class="thank-you">Thank you for your payment, ${user.email || 'customer'}!</p>
+            
+            <div class="grid">
+              <div class="grid-item">
+                <div class="label">Transaction Reference</div>
+                <div class="value">${transaction?.reference || 'N/A'}</div>
+              </div>
+              <div class="grid-item">
+                <div class="label">Transaction ID</div>
+                <div class="value">${transaction?.id || 'N/A'}</div>
+              </div>
+              <div class="grid-item">
+                <div class="label">Payment Status</div>
+                <div class="value ${statusClass}">${transaction?.status || 'N/A'}</div>
+              </div>
+              ${
+                transaction?.providerStatus
+                  ? `
+                <div class="grid-item">
+                  <div class="label">Provider Status</div>
+                  <div class="value">${transaction.providerStatus}</div>
+                </div>
+              `
+                  : ''
+              }
+              <div class="grid-item">
+                <div class="label">Amount Paid</div>
+                <div class="value">${formatPrice(transaction?.actualAmount || 0)}</div>
+              </div>
+              ${originalAmountHtml}
+              ${discountHtml}
+              <div class="grid-item">
+                <div class="label">Payment Method (Provider)</div>
+                <div class="value">${transaction?.provider || 'N/A'}</div>
+              </div>
+              <div class="grid-item">
+                <div class="label">Transaction Type</div>
+                <div class="value">${transaction?.type || 'N/A'}</div>
+              </div>
+              ${sessionIdHtml}
+              <div class="grid-item">
+                <div class="label">Date of Transaction</div>
+                <div class="value">${formatDate(transaction?.date || transaction?.createdAt)}</div>
+              </div>
+              ${planNameHtml}
+              ${planDurationHtml}
+              ${currencyHtml}
+              ${verificationStatusHtml}
+            </div>
+            
+            ${narrationHtml}
+            ${verifyNarrationHtml}
+            ${featuresHtml}
+            
+            <div class="footer">
+              <p>If you have any questions, please contact our support team.</p>
+            </div>
+          </div>
+        </body>
+        </html>
+      `
+
+      return receiptHtml
+    } catch (error) {
+      logger.error('Receipt HTML generation failed', { error, user, invoice })
       throw error
     }
   }
@@ -321,10 +650,12 @@ class PdfService {
 
     return params.payload
       .map((data, index) => {
-        const cells = params.selectedHeaders!.map((key) => {
-          const value = key === 'S/N' ? index + 1 : data[key] ?? ''
-          return `<td>${value}</td>`
-        }).join('')
+        const cells = params
+          .selectedHeaders!.map((key) => {
+            const value = key === 'S/N' ? index + 1 : (data[key] ?? '')
+            return `<td>${value}</td>`
+          })
+          .join('')
 
         return `<tr>${cells}</tr>`
       })

@@ -6,12 +6,14 @@ import {
   beforeCreate,
   belongsTo,
   column,
+  hasOne,
 } from '@adonisjs/lucid/orm'
 import type { AcceptedCurrencies, TransactionStatus, TransactionType } from '#interfaces/payment'
 import { v4 as uuidv4 } from 'uuid'
-import type { BelongsTo } from '@adonisjs/lucid/types/relations'
+import type { BelongsTo, HasOne } from '@adonisjs/lucid/types/relations'
 import User from './user.js'
 import Payment from './payment.js'
+import Invoice from './invoice.js'
 
 export default class Transaction extends BaseModel {
   @column({ isPrimary: true })
@@ -108,4 +110,7 @@ export default class Transaction extends BaseModel {
 
   @belongsTo(() => Payment)
   declare payment: BelongsTo<typeof Payment>
+
+  @hasOne(() => Invoice)
+  declare invoice: HasOne<typeof Invoice>
 }

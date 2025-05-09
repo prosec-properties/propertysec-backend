@@ -30,11 +30,8 @@ export default class InvoicesController {
         })
       }
 
-      // Optionally, regenerate PDF URL if needed or ensure it's stored/retrievable
-      // For simplicity, assuming invoice model might store enough details or PDF path
-      // If PDF needs to be generated on-the-fly like in PaymentsController:
       const pdfBuffer = await pdf.generatePDF({
-        type: 'transfer-invoice', // Or a more generic 'invoice' type if you create one
+        type: 'transfer-invoice',
         data: {
           invoice: invoice,
         },
@@ -43,7 +40,7 @@ export default class InvoicesController {
 
       const responseData = {
         ...invoice.serialize(),
-        pdfUrl: `data:application/pdf;base64,${pdfBuffer.toString('base64')}`,
+        pdfUrl: `data:application/pdf;base64,${pdfBuffer.toString()}`,
       }
 
       return response.ok({
