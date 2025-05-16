@@ -162,3 +162,39 @@ export type PaymentCredentials = {
   planName?: string,
   planDuration?: string,
 }
+
+export interface PaystackPlanResponse {
+  status: boolean;
+  message: string;
+  data: {
+    name: string;
+    amount: number;
+    interval: string;
+    integration: number;
+    domain: string;
+    plan_code: string;
+    send_invoices: boolean;
+    send_sms: boolean;
+    hosted_page: boolean;
+    currency: string;
+    id: number;
+    createdAt: string; // ISO date string
+    updatedAt: string; // ISO date string
+  };
+}
+
+export interface PaystackCustomerResponse {
+  status: boolean;
+  message: string;
+  data: {
+    email: string;
+    integration: number;
+    domain: string;
+    customer_code: string;
+    id: number;
+    identified: boolean;
+    identifications: any | null; // You can replace 'any' with a more specific type if known
+    createdAt: string; // ISO date string
+    updatedAt: string; // ISO date string
+  };
+}

@@ -69,7 +69,7 @@ export default class TransactionsController {
 
   async store({ auth, response, request, logger }: HttpContext) {
     try {
-      await auth.authenticate()
+      const user = await auth.authenticate()
       const { reference, planId } = await request.validateUsing(
         vine.compile(
           vine.object({
@@ -78,7 +78,6 @@ export default class TransactionsController {
           })
         )
       )
-      const user = auth.user!
 
       const paystackPaymentData = await PaymentService.verifyTransaction({
         provider: 'paystack',
@@ -110,7 +109,7 @@ export default class TransactionsController {
         providerResponse: JSON.stringify(paystackPaymentData),
       })
 
-      Subscription.create({
+      const sub = await Subscription.create({
         userId: user.id,
         planId: plan.id,
         startDate: DateTime.now().toISO(),
@@ -118,8 +117,15 @@ export default class TransactionsController {
         totalPrice: plan.price,
       })
 
+      user.subscriptionId = sub.id
+      user.subscriptionStatus = 'active'
+      user.subscriptionEndDate = sub.endDate
+      user.subscriptionStartDate = sub.startDate
+      
+      await user.save()
+
       // handle subscription payment
-      logger.info('Paystack Payment Data:', paystackPaymentData)
+      logger.info(paystackPaymentData, 'Paystack Payment Data dd:')
 
       return response.ok({
         message: 'Transaction created successfully!',

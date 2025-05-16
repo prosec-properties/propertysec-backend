@@ -26,6 +26,7 @@ import CitiesController from '#controllers/cities_controller'
 import SubscriptionsController from '#controllers/subscriptions_controller'
 import AdminController from '#controllers/admin_controller'
 import InvoicesController from '#controllers/invoices_controller'
+import SettingsController from '#controllers/settings_controller'
 
 router.get('/', async () => {
   return {
@@ -163,6 +164,13 @@ router
         router.get('/loan-stats', [LoansController, 'loanStats'])
       })
       .prefix('loans')
+
+    router
+      .group(() => {
+        router.get('/', [SettingsController, 'show'])
+        router.patch('/', [SettingsController, 'update'])
+      })
+      .prefix('settings')
   })
   .prefix('api/v1')
 // .use(middleware.rateLimit(['100', '900']))

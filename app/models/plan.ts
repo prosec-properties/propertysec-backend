@@ -31,6 +31,9 @@ export default class Plan extends BaseModel {
   @column()
   declare meta?: string
 
+  // @column()
+  // declare paystackPlanId?: string
+
   @column({ serializeAs: 'discountPercentage' })
   declare discountPercentage?: number
 

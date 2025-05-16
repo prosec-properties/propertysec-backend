@@ -17,6 +17,9 @@ export default class UsersController {
         .preload('properties')
         .preload('propertyAccessRequests')
         .preload('profileFiles')
+        .preload('subscription', (query) => {
+          query.preload('plan')
+        })
         .first()
 
       return response.ok({

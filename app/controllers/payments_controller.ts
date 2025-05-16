@@ -26,8 +26,6 @@ export default class PaymentsController {
       const user = auth.user!
       const plan = await Plan.findByOrFail('id', planId)
 
-      console.log('Payload :', { planId, type })
-
       const generatedReference = nanoid(10)
 
       let responseObj: PaymentCredentials = {
@@ -165,6 +163,7 @@ export default class PaymentsController {
             amount,
             email: user.email,
             label: user.fullName,
+            ref: responseObj.reference,
             channels: ['card', 'bank', 'ussd', 'qr', 'mobile_money', 'bank_transfer'],
             metadata: {
               planId: plan.id,

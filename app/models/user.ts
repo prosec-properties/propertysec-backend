@@ -1,10 +1,10 @@
 import { DateTime } from 'luxon'
-import { BaseModel, beforeCreate, beforeUpdate, column, hasMany } from '@adonisjs/lucid/orm'
+import { BaseModel, beforeCreate, beforeUpdate, belongsTo, column, hasMany } from '@adonisjs/lucid/orm'
 import hash from '@adonisjs/core/services/hash'
 import { AccessToken, DbAccessTokensProvider } from '@adonisjs/auth/access_tokens'
 import { withAuthFinder } from '@adonisjs/auth/mixins/lucid'
 import { compose } from '@adonisjs/core/helpers'
-import type { HasMany } from '@adonisjs/lucid/types/relations'
+import type { BelongsTo, HasMany } from '@adonisjs/lucid/types/relations'
 import type { IUserRole } from '../interfaces/user.js'
 import { v4 as uuidv4 } from 'uuid'
 import stringHelpers from '@adonisjs/core/helpers/string'
@@ -23,6 +23,7 @@ import LoanRequest from './loan_request.js'
 import Bank from './bank.js'
 
 import { IStatus } from '#interfaces/general'
+import Subscription from './subscription.js'
 
 const AuthFinder = withAuthFinder(() => hash.use('scrypt'), {
   uids: ['email'],
@@ -129,10 +130,10 @@ export default class User extends compose(BaseModel, AuthFinder) {
   declare subscriptionStatus: IStatus | null
 
   @column()
-  declare subscriptionStartDate: DateTime | null
+  declare subscriptionStartDate: string | null
 
   @column()
-  declare subscriptionEndDate: DateTime | null
+  declare subscriptionEndDate: string | null
 
 
   // Metadata
@@ -185,6 +186,9 @@ export default class User extends compose(BaseModel, AuthFinder) {
 
   @hasMany(() => Bank)
   declare banks: HasMany<typeof Bank>
+
+  @belongsTo(() => Subscription)
+  declare subscription: BelongsTo<typeof Subscription>
 
   @beforeCreate()
   static async createSlug(user: User) {

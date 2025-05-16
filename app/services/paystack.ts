@@ -1,6 +1,6 @@
 import env from '#start/env'
 import axios, { AxiosInstance } from 'axios'
-import { PaystackVerifyTransactionResponse } from '../interfaces/payment.js'
+import { PaystackCustomerResponse, PaystackPlanResponse, PaystackVerifyTransactionResponse } from '../interfaces/payment.js'
 import logger from '@adonisjs/core/services/logger'
 
 class PaystackService {
@@ -32,6 +32,34 @@ class PaystackService {
         error,
         `PaystackService.verifyTransaction Error Verifying transaction ${reference}`
       )
+      this.handleError(error)
+    }
+  }
+
+  async createPlan(payload: {
+    name: string
+    amount: number
+    interval: 'daily' | 'weekly' | 'monthly' | 'quarterly' | 'biannually' | 'annually'
+  }) {
+    try {
+      const { data } = await this.$axios.post<PaystackPlanResponse>(`/plan`, payload)
+
+      return data.data
+    } catch (error) {
+      this.handleError(error)
+    }
+  }
+
+  async createCustomer(payload:{
+    email: string
+    firstName?: string
+    lastName?: string
+    phone?: string
+  }){
+    try {
+      const { data } = await this.$axios.post<PaystackCustomerResponse>(`/customer`, payload)
+      return data.data
+    } catch (error) {
       this.handleError(error)
     }
   }

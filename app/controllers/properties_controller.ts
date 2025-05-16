@@ -6,7 +6,6 @@ import FilesService from '#services/files'
 import PropertyFile from '#models/property_file'
 import { MultipartFile } from '@adonisjs/core/bodyparser'
 import { NIGERIA_COUNTRY_ID } from '#constants/general'
-import Subscription from '#models/subscription'
 
 export default class PropertiesController {
   async index({ response, request, logger }: HttpContext) {
@@ -14,7 +13,51 @@ export default class PropertiesController {
       const page = request.input('page', 1)
       const limit = request.input('limit', 20)
 
+      const { status, categories, locations, pricing, search } = request.qs()
+
       const properties = await Property.query()
+        .if(status, (query) => {
+          query.where('status', status)
+        })
+        .if(search, (query) => {
+          query.where('title', 'ilike', `%${search}%`)
+        })
+        .if(categories, (query) => {
+          const parsedCategories = JSON.parse(categories)
+          if (Array.isArray(parsedCategories)) {
+            query.whereIn('categoryId', parsedCategories)
+          }
+        })
+        .if(locations, (query) => {
+          const parsedLocations = JSON.parse(locations)
+          if (Array.isArray(parsedLocations)) {
+            query.whereIn('stateId', parsedLocations)
+          }
+        })
+        .if(pricing, (query) => {
+          const parsedPricing = JSON.parse(pricing)
+          // Check if pricing is an array
+          const pricingArray = Array.isArray(parsedPricing) ? parsedPricing : [parsedPricing]
+
+          // Process each pricing filter
+          pricingArray.forEach((priceFilter) => {
+            // Extract the numeric part and the operator (+ or -)
+            const match = priceFilter.match(/(\d+)([+-])/)
+
+            if (match) {
+              const [, priceValue, operator] = match
+              const price = parseInt(priceValue, 10)
+
+              if (operator === '+') {
+                // Price above the specified value
+                query.where('price', '>=', price)
+              } else if (operator === '-') {
+                // Price below the specified value
+                query.where('price', '<=', price)
+              }
+            }
+          })
+        })
         .preload('files')
         .orderBy('created_at', 'desc')
         .paginate(page, limit)
@@ -35,15 +78,13 @@ export default class PropertiesController {
     try {
       await auth.authenticate()
       const user = auth.user!
-      const subscription = await Subscription.query()
-        .where('userId', user.id)
-        .where('status', 'active')
-        .first()
+
+      const isSubscribed = user.subscriptionStatus === 'active'
       const { files, ...payload } = await request.validateUsing(createPropertyValidator)
 
       if (files && Array.isArray(files)) {
         for (const file of files) {
-          if (file.type?.startsWith('video/') && !subscription) {
+          if (file.type?.startsWith('video/') && !isSubscribed) {
             return response.forbidden({
               success: false,
               message: 'Only subscribed users can upload videos.',
@@ -70,7 +111,7 @@ export default class PropertiesController {
         try {
           property = await Property.create({
             ...payload,
-            status: 'pending',
+            status: 'draft',
             userId: user.id,
             availability: 'available',
             views: 0,
@@ -143,10 +184,8 @@ export default class PropertiesController {
     try {
       await auth.authenticate()
       const user = auth.user!
-      const subscription = await Subscription.query()
-        .where('userId', user.id)
-        .where('status', 'active')
-        .first()
+      const isSubscribed = user.subscriptionStatus === 'active'
+
       const property = await Property.findOrFail(params.id)
       const payload = await request.validateUsing(updatePropertyValidator)
 
@@ -163,7 +202,7 @@ export default class PropertiesController {
 
       if (payload.files && Array.isArray(payload.files)) {
         for (const file of payload.files) {
-          if (file.type?.startsWith('video/') && !subscription) {
+          if (file.type?.startsWith('video/') && !isSubscribed) {
             return response.forbidden({
               success: false,
               message: 'Only subscribed users can upload videos.',
@@ -236,7 +275,51 @@ export default class PropertiesController {
       const page = request.input('page', 1)
       const limit = request.input('limit', 10)
 
+      const { status, categories, locations, pricing, search } = request.qs()
+
       const properties = await Property.query()
+        .if(status, (query) => {
+          query.where('status', status)
+        })
+        .if(search, (query) => {
+          query.where('title', 'ilike', `%${search}%`)
+        })
+        .if(categories, (query) => {
+          const parsedCategories = JSON.parse(categories)
+          if (Array.isArray(parsedCategories)) {
+            query.whereIn('categoryId', parsedCategories)
+          }
+        })
+        .if(locations, (query) => {
+          const parsedLocations = JSON.parse(locations)
+          if (Array.isArray(parsedLocations)) {
+            query.whereIn('stateId', parsedLocations)
+          }
+        })
+        .if(pricing, (query) => {
+          const parsedPricing = JSON.parse(pricing)
+          // Check if pricing is an array
+          const pricingArray = Array.isArray(parsedPricing) ? parsedPricing : [parsedPricing]
+
+          // Process each pricing filter
+          pricingArray.forEach((priceFilter) => {
+            // Extract the numeric part and the operator (+ or -)
+            const match = priceFilter.match(/(\d+)([+-])/)
+
+            if (match) {
+              const [, priceValue, operator] = match
+              const price = parseInt(priceValue, 10)
+
+              if (operator === '+') {
+                // Price above the specified value
+                query.where('price', '>=', price)
+              } else if (operator === '-') {
+                // Price below the specified value
+                query.where('price', '<=', price)
+              }
+            }
+          })
+        })
         .where('userId', user.id)
         .preload('files')
         .orderBy('created_at', 'desc')

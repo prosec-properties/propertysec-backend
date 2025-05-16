@@ -110,6 +110,7 @@ export default class FilesService {
         const uploadPromises = filesToUpload.map((file) =>
           aws.ImageUpload(file).catch((e): ImageUploadInterface => {
             console.error(file, 'Failed to upload file: %s', e.message)
+            console.log('error', e)
             return {
               filename: '',
               url: '',

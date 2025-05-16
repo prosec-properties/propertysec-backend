@@ -1,5 +1,9 @@
+import { AcceptedCurrencies, PlanName } from '#interfaces/payment'
 import Plan from '#models/plan'
+import paystack from '#services/paystack'
 import { BaseSeeder } from '@adonisjs/lucid/seeders'
+import { v4 as uuidv4 } from 'uuid'
+
 
 const mockFeatures = {
   VIP: ['10 uploads.', '24 hours renewal.', 'Public visit.', '', ''],
@@ -21,8 +25,7 @@ const mockFeatures = {
 export default class extends BaseSeeder {
   async run() {
     const uniqueKey = 'duration'
-
-    await Plan.updateOrCreateMany(uniqueKey, [
+    const plans = [
       {
         name: 'VIP',
         features: JSON.stringify(mockFeatures.VIP),
@@ -98,6 +101,39 @@ export default class extends BaseSeeder {
         duration: 6,
         order: 2,
       },
-    ])
+    ]
+
+    for (const plan of plans) {
+      await Plan.updateOrCreate(
+        {
+          name: plan.name as PlanName,
+        },
+        {
+          id: uuidv4(),
+          name: plan.name as PlanName,
+          price: plan.price,
+          features: plan.features,
+          currency: plan.currency as AcceptedCurrencies,
+          duration: plan.duration,
+          order: plan.order,
+        }
+      )
+    }
+
+    // await Plan.updateOrCreateMany(uniqueKey, [])
+
+    // const allPlans = await Plan.query().whereNull('paystackPlanId')
+
+    // for (const plan of plans) {
+    // const paystackPlan = await paystack.createPlan({
+    //   name: plan.name,
+    //   amount: plan.price,
+    //   interval:
+    //     plan.duration === 1 ? 'monthly' : plan.duration === 3 ? 'quarterly' : 'biannually',
+    // })
+
+    // plan.paystackPlanId = paystackPlan?.plan_code
+    //   await plan.save()
+    // }
   }
 }
