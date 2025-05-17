@@ -71,7 +71,9 @@ export default class AffiliatesController {
         .where('propertyId', propertyId)
         .first()
 
-      logger.info('AffiliatesController.isPropertyInShop - Checked if product is in shop successfully')
+      logger.info(
+        'AffiliatesController.isPropertyInShop - Checked if product is in shop successfully'
+      )
       return response.created({
         status: 'success',
         message: 'Checked if product is in shop successfully',
@@ -92,9 +94,10 @@ export default class AffiliatesController {
       const user = auth.user!
 
       // Get all active affiliate entries for the current user
-      const affiliateEntries = await AffiliateProperty.query()
-        .where('affiliateUserId', user.id)
+      const affiliateEntries = await AffiliateProperty.query().where('affiliateUserId', user.id)
       // .where('isActive', true)
+
+      // console.log('Affiliate Entries:', affiliateEntries)
 
       const propertyIds = affiliateEntries.map((entry) => entry.propertyId)
 
@@ -102,7 +105,7 @@ export default class AffiliatesController {
       if (propertyIds.length > 0) {
         affiliatedProperties = await Property.query()
           .whereIn('id', propertyIds)
-          .where('status', 'published') // Assuming properties have their own published status
+          // .where('status', 'published') // Assuming properties have their own published status
           .preload('files')
           .orderBy('created_at', 'desc')
       }
@@ -184,12 +187,16 @@ export default class AffiliatesController {
         })
       }
 
-      const affiliateTransactions = await db.from('transactions').where('slug', user.slug).count('*').first()
+      const affiliateTransactions = await db
+        .from('transactions')
+        .where('slug', user.slug)
+        .count('*')
+        .first()
 
       logger.info('AffiliatesController.commisionSummary - Commision summary fetched successfully')
       return response.ok({
         status: 'success',
-        message: 'Commision summary fetched successfully',  
+        message: 'Commision summary fetched successfully',
         data: {
           affiliateWallet,
           noOfSales: affiliateTransactions?.count,

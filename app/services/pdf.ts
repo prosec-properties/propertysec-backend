@@ -5,7 +5,6 @@ import path from 'node:path'
 import { formatPrice } from '#helpers/payment'
 import User from '#models/user'
 import Invoice from '#models/invoice'
-import Transaction from '#models/transaction'
 import app from '@adonisjs/core/services/app'
 import logger from '@adonisjs/core/services/logger'
 

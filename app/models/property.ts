@@ -1,6 +1,6 @@
 import { DateTime } from 'luxon'
-import { BaseModel, beforeCreate, column, hasMany, hasOne } from '@adonisjs/lucid/orm'
-import type { HasMany, HasOne } from '@adonisjs/lucid/types/relations'
+import { BaseModel, beforeCreate, belongsTo, column, hasMany, hasOne } from '@adonisjs/lucid/orm'
+import type { BelongsTo, HasMany, HasOne } from '@adonisjs/lucid/types/relations'
 import User from './user.js'
 import Category from './category.js'
 import { v4 as uuidv4 } from 'uuid'
@@ -85,8 +85,8 @@ export default class Property extends BaseModel {
   @column.dateTime({ autoCreate: true, autoUpdate: true })
   declare updatedAt: DateTime
 
-  @hasOne(() => User)
-  declare user: HasOne<typeof User>
+  @belongsTo(() => User)
+  declare user: BelongsTo<typeof User>
 
   @hasOne(() => Category, {
     onQuery: (query) => query.preload('subcategories'),

@@ -178,6 +178,7 @@ export default class PropertiesController {
           })
         })
         .preload('files')
+        .preload('user')
         .firstOrFail()
 
       if (property.status === 'published' && property.userId !== auth.user?.id) {
@@ -187,11 +188,11 @@ export default class PropertiesController {
 
       return response.ok({
         success: true,
-        message: 'Property fetched sucessfully',
+        message: 'Property fetched successfully',
         data: property,
       })
     } catch (error) {
-      response.badRequest(getErrorObject(error))
+      return response.badRequest(getErrorObject(error))
     }
   }
 

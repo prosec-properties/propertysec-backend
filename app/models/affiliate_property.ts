@@ -1,5 +1,8 @@
 import { DateTime } from 'luxon'
-import { BaseModel, column } from '@adonisjs/lucid/orm'
+import { BaseModel, beforeCreate, belongsTo, column } from '@adonisjs/lucid/orm'
+import { v4 as uuidv4 } from 'uuid'
+import Property from './property.js'
+import type { BelongsTo } from '@adonisjs/lucid/types/relations'
 
 export default class AffiliateProperty extends BaseModel {
   @column({ isPrimary: true })
@@ -22,4 +25,12 @@ export default class AffiliateProperty extends BaseModel {
 
   @column.dateTime({ autoCreate: true, autoUpdate: true })
   declare updatedAt: DateTime
+
+  @beforeCreate()
+  static async createUUID(bank: AffiliateProperty) {
+    bank.id = uuidv4()
+  }
+
+  @belongsTo(() => Property)
+  declare property: BelongsTo<typeof Property>
 }
