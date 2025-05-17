@@ -27,6 +27,7 @@ import SubscriptionsController from '#controllers/subscriptions_controller'
 import AdminController from '#controllers/admin_controller'
 import InvoicesController from '#controllers/invoices_controller'
 import SettingsController from '#controllers/settings_controller'
+import InspectionDetailsController from '#controllers/inspection_details_controller'
 
 router.get('/', async () => {
   return {
@@ -176,6 +177,16 @@ router
         router.patch('/', [SettingsController, 'update'])
       })
       .prefix('settings')
+      
+    router
+      .group(() => {
+        router.get('/', [InspectionDetailsController, 'index'])
+        router.get('/:id', [InspectionDetailsController, 'show'])
+        router.post('/', [InspectionDetailsController, 'store'])
+        router.patch('/:id/approval', [InspectionDetailsController, 'updateApprovalStatus'])
+      })
+      .use(middleware.auth())
+      .prefix('inspections')
   })
   .prefix('api/v1')
 // .use(middleware.rateLimit(['100', '900']))
