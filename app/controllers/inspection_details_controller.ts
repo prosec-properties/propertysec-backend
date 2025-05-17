@@ -23,7 +23,7 @@ export default class InspectionDetailsController {
       const inspectionDetails = await InspectionDetail.create({
         ...payload,
         userId: user.id,
-        approvalStatus: 'pending',
+        inspectionStatus: 'PENDING',
       })
 
       return response.ok({
@@ -164,10 +164,9 @@ export default class InspectionDetailsController {
         propertyId: inspection.propertyId,
         user: inspection.user,
         property: inspection.property,
-        status: inspection.inspectionStatus === 'COMPLETED' ? 'paid' : 'pending',
+        status: inspection.inspectionStatus,
         amount: inspection.inspectionAmount,
         inspectionStatus: inspection.inspectionStatus,
-        approvalStatus: inspection.approvalStatus || 'pending',
         inspectionReport: inspection.inspectionReport,
         paymentDate: inspection.createdAt,
         createdAt: inspection.createdAt,
@@ -207,28 +206,31 @@ export default class InspectionDetailsController {
           success: false,
           message: 'Inspection ID is required',
         })
-      }      // Validate request body
+      } // Validate request body
       const payload = await request.validateUsing(
         vine.compile(
           vine.object({
-            approvalStatus: vine.string().in(['approved', 'rejected']),
+            inspectionStatus: vine.string().in(['approved', 'rejected']),
           })
         )
       )
 
-      // Find the inspection
       const inspection = await InspectionDetail.findOrFail(id)
-      
-      // Update status
-      inspection.approvalStatus = payload.approvalStatus as 'approved' | 'rejected'
+
+      if (payload.inspectionStatus === 'approved') {
+        inspection.inspectionStatus = 'COMPLETED'
+      } else {
+        inspection.inspectionStatus = 'PENDING'
+      }
+
       await inspection.save()
 
       return response.ok({
         success: true,
-        message: `Inspection request ${payload.approvalStatus} successfully!`,
+        message: `Inspection request ${payload.inspectionStatus} successfully!`,
         data: {
           id: inspection.id,
-          approvalStatus: inspection.approvalStatus,
+          inspectionStatus: inspection.inspectionStatus,
         },
       })
     } catch (error) {
