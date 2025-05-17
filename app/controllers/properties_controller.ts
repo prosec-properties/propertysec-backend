@@ -6,6 +6,8 @@ import FilesService from '#services/files'
 import PropertyFile from '#models/property_file'
 import { MultipartFile } from '@adonisjs/core/bodyparser'
 import { NIGERIA_COUNTRY_ID } from '#constants/general'
+import vine from '@vinejs/vine'
+import User from '#models/user'
 
 export default class PropertiesController {
   async index({ response, request, logger }: HttpContext) {
@@ -163,7 +165,20 @@ export default class PropertiesController {
 
   async show({ logger, response, params, auth }: HttpContext) {
     try {
-      const property = await Property.query().where('id', params.id).preload('files').firstOrFail()
+      let user: User | null = null
+      try {
+        user = await auth.authenticate()
+      } catch (error) {}
+
+      const property = await Property.query()
+        .where('id', params.id)
+        .if(!!user, (query) => {
+          query.preload('inspections', (q) => {
+            q.where('userId', user!.id)
+          })
+        })
+        .preload('files')
+        .firstOrFail()
 
       if (property.status === 'published' && property.userId !== auth.user?.id) {
         await property.merge({ views: property.views + 1 }).save()
@@ -345,6 +360,53 @@ export default class PropertiesController {
       return response.ok({
         success: true,
         message: 'Property deleted successfully',
+      })
+    } catch (error) {
+      response.badRequest(getErrorObject(error))
+    }
+  }
+
+  async updatePropertyStatus({ auth, logger, response, request, params }: HttpContext) {
+    try {
+      const user = await auth.authenticate()
+
+      if (user.role !== 'admin') {
+        logger.error(
+          'PropertiesController.updatePropertyStatus - You are not authorized to perform this action'
+        )
+        return response.forbidden({
+          success: false,
+          message: 'You are not authorized to perform this action',
+        })
+      }
+      const { status, reason } = await vine
+        .compile(
+          vine.object({
+            status: vine.enum(['published', 'rejected']),
+            reason: vine.string().optional().requiredWhen('status', '=', 'rejected'),
+          })
+        )
+        .validate(request.body())
+
+      const property = await Property.findOrFail(params.id)
+
+      const propertyMeta = property.meta ? JSON.parse(property.meta) : {}
+
+      await property
+        .merge({
+          status,
+          meta: JSON.stringify({
+            ...propertyMeta,
+            rejectedReason: reason,
+          }),
+        })
+        .save()
+
+      logger.info('Property status updated successfully')
+      return response.ok({
+        success: true,
+        message: 'Property status updated successfully',
+        data: property,
       })
     } catch (error) {
       response.badRequest(getErrorObject(error))

@@ -13,7 +13,7 @@ export default class extends BaseSchema {
       table.uuid('user_id').references('id').inTable('users')
       table.uuid('property_id').references('id').inTable('properties')
       table.string('name')
-      table.string('email')
+      table.string('email') 
       table.string('phone_number')
       table.text('meta').nullable()
 

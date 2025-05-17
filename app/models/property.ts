@@ -7,6 +7,7 @@ import { v4 as uuidv4 } from 'uuid'
 import type { IPropertyType } from '../interfaces/property.js'
 import PropertyFile from './property_file.js'
 import type { IProductAvailability, IProductStatus } from '#interfaces/product'
+import InspectionDetail from './inspection_detail.js'
 
 export default class Property extends BaseModel {
   @column({ isPrimary: true })
@@ -99,4 +100,7 @@ export default class Property extends BaseModel {
   static generate(property: Property) {
     property.id = uuidv4()
   }
+
+  @hasMany(() => InspectionDetail)
+  declare inspections: HasMany<typeof InspectionDetail>
 }

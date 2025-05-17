@@ -13,7 +13,7 @@ export const updateProfileValidator = vine.compile(
       })
       .optional(),
     password: vine.string().minLength(6).nullable().optional(),
-    oldPassword: vine.string().minLength(6).nullable().optional(),
+    oldPassword: vine.string().minLength(6).nullable().optional().requiredIfExists('password'),
     fullName: vine.string().trim().minLength(3).optional(),
 
     businessName: vine.string().nullable().optional(),
@@ -59,7 +59,7 @@ export const updateProfileValidator = vine.compile(
           size: '10mb',
           extnames: ACCEPTED_IMAGE_TYPES,
         })
-      ) 
+      )
       .optional(),
     profileImage: vine
       .array(

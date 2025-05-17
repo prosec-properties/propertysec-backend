@@ -1,5 +1,12 @@
 import { DateTime } from 'luxon'
-import { BaseModel, beforeCreate, beforeUpdate, belongsTo, column, hasMany } from '@adonisjs/lucid/orm'
+import {
+  BaseModel,
+  beforeCreate,
+  beforeUpdate,
+  belongsTo,
+  column,
+  hasMany,
+} from '@adonisjs/lucid/orm'
 import hash from '@adonisjs/core/services/hash'
 import { AccessToken, DbAccessTokensProvider } from '@adonisjs/auth/access_tokens'
 import { withAuthFinder } from '@adonisjs/auth/mixins/lucid'
@@ -135,6 +142,8 @@ export default class User extends compose(BaseModel, AuthFinder) {
   @column()
   declare subscriptionEndDate: string | null
 
+  @column()
+  declare buyerApproved: boolean
 
   // Metadata
   @column()

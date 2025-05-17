@@ -25,7 +25,7 @@ export const ACCEPTED_IMAGE_TYPES = [
 ]
 
 export const ACCEPTED_VIDEO_TYPES = [
-  'mp4', 'MP4', 'webp', 'WEBP'
+  'mp4', 'MP4', 'webp', 'WEBP', 'mov'
 ]
 
 

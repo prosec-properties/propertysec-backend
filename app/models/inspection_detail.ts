@@ -1,6 +1,9 @@
 import { DateTime } from 'luxon'
-import { BaseModel, beforeCreate, column } from '@adonisjs/lucid/orm'
+import { BaseModel, beforeCreate, belongsTo, column } from '@adonisjs/lucid/orm'
 import { v4 as uuidv4 } from 'uuid'
+import Property from './property.js'
+import User from './user.js'
+import type { BelongsTo } from '@adonisjs/lucid/types/relations'
 
 export default class InspectionDetail extends BaseModel {
   @column({ isPrimary: true })
@@ -46,4 +49,10 @@ export default class InspectionDetail extends BaseModel {
   static generateId(inspectionDetail: InspectionDetail) {
     inspectionDetail.id = uuidv4()
   }
+
+  @belongsTo(() => User)
+  declare user: BelongsTo<typeof User>
+
+  @belongsTo(() => Property)
+  declare property: BelongsTo<typeof Property>
 }

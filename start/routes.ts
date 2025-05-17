@@ -66,6 +66,8 @@ router
         router.patch('/update-profile', [UsersController, 'updateProfile'])
         router.delete('/delete-file/:id', [UsersController, 'deleteFile'])
         router.get('/:id', [UsersController, 'showAUser'])
+        router.post('/buyer/approve/:userId', [AdminController, 'approveBuyerUser'])
+        router.post('/buyer/reject/:userId', [AdminController, 'rejectBuyerUser'])
         router.delete('/:userId', [AdminController, 'deleteUser'])
       })
       .prefix('users')
@@ -92,6 +94,7 @@ router
         router.get('/', [PropertiesController, 'index'])
         router.delete('/:id', [PropertiesController, 'destroy'])
         router.post('/', [PropertiesController, 'store'])
+        router.patch('/status/admin/:id', [PropertiesController, 'updatePropertyStatus'])
         router.patch('/:id', [PropertiesController, 'update'])
       })
       .prefix('properties')
@@ -109,6 +112,8 @@ router
     router
       .group(() => {
         router.get('/myshop', [AffiliatesController, 'myShop'])
+        router.get('/property/:propertyId', [AffiliatesController, 'isPropertyInShop'])
+        router.get('/stats', [AffiliatesController, 'commisionSummary'])
         router.post('/add-to-shop', [AffiliatesController, 'saveToShop'])
         router.post('/remove-from-shop', [AffiliatesController, 'removeFromShop'])
       })

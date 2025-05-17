@@ -60,4 +60,57 @@ export default class AdminController {
       return response.badRequest(getErrorObject(error))
     }
   }
+
+  async approveBuyerUser({ auth, response, params, bouncer }: HttpContext) {
+    try {
+      await auth.authenticate()
+      await bouncer.with('UserPolicy').authorize('isAdmin')
+      const { userId } = params
+      const user = await User.findOrFail(userId)
+
+      const buyer = user.role === 'buyer'
+
+      if (!buyer) {
+        return response.badRequest({
+          success: false,
+          message: 'User is not a buyer',
+        })
+      }
+
+      user.buyerApproved = true
+      await user.save()
+
+      return response.ok({
+        success: true,
+        message: 'User approved successfully',
+      })
+    } catch (error) {
+      return response.badRequest(getErrorObject(error))
+    }
+  }
+
+  async rejectBuyerUser({ auth, response, params, bouncer }: HttpContext) {
+    try {
+      await auth.authenticate()
+      await bouncer.with('UserPolicy').authorize('isAdmin')
+      const { userId } = params
+      const user = await User.findOrFail(userId)
+      const buyer = user.role === 'buyer'
+      if (!buyer) {
+        return response.badRequest({
+          success: false,
+          message: 'User is not a buyer',
+        })
+      }
+
+      user.buyerApproved = false
+      await user.save()
+      return response.ok({
+        success: true,
+        message: 'User approval withdrawn successfully',
+      })
+    } catch (error) {
+      return response.badRequest(getErrorObject(error))
+    }
+  }
 }

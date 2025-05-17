@@ -76,6 +76,12 @@ export default class Transaction extends BaseModel {
   @column()
   declare meta?: string | null
 
+  @column()
+  declare slug?: string | null
+
+  @column()
+  declare propertyId?: string | null
+
   @column.dateTime({ autoCreate: true })
   declare createdAt: DateTime
 

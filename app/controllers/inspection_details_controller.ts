@@ -3,6 +3,7 @@ import type { HttpContext } from '@adonisjs/core/http'
 // import vine from '@vinejs/vine'
 
 export default class InspectionDetailsController {
+  
   async store({ response, logger }: HttpContext) {
     try {
       //   await auth.authenticate()

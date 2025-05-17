@@ -52,7 +52,7 @@ export const updatePropertyValidator = vine.compile(
       bathrooms: vine.number(),
       toilets: vine.number(),
       street: vine.string(),
-      append: vine.string(),
+      append: vine.string().optional(),
 
       stateId: vine.string().exists(async (db, value) => {
         const state = await db.from('states').where('id', value).first()

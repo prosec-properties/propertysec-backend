@@ -63,9 +63,7 @@ export default class UsersController {
     } catch (error) {
       logger.error(error)
       return response.badRequest(
-        getErrorObject(error, {
-          controller: 'UsersController.updateProfile',
-        })
+        getErrorObject(error)
       )
     }
   }

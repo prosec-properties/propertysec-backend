@@ -1,10 +1,12 @@
 import { getErrorObject } from '#helpers/error'
 import { propertyCommission } from '#helpers/general'
-import Affiliate from '#models/affiliate_property'
+import AffiliateProperty from '#models/affiliate_property'
 import Product from '#models/product'
 import Property from '#models/property'
+import Wallet from '#models/wallet'
 import { addToAffiliateShopValidator } from '#validators/affiliate'
 import type { HttpContext } from '@adonisjs/core/http'
+import db from '@adonisjs/lucid/services/db'
 
 export default class AffiliatesController {
   async saveToShop({ auth, request, response }: HttpContext) {
@@ -23,7 +25,7 @@ export default class AffiliatesController {
         })
       }
 
-      const existingAffiliate = await Affiliate.query()
+      const existingAffiliate = await AffiliateProperty.query()
         .where('affiliateUserId', user.id)
         .where('propertyId', propertyId)
         .first()
@@ -37,7 +39,7 @@ export default class AffiliatesController {
 
       const commission = propertyCommission(property.price)
 
-      await Affiliate.create({
+      await AffiliateProperty.create({
         affiliateUserId: user.id,
         propertyId,
         commission,
@@ -58,17 +60,43 @@ export default class AffiliatesController {
     }
   }
 
+  async isPropertyInShop({ auth, response, params, logger }: HttpContext) {
+    try {
+      await auth.authenticate()
+      const user = auth.user!
+      const { propertyId } = params
+
+      const isInShop = await AffiliateProperty.query()
+        .where('affiliateUserId', user.id)
+        .where('propertyId', propertyId)
+        .first()
+
+      logger.info('AffiliatesController.isPropertyInShop - Checked if product is in shop successfully')
+      return response.created({
+        status: 'success',
+        message: 'Checked if product is in shop successfully',
+        data: isInShop,
+      })
+    } catch (error) {
+      logger.error(
+        error,
+        'AffiliatesController.isPropertyInShop - - Error in checking if product is in shop'
+      )
+      return response.internalServerError(getErrorObject(error))
+    }
+  }
+
   async myShop({ auth, response }: HttpContext) {
     try {
       await auth.authenticate()
       const user = auth.user!
 
       // Get all active affiliate entries for the current user
-      const affiliateEntries = await Affiliate.query()
+      const affiliateEntries = await AffiliateProperty.query()
         .where('affiliateUserId', user.id)
-        .where('isActive', true)
+      // .where('isActive', true)
 
-      const propertyIds = affiliateEntries.map(entry => entry.propertyId)
+      const propertyIds = affiliateEntries.map((entry) => entry.propertyId)
 
       let affiliatedProperties: Property[] = []
       if (propertyIds.length > 0) {
@@ -89,7 +117,7 @@ export default class AffiliatesController {
         success: true,
         message: 'Shop items fetched successfully',
         data: {
-          properties: affiliatedProperties, 
+          properties: affiliatedProperties,
           products: myProducts,
           totalItems: affiliatedProperties.length + myProducts.length,
         },
@@ -115,7 +143,7 @@ export default class AffiliatesController {
       }
 
       if (itemType === 'property') {
-        await Affiliate.query()
+        await AffiliateProperty.query()
           .where('affiliateUserId', user.id)
           .where('propertyId', itemId)
           .delete()
@@ -135,6 +163,43 @@ export default class AffiliatesController {
       })
     } catch (error) {
       console.error('Error in removeFromShop:', error)
+      return response.internalServerError(getErrorObject(error))
+    }
+  }
+
+  async commisionSummary({ auth, response, logger }: HttpContext) {
+    try {
+      await auth.authenticate()
+      const user = auth.user!
+
+      let affiliateWallet = await Wallet.query()
+        .where('userId', user.id)
+        .where('type', 'affiliate')
+        .first()
+
+      if (!affiliateWallet) {
+        affiliateWallet = await Wallet.create({
+          userId: user.id,
+          type: 'affiliate',
+        })
+      }
+
+      const affiliateTransactions = await db.from('transactions').where('slug', user.slug).count('*').first()
+
+      logger.info('AffiliatesController.commisionSummary - Commision summary fetched successfully')
+      return response.ok({
+        status: 'success',
+        message: 'Commision summary fetched successfully',  
+        data: {
+          affiliateWallet,
+          noOfSales: affiliateTransactions?.count,
+        },
+      })
+    } catch (error) {
+      logger.error(
+        error,
+        'AffiliatesController.commisionSummary - Error in fetching commision summary'
+      )
       return response.internalServerError(getErrorObject(error))
     }
   }
