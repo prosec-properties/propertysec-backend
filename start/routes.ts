@@ -184,6 +184,7 @@ router
         router.get('/:id', [InspectionDetailsController, 'show'])
         router.post('/', [InspectionDetailsController, 'store'])
         router.patch('/:id/approval', [InspectionDetailsController, 'updateApprovalStatus'])
+        router.patch('/:id/status', [InspectionDetailsController, 'updateInspectionStatus'])
       })
       .use(middleware.auth())
       .prefix('inspections')

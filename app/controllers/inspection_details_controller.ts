@@ -100,6 +100,7 @@ export default class InspectionDetailsController {
           name: inspection.name,
           email: inspection.email,
           phoneNumber: inspection.phoneNumber,
+          inspectionDate: inspection.inspectionDate,
         }
       })
 
@@ -164,9 +165,10 @@ export default class InspectionDetailsController {
         propertyId: inspection.propertyId,
         user: inspection.user,
         property: inspection.property,
-        status: inspection.inspectionStatus,
+        status: inspection.inspectionStatus === 'COMPLETED' ? 'paid' : 'pending',
         amount: inspection.inspectionAmount,
         inspectionStatus: inspection.inspectionStatus,
+        approvalStatus: inspection.approvalStatus || 'pending',
         inspectionReport: inspection.inspectionReport,
         paymentDate: inspection.createdAt,
         createdAt: inspection.createdAt,
@@ -174,6 +176,7 @@ export default class InspectionDetailsController {
         name: inspection.name,
         email: inspection.email,
         phoneNumber: inspection.phoneNumber,
+        inspectionDate: inspection.inspectionDate,
       }
 
       return response.ok({
@@ -210,14 +213,14 @@ export default class InspectionDetailsController {
       const payload = await request.validateUsing(
         vine.compile(
           vine.object({
-            inspectionStatus: vine.string().in(['approved', 'rejected']),
+            approvalStatus: vine.string().in(['approved', 'rejected']),
           })
         )
       )
 
       const inspection = await InspectionDetail.findOrFail(id)
 
-      if (payload.inspectionStatus === 'approved') {
+      if (payload.approvalStatus === 'approved') {
         inspection.inspectionStatus = 'COMPLETED'
       } else {
         inspection.inspectionStatus = 'PENDING'
@@ -227,7 +230,7 @@ export default class InspectionDetailsController {
 
       return response.ok({
         success: true,
-        message: `Inspection request ${payload.inspectionStatus} successfully!`,
+        message: `Inspection request ${payload.approvalStatus} successfully!`,
         data: {
           id: inspection.id,
           inspectionStatus: inspection.inspectionStatus,
@@ -235,6 +238,56 @@ export default class InspectionDetailsController {
       })
     } catch (error) {
       logger.error('Error updating inspection approval status', error)
+      return response.badRequest(getErrorObject(error))
+    }
+  }
+
+  async updateInspectionStatus({ auth, params, request, response, logger }: HttpContext) {
+    try {
+      await auth.authenticate()
+      const user = auth.user!
+
+      // Verify user is admin
+      if (user.role !== 'admin') {
+        return response.forbidden({
+          success: false,
+          message: 'Only administrators can update inspection status',
+        })
+      }
+
+      const { id } = params
+      if (!id) {
+        return response.badRequest({
+          success: false,
+          message: 'Inspection ID is required',
+        })
+      }
+
+      console.log('ID:', id)
+
+      // Validate request body
+      const payload = await request.validateUsing(
+        vine.compile(
+          vine.object({
+            inspectionStatus: vine.string().in(['PENDING', 'COMPLETED']),
+          })
+        )
+      )
+
+      const inspection = await InspectionDetail.findOrFail(id)
+      inspection.inspectionStatus = payload.inspectionStatus as 'PENDING' | 'COMPLETED'
+      await inspection.save()
+
+      return response.ok({
+        success: true,
+        message: `Inspection status updated to ${payload.inspectionStatus} successfully!`,
+        data: {
+          id: inspection.id,
+          inspectionStatus: inspection.inspectionStatus,
+        },
+      })
+    } catch (error) {
+      logger.error('Error updating inspection status', error)
       return response.badRequest(getErrorObject(error))
     }
   }

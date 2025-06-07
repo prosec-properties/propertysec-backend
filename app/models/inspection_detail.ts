@@ -15,6 +15,8 @@ export default class InspectionDetail extends BaseModel {
   @column()
   declare inspectionStatus: 'PENDING' | 'COMPLETED'
 
+  @column()
+  declare approvalStatus?: 'approved' | 'pending' | 'rejected'
 
   @column()
   declare inspectionReport: string
