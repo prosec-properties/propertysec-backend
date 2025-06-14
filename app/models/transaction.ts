@@ -47,7 +47,7 @@ export default class Transaction extends BaseModel {
   declare providerStatus: string
 
   @column({ serializeAs: 'sessionId' })
-  declare sessionId?: string
+declare sessionId?: string
 
   @column({ serializeAs: null })
   declare providerResponse: string
