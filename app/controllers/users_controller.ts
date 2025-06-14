@@ -172,6 +172,7 @@ export default class UsersController {
       const perPage = Number(request.input('per_page', 20))
       const sortBy = request.input('sort_by', 'created_at')
       const order = request.input('order', 'desc')
+      const search = request.input('search', '')
 
       const orderDirection = order.toLowerCase() === 'asc' ? 'asc' : 'desc'
 
@@ -179,6 +180,16 @@ export default class UsersController {
       const validSortBy = sortableColumns.includes(sortBy) ? sortBy : 'created_at'
 
       const users = await User.query()
+        .if(search, (query) => {
+          query.where((subQuery) => {
+            subQuery
+              .where('fullName', 'ilike', `%${search}%`)
+              .orWhere('email', 'ilike', `%${search}%`)
+              .orWhere('phoneNumber', 'ilike', `%${search}%`)
+              .orWhere('stateOfResidence', 'ilike', `%${search}%`)
+              .orWhere('role', 'ilike', `%${search}%`)
+          })
+        })
         .preload('profileFiles')
         .orderBy(validSortBy, orderDirection)
         .paginate(page, perPage)

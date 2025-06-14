@@ -307,9 +307,21 @@ export default class LoansController {
     try {
       await auth.authenticate()
       await bouncer.with('UserPolicy').authorize('isAdmin')
-      const { page = 1, limit = 10 } = request.qs()
+      const { page = 1, limit = 10, search } = request.qs()
 
-      const loans = await Loan.query().preload('user').paginate(page, limit)
+      const loans = await Loan.query()
+        .if(search, (query) => {
+          query.whereHas('user', (userQuery) => {
+            userQuery.where((subQuery) => {
+              subQuery
+                .where('fullName', 'ilike', `%${search}%`)
+                .orWhere('email', 'ilike', `%${search}%`)
+                .orWhere('phoneNumber', 'ilike', `%${search}%`)
+            })
+          })
+        })
+        .preload('user')
+        .paginate(page, limit)
 
       return response.ok({
         success: true,
