@@ -1,0 +1,52 @@
+@mjml({
+  fonts: {
+    Niramit: 'https://fonts.googleapis.com/css?family=Niramit:400,500,700'
+  }
+})
+<mjml>
+  <mj-body background-color="#F2F2F2">
+    <mj-section background-color="#FFFFFF">
+      <mj-column>
+
+        <mj-text font-size="24px" color="#2B2B2B" font-family="Niramit">Property Purchase Confirmation</mj-text>
+        <mj-text font-size="16px" color="#464646" font-family="Murecho">Dear {{buyerName}},</mj-text>
+        
+        <mj-text font-size="16px" color="#464646" font-family="Murecho">Congratulations! Your property purchase has been completed successfully.</mj-text>
+
+        <mj-divider border-color="#E0E0E0" border-width="1px" />
+
+        <mj-text font-size="18px" color="#2B2B2B" font-family="Niramit">Purchase Details:</mj-text>
+        
+        <mj-text font-size="16px" color="#464646" font-family="Murecho">
+          <strong>Property:</strong> {{propertyTitle}}<br/>
+          <strong>Address:</strong> {{propertyAddress}}<br/>
+          <strong>Purchase Amount:</strong> {{currency}} {{purchaseAmount}}<br/>
+          <strong>Transaction Reference:</strong> {{transactionReference}}<br/>
+          <strong>Purchase Date:</strong> {{purchaseDate}}
+        </mj-text>
+
+        <mj-divider border-color="#E0E0E0" border-width="1px" />
+
+        <mj-text font-size="16px" color="#464646" font-family="Murecho">What happens next?</mj-text>
+        <mj-text font-size="14px" color="#464646" font-family="Murecho">
+          • Our team will contact you within 24 hours to discuss the next steps<br/>
+          • You will receive documentation and ownership transfer details<br/>
+          • A property handover appointment will be scheduled<br/>
+          • You will receive your official receipt and ownership documents
+        </mj-text>
+
+        <mj-text font-size="16px" color="#464646" font-family="Murecho">Thank you for choosing Property Sec for your property investment. We look forward to completing your property purchase process.</mj-text>
+
+      </mj-column>
+    </mj-section>
+    
+    <mj-section>
+      <mj-column>
+        <mj-text align="center"><span style="color: #464646">Sent by </span> <span style="color: #080808">Property Sec</span></mj-text>
+        <mj-text align="center">Privacy Policy | Terms and Conditions</mj-text>
+        <mj-text align="center"><span style="color: #464646">If you have any questions please contact us at</span> <span>support@propertysec.com</span></mj-text>
+      </mj-column>
+    </mj-section>
+  </mj-body>
+</mjml>
+@end

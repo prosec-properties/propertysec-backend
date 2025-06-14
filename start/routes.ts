@@ -57,7 +57,9 @@ router
 
     router
       .group(() => {
-        router.get('/users', [UsersController, 'fetchAllUsers'])
+        router.get('/users', [AdminController, 'fetchAllUsers'])
+        router.get('/property-purchases', [AdminController, 'fetchPropertyPurchases'])
+        router.patch('/property-purchases/:purchaseId/status', [AdminController, 'updatePropertyPurchaseStatus'])
       })
       .prefix('admin')
 
