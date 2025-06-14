@@ -57,16 +57,18 @@ export default class LoansController {
     const payload = await request.validateUsing(personalInfoValidator)
 
     // Update user with personal information
-    await user.merge({
-      fullName: payload.fullName,
-      email: payload.email,
-      phoneNumber: payload.phoneNumber,
-      stateOfOrigin: payload.stateOfOrigin,
-      nationality: payload.nationality,
-      homeAddress: payload.homeAddress,
-      religion: payload.religion,
-      nextOfKinName: payload.nextOfKinName,
-    }).save()
+    await user
+      .merge({
+        fullName: payload.fullName,
+        email: payload.email,
+        phoneNumber: payload.phoneNumber,
+        stateOfOrigin: payload.stateOfOrigin,
+        nationality: payload.nationality,
+        homeAddress: payload.homeAddress,
+        religion: payload.religion,
+        nextOfKinName: payload.nextOfKinName,
+      })
+      .save()
 
     const ongoingLoanRequest = await LoanRequest.query()
       .where('userId', user.id)
@@ -113,13 +115,15 @@ export default class LoansController {
     }
 
     // Update user with relevant bank information
-    await user.merge({
-      nin: payload.nin,
-      bvn: payload.bvn,
-      bankName: payload.bankName,
-      bankAccountNumber: payload.salaryAccountNumber,
-      monthlySalary: parseFloat(payload.averageSalary) || null,
-    }).save()
+    await user
+      .merge({
+        nin: payload.nin,
+        bvn: payload.bvn,
+        bankName: payload.bankName,
+        bankAccountNumber: payload.salaryAccountNumber,
+        monthlySalary: parseFloat(payload.averageSalary) || null,
+      })
+      .save()
 
     const bank = await Bank.updateOrCreate(
       { userId: user.id, contextId: loanRequest.id },
@@ -251,7 +255,7 @@ export default class LoansController {
 
     console.log('userIfd', user.id)
 
-    await Loan.create({
+    const loan = await Loan.create({
       userId: user.id,
       loanAmount: loanRequest.amount as ILoanAmount,
       loanDuration: loanRequest.duration as ILoanDuration,
@@ -260,6 +264,12 @@ export default class LoansController {
       reasonForFunds: loanRequest.reasonForLoanRequest || '',
       hasCompletedForm: true,
     })
+
+    // Update all loan files to reference the actual loan ID instead of loan request ID
+    await LoanFile.query()
+      .where('loanId', loanRequest.id)
+      .where('userId', user.id)
+      .update({ loanId: loan.id })
 
     await loanRequest.merge({ status: 'completed' }).save()
 
@@ -442,8 +452,6 @@ export default class LoansController {
       await auth.authenticate()
       const user = auth.user!
 
-      console.log('user from getLoanById', user.id)
-
       const loanId = params.id
       const loan = await Loan.query()
         .where('id', loanId)
@@ -462,7 +470,7 @@ export default class LoansController {
             'avatarUrl',
             'hasCompletedProfile',
             'createdAt',
-            'updatedAt'
+            'updatedAt',
           ])
         })
         .preload('files')
@@ -495,7 +503,10 @@ export default class LoansController {
         // Fetch all related data using the loan request ID as context
         const [bank, employment, guarantor, landlord] = await Promise.all([
           Bank.query().where('contextId', loanRequest.id).where('contextType', 'loan').first(),
-          Employment.query().where('contextId', loanRequest.id).where('contextType', 'loan').first(),
+          Employment.query()
+            .where('contextId', loanRequest.id)
+            .where('contextType', 'loan')
+            .first(),
           Guarantor.query().where('contextId', loanRequest.id).where('contextType', 'loan').first(),
           Landlord.query().where('contextId', loanRequest.id).where('contextType', 'loan').first(),
         ])
@@ -544,7 +555,7 @@ export default class LoansController {
             'avatarUrl',
             'hasCompletedProfile',
             'createdAt',
-            'updatedAt'
+            'updatedAt',
           ])
         })
         .preload('files')
@@ -558,9 +569,15 @@ export default class LoansController {
         .select(
           db.raw('COUNT(*) as totalLoans'),
           db.raw('COALESCE(SUM(CAST(loan_amount AS INTEGER)), 0) as totalAmount'),
-          db.raw("COALESCE(SUM(CASE WHEN loan_status = 'approved' THEN CAST(loan_amount AS INTEGER) ELSE 0 END), 0) as approvedAmount"),
-          db.raw("COALESCE(SUM(CASE WHEN loan_status = 'pending' THEN CAST(loan_amount AS INTEGER) ELSE 0 END), 0) as pendingAmount"),
-          db.raw("COALESCE(SUM(CASE WHEN loan_status = 'rejected' THEN CAST(loan_amount AS INTEGER) ELSE 0 END), 0) as rejectedAmount")
+          db.raw(
+            "COALESCE(SUM(CASE WHEN loan_status = 'approved' THEN CAST(loan_amount AS INTEGER) ELSE 0 END), 0) as approvedAmount"
+          ),
+          db.raw(
+            "COALESCE(SUM(CASE WHEN loan_status = 'pending' THEN CAST(loan_amount AS INTEGER) ELSE 0 END), 0) as pendingAmount"
+          ),
+          db.raw(
+            "COALESCE(SUM(CASE WHEN loan_status = 'rejected' THEN CAST(loan_amount AS INTEGER) ELSE 0 END), 0) as rejectedAmount"
+          )
         )
         .first()
 
@@ -574,9 +591,9 @@ export default class LoansController {
             totalAmount: Number(loanStats?.totalAmount || 0),
             approvedAmount: Number(loanStats?.approvedAmount || 0),
             pendingAmount: Number(loanStats?.pendingAmount || 0),
-            rejectedAmount: Number(loanStats?.rejectedAmount || 0)
-          }
-        }
+            rejectedAmount: Number(loanStats?.rejectedAmount || 0),
+          },
+        },
       })
     } catch (error) {
       return response.badRequest(getErrorObject(error))
