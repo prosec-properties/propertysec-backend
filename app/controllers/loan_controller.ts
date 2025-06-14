@@ -56,6 +56,18 @@ export default class LoansController {
   private async handlePersonalInfo({ request, response, user }: HandleStepParams) {
     const payload = await request.validateUsing(personalInfoValidator)
 
+    // Update user with personal information
+    await user.merge({
+      fullName: payload.fullName,
+      email: payload.email,
+      phoneNumber: payload.phoneNumber,
+      stateOfOrigin: payload.stateOfOrigin,
+      nationality: payload.nationality,
+      homeAddress: payload.homeAddress,
+      religion: payload.religion,
+      nextOfKinName: payload.nextOfKinName,
+    }).save()
+
     const ongoingLoanRequest = await LoanRequest.query()
       .where('userId', user.id)
       .orderBy('createdAt', 'desc')
@@ -99,6 +111,15 @@ export default class LoansController {
     if (!loanRequest) {
       return response.notFound(errorResponse('Loan request not found'))
     }
+
+    // Update user with relevant bank information
+    await user.merge({
+      nin: payload.nin,
+      bvn: payload.bvn,
+      bankName: payload.bankName,
+      bankAccountNumber: payload.salaryAccountNumber,
+      monthlySalary: parseFloat(payload.averageSalary) || null,
+    }).save()
 
     const bank = await Bank.updateOrCreate(
       { userId: user.id, contextId: loanRequest.id },
@@ -236,6 +257,8 @@ export default class LoansController {
       loanDuration: loanRequest.duration as ILoanDuration,
       interestRate: 5,
       loanStatus: 'pending',
+      reasonForFunds: loanRequest.reasonForLoanRequest || '',
+      hasCompletedForm: true,
     })
 
     await loanRequest.merge({ status: 'completed' }).save()
@@ -445,9 +468,38 @@ export default class LoansController {
         })
       }
 
+      // Find the loan request to get the context ID for related data
+      const loanRequest = await LoanRequest.query()
+        .where('userId', loan.userId)
+        .where('status', 'completed')
+        .orderBy('createdAt', 'desc')
+        .first()
+
+      let relatedData = {}
+      if (loanRequest) {
+        // Fetch all related data using the loan request ID as context
+        const [bank, employment, guarantor, landlord] = await Promise.all([
+          Bank.query().where('contextId', loanRequest.id).where('contextType', 'loan').first(),
+          Employment.query().where('contextId', loanRequest.id).where('contextType', 'loan').first(),
+          Guarantor.query().where('contextId', loanRequest.id).where('contextType', 'loan').first(),
+          Landlord.query().where('contextId', loanRequest.id).where('contextType', 'loan').first(),
+        ])
+
+        relatedData = {
+          loanRequest,
+          bank,
+          employment,
+          guarantor,
+          landlord,
+        }
+      }
+
       return response.ok({
         success: true,
-        data: loan,
+        data: {
+          ...loan.toJSON(),
+          ...relatedData,
+        },
       })
     } catch (error) {
       return response.badRequest(getErrorObject(error))

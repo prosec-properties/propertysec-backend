@@ -110,7 +110,7 @@ export default class User extends compose(BaseModel, AuthFinder) {
   declare bvn: string | null
 
   @column()
-  declare nextOfKin: string | null
+  declare nextOfKinName: string | null
 
   @column()
   declare religion: string | null
