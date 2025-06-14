@@ -23,7 +23,7 @@ export default class Transaction extends BaseModel {
   declare userId: string
 
   @column({ serializeAs: 'transactionType' })
-  declare transactionType: 'SUBSCRIPTION' | 'PROPERTY_INSPECTION' | 'LOAN_REPAYMENT' | 'PROPERTY_PURCHASE'
+  declare transactionType: 'SUBSCRIPTION' | 'PROPERTY_INSPECTION' | 'LOAN_REPAYMENT'
 
   @column({ serializeAs: 'transactionTypeId' })
   declare transactionTypeId: string
@@ -47,7 +47,7 @@ export default class Transaction extends BaseModel {
   declare providerStatus: string
 
   @column({ serializeAs: 'sessionId' })
-declare sessionId?: string
+  declare sessionId?: string
 
   @column({ serializeAs: null })
   declare providerResponse: string

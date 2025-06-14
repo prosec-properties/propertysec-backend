@@ -323,6 +323,136 @@ export default class LoansController {
       return response.badRequest(getErrorObject(error))
     }
   }
+
+  async approveLoan({ auth, response, params }: HttpContext) {
+    try {
+      await auth.authenticate()
+      const user = auth.user!
+
+      // Check if user is admin
+      if (user.role !== 'admin') {
+        return response.unauthorized({
+          success: false,
+          message: 'Unauthorized: Admin access required',
+        })
+      }
+
+      const loanId = params.id
+      const loan = await Loan.find(loanId)
+
+      if (!loan) {
+        return response.notFound({
+          success: false,
+          message: 'Loan not found',
+        })
+      }
+
+      if (loan.loanStatus !== 'pending') {
+        return response.badRequest({
+          success: false,
+          message: 'Only pending loans can be approved',
+        })
+      }
+
+      loan.loanStatus = 'approved'
+      await loan.save()
+
+      return response.ok({
+        success: true,
+        message: 'Loan approved successfully',
+        data: loan,
+      })
+    } catch (error) {
+      return response.badRequest(getErrorObject(error))
+    }
+  }
+
+  async rejectLoan({ auth, request, response, params }: HttpContext) {
+    try {
+      await auth.authenticate()
+      const user = auth.user!
+
+      // Check if user is admin
+      if (user.role !== 'admin') {
+        return response.unauthorized({
+          success: false,
+          message: 'Unauthorized: Admin access required',
+        })
+      }
+
+      const loanId = params.id
+      const { reason } = request.only(['reason'])
+
+      const loan = await Loan.find(loanId)
+
+      if (!loan) {
+        return response.notFound({
+          success: false,
+          message: 'Loan not found',
+        })
+      }
+
+      if (loan.loanStatus !== 'pending') {
+        return response.badRequest({
+          success: false,
+          message: 'Only pending loans can be rejected',
+        })
+      }
+
+      loan.loanStatus = 'rejected'
+      // You might want to store the rejection reason in a meta field or separate table
+      if (reason) {
+        loan.meta = JSON.stringify({ rejectionReason: reason })
+      }
+      await loan.save()
+
+      return response.ok({
+        success: true,
+        message: 'Loan rejected successfully',
+        data: loan,
+      })
+    } catch (error) {
+      return response.badRequest(getErrorObject(error))
+    }
+  }
+
+  async getLoanById({ auth, response, params }: HttpContext) {
+    try {
+      await auth.authenticate()
+      const user = auth.user!
+
+      console.log('user from getLoanById', user.id)
+
+      // Check if user is admin
+      if (user.role !== 'admin') {
+        return response.unauthorized({
+          success: false,
+          message: 'Unauthorized: Admin access required',
+        })
+      }
+
+      const loanId = params.id
+      const loan = await Loan.query()
+        .where('id', loanId)
+        .preload('user')
+        .preload('files')
+        .first()
+
+      if (!loan) {
+        return response.notFound({
+          success: false,
+          message: 'Loan not found',
+        })
+      }
+
+      return response.ok({
+        success: true,
+        data: loan,
+      })
+    } catch (error) {
+      return response.badRequest(getErrorObject(error))
+    }
+  }
 }
 
 interface HandleStepParams {
