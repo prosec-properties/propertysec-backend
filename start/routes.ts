@@ -168,12 +168,14 @@ router
     router
       .group(() => {
         router.post('/request', [LoansController, 'processLoanStep'])
+        router.get('/me', [LoansController, 'getUserLoans'])
         router.get('/loan-requests', [LoansController, 'fetchedLoanRequests'])
         router.get('/loan-stats', [LoansController, 'loanStats'])
         router.get('/:id', [LoansController, 'getLoanById'])
         router.patch('/:id/approve', [LoansController, 'approveLoan'])
         router.patch('/:id/reject', [LoansController, 'rejectLoan'])
       })
+      .use(middleware.auth())
       .prefix('loans')
 
     router

@@ -352,7 +352,6 @@ export default class LoansController {
       await auth.authenticate()
       const user = auth.user!
 
-      // Check if user is admin
       if (user.role !== 'admin') {
         return response.unauthorized({
           success: false,
@@ -423,7 +422,6 @@ export default class LoansController {
       }
 
       loan.loanStatus = 'rejected'
-      // You might want to store the rejection reason in a meta field or separate table
       if (reason) {
         loan.meta = JSON.stringify({ rejectionReason: reason })
       }
@@ -446,18 +444,27 @@ export default class LoansController {
 
       console.log('user from getLoanById', user.id)
 
-      // Check if user is admin
-      if (user.role !== 'admin') {
-        return response.unauthorized({
-          success: false,
-          message: 'Unauthorized: Admin access required',
-        })
-      }
-
       const loanId = params.id
       const loan = await Loan.query()
         .where('id', loanId)
-        .preload('user')
+        .preload('user', (userQuery) => {
+          userQuery.select([
+            'id',
+            'fullName',
+            'email',
+            'phoneNumber',
+            'role',
+            'homeAddress',
+            'stateOfOrigin',
+            'nationality',
+            'religion',
+            'nextOfKinName',
+            'avatarUrl',
+            'hasCompletedProfile',
+            'createdAt',
+            'updatedAt'
+          ])
+        })
         .preload('files')
         .first()
 
@@ -465,6 +472,14 @@ export default class LoansController {
         return response.notFound({
           success: false,
           message: 'Loan not found',
+        })
+      }
+
+      // Check if user is admin or owns the loan
+      if (user.role !== 'admin' && loan.userId !== user.id) {
+        return response.unauthorized({
+          success: false,
+          message: 'Unauthorized: You can only access your own loans',
         })
       }
 
@@ -500,6 +515,68 @@ export default class LoansController {
           ...loan.toJSON(),
           ...relatedData,
         },
+      })
+    } catch (error) {
+      return response.badRequest(getErrorObject(error))
+    }
+  }
+
+  async getUserLoans({ auth, response, request }: HttpContext) {
+    try {
+      await auth.authenticate()
+      const user = auth.user!
+      const { page = 1, limit = 10 } = request.qs()
+
+      const loans = await Loan.query()
+        .where('userId', user.id)
+        .preload('user', (userQuery) => {
+          userQuery.select([
+            'id',
+            'fullName',
+            'email',
+            'phoneNumber',
+            'role',
+            'homeAddress',
+            'stateOfOrigin',
+            'nationality',
+            'religion',
+            'nextOfKinName',
+            'avatarUrl',
+            'hasCompletedProfile',
+            'createdAt',
+            'updatedAt'
+          ])
+        })
+        .preload('files')
+        .orderBy('createdAt', 'desc')
+        .paginate(page, limit)
+
+      // Calculate loan statistics for the user
+      const loanStats = await db
+        .from('loans')
+        .where('user_id', user.id)
+        .select(
+          db.raw('COUNT(*) as totalLoans'),
+          db.raw('COALESCE(SUM(CAST(loan_amount AS INTEGER)), 0) as totalAmount'),
+          db.raw("COALESCE(SUM(CASE WHEN loan_status = 'approved' THEN CAST(loan_amount AS INTEGER) ELSE 0 END), 0) as approvedAmount"),
+          db.raw("COALESCE(SUM(CASE WHEN loan_status = 'pending' THEN CAST(loan_amount AS INTEGER) ELSE 0 END), 0) as pendingAmount"),
+          db.raw("COALESCE(SUM(CASE WHEN loan_status = 'rejected' THEN CAST(loan_amount AS INTEGER) ELSE 0 END), 0) as rejectedAmount")
+        )
+        .first()
+
+      return response.ok({
+        success: true,
+        message: 'User loans fetched successfully',
+        data: {
+          loans,
+          stats: {
+            totalLoans: Number(loanStats?.totalLoans || 0),
+            totalAmount: Number(loanStats?.totalAmount || 0),
+            approvedAmount: Number(loanStats?.approvedAmount || 0),
+            pendingAmount: Number(loanStats?.pendingAmount || 0),
+            rejectedAmount: Number(loanStats?.rejectedAmount || 0)
+          }
+        }
       })
     } catch (error) {
       return response.badRequest(getErrorObject(error))
