@@ -23,6 +23,7 @@ export default class PropertiesController {
         })
         .if(search, (query) => {
           query.where('title', 'ilike', `%${search}%`)
+          query.orWhere('address', 'ilike', `%${search}%`)
         })
         .if(categories, (query) => {
           const parsedCategories = JSON.parse(categories)
@@ -38,10 +39,8 @@ export default class PropertiesController {
         })
         .if(pricing, (query) => {
           const parsedPricing = JSON.parse(pricing)
-          // Check if pricing is an array
           const pricingArray = Array.isArray(parsedPricing) ? parsedPricing : [parsedPricing]
 
-          // Process each pricing filter
           pricingArray.forEach((priceFilter) => {
             // Extract the numeric part and the operator (+ or -)
             const match = priceFilter.match(/(\d+)([+-])/)

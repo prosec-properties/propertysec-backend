@@ -347,6 +347,13 @@ export default class LoansController {
         .select(db.raw('SUM(CAST(loan_amount AS INTEGER)) as amount'))
         .first()
 
+      const disbursedLoans = await db
+        .query()
+        .from('loans')
+        .where('loan_status', 'disbursed')
+        .select(db.raw('SUM(CAST(loan_amount AS INTEGER)) as amount'))
+        .first()
+
       const statusCounts = await db
         .from('loans')
         .select('loan_status')
@@ -362,6 +369,7 @@ export default class LoansController {
           totalAmount: loanStats.totalAmount,
           statusCounts,
           approvedLoans: approvedLoans.amount || 0,
+          disbursedLoans: disbursedLoans.amount || 0,
         },
       })
     } catch (error) {
@@ -585,6 +593,9 @@ export default class LoansController {
             "COALESCE(SUM(CASE WHEN loan_status = 'approved' THEN CAST(loan_amount AS INTEGER) ELSE 0 END), 0) as approvedAmount"
           ),
           db.raw(
+            "COALESCE(SUM(CASE WHEN loan_status = 'disbursed' THEN CAST(loan_amount AS INTEGER) ELSE 0 END), 0) as disbursedAmount"
+          ),
+          db.raw(
             "COALESCE(SUM(CASE WHEN loan_status = 'pending' THEN CAST(loan_amount AS INTEGER) ELSE 0 END), 0) as pendingAmount"
           ),
           db.raw(
@@ -602,9 +613,87 @@ export default class LoansController {
             totalLoans: Number(loanStats?.totalLoans || 0),
             totalAmount: Number(loanStats?.totalAmount || 0),
             approvedAmount: Number(loanStats?.approvedAmount || 0),
+            disbursedAmount: Number(loanStats?.disbursedAmount || 0),
             pendingAmount: Number(loanStats?.pendingAmount || 0),
             rejectedAmount: Number(loanStats?.rejectedAmount || 0),
           },
+        },
+      })
+    } catch (error) {
+      return response.badRequest(getErrorObject(error))
+    }
+  }
+
+  async disburseLoan({ auth, request, response, params }: HttpContext) {
+    try {
+      await auth.authenticate()
+      const user = auth.user!
+
+      // Check if user is admin
+      if (user.role !== 'admin') {
+        return response.unauthorized({
+          success: false,
+          message: 'Unauthorized: Admin access required',
+        })
+      }
+
+      const loanId = params.id
+      const { disbursementMethod, disbursementDetails, disbursementAmount } = request.only([
+        'disbursementMethod',
+        'disbursementDetails',
+        'disbursementAmount',
+      ])
+
+      const loan = await Loan.find(loanId)
+
+      if (!loan) {
+        return response.notFound({
+          success: false,
+          message: 'Loan not found',
+        })
+      }
+
+      if (loan.loanStatus !== 'approved') {
+        return response.badRequest({
+          success: false,
+          message: 'Only approved loans can be disbursed',
+        })
+      }
+
+      // Validate disbursement amount matches loan amount
+      if (disbursementAmount && parseFloat(disbursementAmount) !== parseFloat(loan.loanAmount)) {
+        return response.badRequest({
+          success: false,
+          message: 'Disbursement amount must match the approved loan amount',
+        })
+      }
+
+      // Update loan status to disbursed and store disbursement details
+      const disbursementData = {
+        disbursedBy: user.id,
+        disbursedAt: new Date().toISOString(),
+        disbursementMethod: disbursementMethod || 'bank_transfer',
+        disbursementDetails: disbursementDetails || '',
+        disbursementAmount: disbursementAmount || loan.loanAmount,
+      }
+
+      loan.loanStatus = 'disbursed'
+
+      // Store disbursement metadata
+      const existingMeta = loan.meta ? JSON.parse(loan.meta) : {}
+      loan.meta = JSON.stringify({
+        ...existingMeta,
+        disbursement: disbursementData,
+      })
+
+      await loan.save()
+
+      return response.ok({
+        success: true,
+        message: 'Loan disbursed successfully',
+        data: {
+          ...loan.toJSON(),
+          disbursementInfo: disbursementData,
         },
       })
     } catch (error) {

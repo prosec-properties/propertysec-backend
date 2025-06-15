@@ -174,6 +174,7 @@ router
         router.get('/:id', [LoansController, 'getLoanById'])
         router.patch('/:id/approve', [LoansController, 'approveLoan'])
         router.patch('/:id/reject', [LoansController, 'rejectLoan'])
+        router.patch('/:id/disburse', [LoansController, 'disburseLoan'])
       })
       .use(middleware.auth())
       .prefix('loans')

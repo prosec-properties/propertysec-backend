@@ -32,7 +32,7 @@ export const createPropertyValidator = vine.compile(
     }),
     files: vine.array(
       vine.file({
-        size: '10mb',
+        size: '20mb',
         extnames: [...ACCEPTED_IMAGE_TYPES, ...ACCEPTED_VIDEO_TYPES],
       })
     ),
@@ -68,7 +68,7 @@ export const updatePropertyValidator = vine.compile(
       }),
       files: vine.array(
         vine.file({
-          size: '10mb',
+          size: '20mb',
           extnames: [...ACCEPTED_IMAGE_TYPES, ...ACCEPTED_VIDEO_TYPES],
         })
       ),
