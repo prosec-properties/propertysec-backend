@@ -67,7 +67,7 @@ export default class InspectionDetailsController {
           builder
             .whereHas('user', (userQuery) => {
               userQuery
-                .where('fullName', 'ILIKE', `%${search}%`)
+                .where('full_name', 'ILIKE', `%${search}%`)
                 .orWhere('email', 'ILIKE', `%${search}%`)
             })
             .orWhereHas('property', (propertyQuery) => {
@@ -75,12 +75,30 @@ export default class InspectionDetailsController {
                 .where('title', 'ILIKE', `%${search}%`)
                 .orWhere('address', 'ILIKE', `%${search}%`)
             })
+            .orWhere('name', 'ILIKE', `%${search}%`)
+            .orWhere('email', 'ILIKE', `%${search}%`)
         })
       }
 
       const inspections = await query.paginate(page, limit)
 
       const formattedInspections = inspections.toJSON()
+
+      let baseStatsQuery = InspectionDetail.query()
+
+      if (!isAdmin) {
+        baseStatsQuery = baseStatsQuery.where('userId', auth.user!.id)
+      }
+
+      const [totalResult, completedResult] = await Promise.all([
+        baseStatsQuery.clone().count('*').first(),
+        baseStatsQuery.clone().where('inspectionStatus', 'COMPLETED').count('*').first(),
+      ])
+
+      const statistics = {
+        totalInspections: Number(totalResult?.$extras.count) || 0,
+        completedInspections: Number(completedResult?.$extras.count) || 0,
+      }
 
       const transformedData = formattedInspections.data.map((inspection) => {
         return {
@@ -89,7 +107,7 @@ export default class InspectionDetailsController {
           propertyId: inspection.propertyId,
           user: inspection.user,
           property: inspection.property,
-          status: inspection.inspectionStatus === 'COMPLETED' ? 'paid' : 'pending',
+          status: inspection.inspectionStatus === 'COMPLETED' ? 'Paid' : 'Pending',
           amount: inspection.inspectionAmount,
           inspectionStatus: inspection.inspectionStatus,
           approvalStatus: inspection.approvalStatus || 'pending',
@@ -108,6 +126,7 @@ export default class InspectionDetailsController {
         success: true,
         message: 'Inspection payments fetched successfully!',
         data: transformedData,
+        statistics: statistics,
         meta: {
           total: formattedInspections.meta.total,
           per_page: formattedInspections.meta.per_page,
@@ -158,7 +177,6 @@ export default class InspectionDetailsController {
         })
       }
 
-      // Transform to match frontend interface
       const transformedData = {
         id: inspection.id,
         userId: inspection.userId,
@@ -195,7 +213,6 @@ export default class InspectionDetailsController {
       await auth.authenticate()
       const user = auth.user!
 
-      // Verify user is admin
       if (user.role !== 'admin') {
         return response.forbidden({
           success: false,
