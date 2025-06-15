@@ -108,7 +108,7 @@ export default class InspectionDetailsController {
           user: inspection.user,
           property: inspection.property,
           status: inspection.inspectionStatus === 'COMPLETED' ? 'Paid' : 'Pending',
-          amount: inspection.inspectionAmount,
+          inspectionAmount: inspection.inspectionAmount,
           inspectionStatus: inspection.inspectionStatus,
           approvalStatus: inspection.approvalStatus || 'pending',
           inspectionReport: inspection.inspectionReport,

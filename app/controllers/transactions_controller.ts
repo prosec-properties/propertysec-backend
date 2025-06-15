@@ -261,7 +261,6 @@ export default class TransactionsController {
             .where('id', meta.propertyId)
             .update({ availability: 'sold' })
 
-          // Get property details for email
           const property = await Property.findOrFail(meta.propertyId)
 
           // Send purchase confirmation email
