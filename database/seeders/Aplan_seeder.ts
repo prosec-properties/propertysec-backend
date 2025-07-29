@@ -1,6 +1,6 @@
 import { AcceptedCurrencies, PlanName } from '#interfaces/payment'
 import Plan from '#models/plan'
-import paystack from '#services/paystack'
+// import paystack from '#services/paystack'
 import { BaseSeeder } from '@adonisjs/lucid/seeders'
 import { v4 as uuidv4 } from 'uuid'
 
@@ -24,7 +24,7 @@ const mockFeatures = {
 }
 export default class extends BaseSeeder {
   async run() {
-    const uniqueKey = 'duration'
+    // const uniqueKey = 'duration'
     const plans = [
       {
         name: 'VIP',

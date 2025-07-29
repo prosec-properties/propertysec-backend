@@ -1,4 +1,4 @@
-import Plan from '#models/plan'
+// import Plan from '#models/plan'
 import { BaseSeeder } from '@adonisjs/lucid/seeders'
 
 export default class extends BaseSeeder {

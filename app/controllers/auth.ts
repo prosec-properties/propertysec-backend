@@ -21,7 +21,7 @@ import { DateTime } from 'luxon'
 export default class AuthController {
   async register({ request, response, auth }: HttpContext) {
     const payload = await request.validateUsing(registerUserValidator)
-    let isAddedByAdmin = false
+    // let isAddedByAdmin = false
     let meta
 
     try {
@@ -31,7 +31,7 @@ export default class AuthController {
         if (!isAdmin) {
           return response.badRequest(errorResponse('You are not authorized to perform this action'))
         }
-        isAddedByAdmin = true
+        // isAddedByAdmin = true
         meta = {
           addedByAdmin: true,
           addedBy: auth.user?.id,
