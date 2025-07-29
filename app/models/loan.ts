@@ -3,6 +3,7 @@ import { BaseModel, beforeCreate, column, belongsTo, hasMany } from '@adonisjs/l
 import { v4 as uuidv4 } from 'uuid'
 import type { BelongsTo, HasMany } from '@adonisjs/lucid/types/relations'
 import LoanFile from './loan_file.js'
+import LoanRepayment from './loan_repayment.js'
 import User from './user.js'
 import type { ILoanAmount, ILoanDuration, ILoanStatus } from '#interfaces/loan'
 
@@ -45,6 +46,9 @@ export default class Loan extends BaseModel {
 
   @hasMany(() => LoanFile)
   declare files: HasMany<typeof LoanFile>
+
+  @hasMany(() => LoanRepayment)
+  declare repayments: HasMany<typeof LoanRepayment>
 
   @beforeCreate()
   static generateId(property: Loan) {

@@ -143,9 +143,12 @@ router
       .prefix('invoices')
 
     router
-      .group(() =>
+      .group(() => {
         router.get('/subscribed-users', [SubscriptionsController, 'fetchSubscribedUsers'])
-      )
+        router.get('/:id', [SubscriptionsController, 'getSubscriptionDetails'])
+        router.get('/', [SubscriptionsController, 'index'])
+      })
+      .use(middleware.auth())
       .prefix('subscriptions')
 
     router
@@ -175,6 +178,12 @@ router
         router.patch('/:id/approve', [LoansController, 'approveLoan'])
         router.patch('/:id/reject', [LoansController, 'rejectLoan'])
         router.patch('/:id/disburse', [LoansController, 'disburseLoan'])
+        
+        // Loan repayment routes
+        router.get('/:id/repayment-details', [LoansController, 'getLoanRepaymentDetails'])
+        router.post('/:id/repay', [LoansController, 'initializeLoanRepayment'])
+        router.post('/repayments/:repaymentId/verify', [LoansController, 'verifyLoanRepayment'])
+        router.get('/repayments/me', [LoansController, 'getUserLoanRepayments'])
       })
       .use(middleware.auth())
       .prefix('loans')

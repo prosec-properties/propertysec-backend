@@ -1,7 +1,10 @@
 import { errorResponse, getErrorObject } from '#helpers/error'
+import { calculateLoanDetails, calculateOutstandingBalance, parseLoanDuration } from '#helpers/loan'
 import { ILoanAmount, ILoanDuration, ILoanFileType } from '#interfaces/loan'
 import Loan from '#models/loan'
 import LoanFile from '#models/loan_file'
+import LoanRepayment from '#models/loan_repayment'
+import Payment from '#models/payment'
 import User from '#models/user'
 import Employment from '#models/employment'
 import Landlord from '#models/landlord'
@@ -9,6 +12,7 @@ import Guarantor from '#models/guarantor'
 import LoanRequest from '#models/loan_request'
 import { ImageUploadInterface } from '#services/azure'
 import FilesService from '#services/files'
+import PaymentVerificationService from '#services/payment_verification'
 import {
   personalInfoValidator,
   bankInfoValidator,
@@ -17,9 +21,12 @@ import {
   landlordInfoValidator,
   guarantorInfoValidator,
 } from '#validators/loan'
+import { loanRepaymentValidator, verifyRepaymentValidator } from '#validators/loan_repayment'
 import type { HttpContext } from '@adonisjs/core/http'
 import Bank from '#models/bank'
 import db from '@adonisjs/lucid/services/db'
+import { DateTime } from 'luxon'
+import { nanoid } from 'nanoid'
 
 export default class LoansController {
   async processLoanStep({ auth, request, response, logger }: HttpContext) {
@@ -129,7 +136,7 @@ export default class LoansController {
       { userId: user.id, contextId: loanRequest.id },
       {
         userId: user.id,
-        averageSalary: payload.averageSalary,
+        averageSalary: parseFloat(payload.averageSalary) || 0,
         bankName: payload.bankName,
         salaryAccountNumber: payload.salaryAccountNumber,
         nin: payload.nin,
@@ -309,24 +316,43 @@ export default class LoansController {
       await bouncer.with('UserPolicy').authorize('isAdmin')
       const { page = 1, limit = 10, search } = request.qs()
 
-      const loans = await Loan.query()
-        .if(search, (query) => {
-          query.whereHas('user', (userQuery) => {
-            userQuery.where((subQuery) => {
-              subQuery
-                .where('fullName', 'ilike', `%${search}%`)
-                .orWhere('email', 'ilike', `%${search}%`)
-                .orWhere('phoneNumber', 'ilike', `%${search}%`)
-            })
+      let query = Loan.query()
+        .preload('user')
+        .orderBy('created_at', 'desc')
+
+      if (search) {
+        query = query.whereHas('user', (userQuery) => {
+          userQuery.where((subQuery) => {
+            subQuery
+              .where('fullName', 'ilike', `%${search}%`)
+              .orWhere('email', 'ilike', `%${search}%`)
+              .orWhere('phoneNumber', 'ilike', `%${search}%`)
           })
         })
-        .preload('user')
-        .paginate(page, limit)
+      }
+
+      const loans = await query.paginate(page, limit)
+
+      let baseStatsQuery = Loan.query()
+    
+
+      const [totalLoans, activeLoans, completedLoans] = await Promise.all([
+        baseStatsQuery.clone().count('* as total'),
+        baseStatsQuery.clone().where('loanStatus', 'approved').count('* as total'),
+        baseStatsQuery.clone().where('loanStatus', 'disbursed').count('* as total'),
+      ])
 
       return response.ok({
         success: true,
         message: 'Loan users fetched successfully',
-        data: loans,
+        data: {
+          ...loans.toJSON(),
+          statistics: {
+            totalLoans: totalLoans[0]?.$extras?.total || 0,
+            activeLoans: activeLoans[0]?.$extras?.total || 0,
+            completedLoans: completedLoans[0]?.$extras?.total || 0,
+          }
+        },
       })
     } catch (error) {
       return response.badRequest(getErrorObject(error))
@@ -695,6 +721,378 @@ export default class LoansController {
           ...loan.toJSON(),
           disbursementInfo: disbursementData,
         },
+      })
+    } catch (error) {
+      return response.badRequest(getErrorObject(error))
+    }
+  }
+
+  async getLoanRepaymentDetails({ auth, response, params }: HttpContext) {
+    try {
+      await auth.authenticate()
+      const user = auth.user!
+      const loanId = params.id
+
+      const loan = await Loan.query()
+        .where('id', loanId)
+        .preload('user')
+        .preload('repayments')
+        .first()
+
+      if (!loan) {
+        return response.notFound({
+          success: false,
+          message: 'Loan not found',
+        })
+      }
+
+      // Check if user owns the loan or is admin
+      if (user.role !== 'admin' && loan.userId !== user.id) {
+        return response.unauthorized({
+          success: false,
+          message: 'Unauthorized: You can only access your own loans',
+        })
+      }
+
+      if (loan.loanStatus !== 'disbursed' && loan.loanStatus !== 'overdue') {
+        return response.badRequest({
+          success: false,
+          message: 'Only disbursed loans can be repaid',
+        })
+      }
+
+      const loanAmount = parseFloat(loan.loanAmount)
+      const interestRate = loan.interestRate
+      const durationInMonths = parseLoanDuration(loan.loanDuration)
+      
+      const meta = loan.meta ? JSON.parse(loan.meta) : {}
+      const disbursementDate = meta.disbursement?.disbursedAt 
+        ? DateTime.fromISO(meta.disbursement.disbursedAt)
+        : loan.createdAt
+
+      const totalPaid = loan.repayments
+        .filter(repayment => repayment.repaymentStatus === 'SUCCESS')
+        .reduce((sum, repayment) => sum + repayment.repaymentAmount, 0)
+
+      const outstandingDetails = calculateOutstandingBalance(
+        loanAmount,
+        totalPaid,
+        interestRate,
+        durationInMonths,
+        disbursementDate
+      )
+
+      const loanDetails = calculateLoanDetails(loanAmount, interestRate, durationInMonths)
+
+      const expectedEndDate = disbursementDate.plus({ months: durationInMonths })
+      const isOverdue = DateTime.now() > expectedEndDate && outstandingDetails.totalOutstanding > 0
+
+      if (isOverdue && loan.loanStatus !== 'overdue') {
+        loan.loanStatus = 'overdue'
+        await loan.save()
+      }
+
+      return response.ok({
+        success: true,
+        data: {
+          loan: {
+            id: loan.id,
+            loanAmount: loanAmount,
+            interestRate: interestRate,
+            loanDuration: loan.loanDuration,
+            loanStatus: loan.loanStatus,
+            disbursementDate: disbursementDate.toISO(),
+            expectedEndDate: expectedEndDate.toISO(),
+            isOverdue,
+          },
+          repaymentDetails: {
+            totalAmountDue: loanDetails.totalAmount,
+            totalPaid,
+            outstandingPrincipal: outstandingDetails.outstandingPrincipal,
+            outstandingInterest: outstandingDetails.outstandingInterest,
+            penaltyAmount: outstandingDetails.penaltyAmount,
+            totalOutstanding: outstandingDetails.totalOutstanding,
+            monthlyPayment: loanDetails.monthlyPayment,
+          },
+          repaymentHistory: loan.repayments.map(repayment => ({
+            id: repayment.id,
+            amount: repayment.repaymentAmount,
+            type: repayment.repaymentType,
+            status: repayment.repaymentStatus,
+            paymentMethod: repayment.paymentMethod,
+            paymentReference: repayment.paymentReference,
+            repaymentDate: repayment.repaymentDate?.toISO(),
+            createdAt: repayment.createdAt.toISO(),
+          }))
+        },
+      })
+    } catch (error) {
+      return response.badRequest(getErrorObject(error))
+    }
+  }
+
+  async initializeLoanRepayment({ auth, request, response, params }: HttpContext) {
+    try {
+      await auth.authenticate()
+      const user = auth.user!
+      const loanId = params.id
+      
+      const payload = await request.validateUsing(loanRepaymentValidator)
+      const { repaymentAmount, repaymentType = 'PARTIAL', paymentMethod = 'CARD' } = payload
+
+      if (!repaymentAmount || repaymentAmount <= 0) {
+        return response.badRequest({
+          success: false,
+          message: 'Repayment amount must be greater than 0',
+        })
+      }
+
+      const loan = await Loan.query()
+        .where('id', loanId)
+        .preload('repayments', (query) => {
+          query.where('repaymentStatus', 'SUCCESS')
+        })
+        .first()
+
+      if (!loan) {
+        return response.notFound({
+          success: false,
+          message: 'Loan not found',
+        })
+      }
+
+      if (loan.userId !== user.id) {
+        return response.unauthorized({
+          success: false,
+          message: 'Unauthorized: You can only repay your own loans',
+        })
+      }
+
+      if (loan.loanStatus !== 'disbursed' && loan.loanStatus !== 'overdue') {
+        return response.badRequest({
+          success: false,
+          message: 'Only disbursed loans can be repaid',
+        })
+      }
+
+      // Calculate outstanding balance
+      const loanAmount = parseFloat(loan.loanAmount)
+      const totalPaid = loan.repayments.reduce((sum, repayment) => sum + repayment.repaymentAmount, 0)
+      const loanDetails = calculateLoanDetails(loanAmount, loan.interestRate, parseLoanDuration(loan.loanDuration))
+      const totalDue = loanDetails.totalAmount
+      const outstandingBalance = totalDue - totalPaid
+
+      if (outstandingBalance <= 0) {
+        return response.badRequest({
+          success: false,
+          message: 'This loan has been fully repaid',
+        })
+      }
+
+      if (repaymentAmount > outstandingBalance) {
+        return response.badRequest({
+          success: false,
+          message: `Repayment amount cannot exceed outstanding balance of ₦${outstandingBalance.toFixed(2)}`,
+        })
+      }
+
+      const paymentReference = `LR_${nanoid(10)}`
+
+      const loanRepayment = await LoanRepayment.create({
+        loanId: loan.id,
+        userId: user.id,
+        repaymentAmount: repaymentAmount,
+        repaymentType: repaymentType,
+        paymentMethod: paymentMethod,
+        paymentReference: paymentReference,
+        paymentProvider: 'PAYSTACK', 
+        repaymentStatus: 'PENDING',
+        outstandingBalance: outstandingBalance - repaymentAmount,
+        principalAmount: 0, // Will be calculated after successful payment
+        interestAmount: 0, // Will be calculated after successful payment
+      })
+
+      const responseData = {
+        success: true,
+        message: 'Loan repayment initialized successfully',
+        data: {
+          repaymentId: loanRepayment.id,
+          loanId: loan.id,
+          repaymentAmount: repaymentAmount,
+          outstandingBalance: outstandingBalance - repaymentAmount,
+          paymentReference: paymentReference,
+          paystackConfig: {
+            publicKey: process.env.PAYSTACK_PUBLIC_KEY,
+            amount: repaymentAmount * 100, // Paystack expects amount in kobo
+            email: user.email,
+            reference: paymentReference,
+            currency: 'NGN',
+            metadata: {
+              loanId: loan.id,
+              repaymentId: loanRepayment.id,
+              userId: user.id,
+              repaymentType: repaymentType,
+            },
+          },
+        },
+      }
+
+      return response.created(responseData)
+    } catch (error) {
+      return response.badRequest(getErrorObject(error))
+    }
+  }
+
+  async verifyLoanRepayment({ auth, request, response, params }: HttpContext) {
+    try {
+      await auth.authenticate()
+      const user = auth.user!
+      const repaymentId = params.repaymentId
+      
+      // Validate request data
+      const payload = await request.validateUsing(verifyRepaymentValidator)
+      const { paymentReference, providerResponse } = payload
+
+      const loanRepayment = await LoanRepayment.query()
+        .where('id', repaymentId)
+        .preload('loan')
+        .first()
+
+      if (!loanRepayment) {
+        return response.notFound({
+          success: false,
+          message: 'Loan repayment not found',
+        })
+      }
+
+      // Check if user owns the repayment
+      if (loanRepayment.userId !== user.id) {
+        return response.unauthorized({
+          success: false,
+          message: 'Unauthorized: You can only verify your own repayments',
+        })
+      }
+
+      if (loanRepayment.repaymentStatus !== 'PENDING') {
+        return response.badRequest({
+          success: false,
+          message: 'This repayment has already been processed',
+        })
+      }
+
+      // Verify payment with payment provider
+      const verificationResult = await PaymentVerificationService.verifyPayment(
+        loanRepayment.paymentProvider,
+        paymentReference
+      )
+
+      if (verificationResult.success) {
+        // Update repayment status
+        loanRepayment.repaymentStatus = 'SUCCESS'
+        loanRepayment.repaymentDate = DateTime.now()
+        loanRepayment.meta = JSON.stringify({
+          providerResponse: verificationResult.data || providerResponse || {},
+          verifiedAt: DateTime.now().toISO(),
+        })
+
+        // Calculate principal and interest breakdown
+        const loan = loanRepayment.loan
+        const loanAmount = parseFloat(loan.loanAmount)
+        const loanDetails = calculateLoanDetails(loanAmount, loan.interestRate, parseLoanDuration(loan.loanDuration))
+        const totalInterest = loanDetails.totalInterest
+        const totalPrincipal = loanAmount
+
+        // Simple proportional calculation for principal/interest breakdown
+        const interestPortion = totalInterest / loanDetails.totalAmount
+        const principalPortion = totalPrincipal / loanDetails.totalAmount
+
+        loanRepayment.interestAmount = loanRepayment.repaymentAmount * interestPortion
+        loanRepayment.principalAmount = loanRepayment.repaymentAmount * principalPortion
+
+        await loanRepayment.save()
+
+        // Create payment record
+        await Payment.create({
+          userId: user.id,
+          amount: loanRepayment.repaymentAmount,
+          provider: 'PAYSTACK',
+          status: 'SUCCESS',
+          reference: paymentReference,
+          providerResponse: JSON.stringify(verificationResult.data || providerResponse || {}),
+          paymentMethod: loanRepayment.paymentMethod === 'CASH' ? 'WALLET' : loanRepayment.paymentMethod,
+        })
+
+        // Check if loan is fully repaid
+        const allRepayments = await LoanRepayment.query()
+          .where('loanId', loan.id)
+          .where('repaymentStatus', 'SUCCESS')
+
+        const totalPaid = allRepayments.reduce((sum, repayment) => sum + repayment.repaymentAmount, 0)
+        const totalDue = loanDetails.totalAmount
+
+        if (totalPaid >= totalDue) {
+          loan.loanStatus = 'completed'
+          await loan.save()
+        }
+
+        return response.ok({
+          success: true,
+          message: 'Loan repayment verified successfully',
+          data: {
+            repaymentId: loanRepayment.id,
+            amount: loanRepayment.repaymentAmount,
+            status: loanRepayment.repaymentStatus,
+            outstandingBalance: loanRepayment.outstandingBalance,
+            loanStatus: loan.loanStatus,
+            isLoanCompleted: loan.loanStatus === 'completed',
+          },
+        })
+      } else {
+        // Payment verification failed
+        loanRepayment.repaymentStatus = 'FAILED'
+        loanRepayment.meta = JSON.stringify({
+          providerResponse: verificationResult.data || providerResponse || {},
+          errorMessage: verificationResult.message,
+          failedAt: DateTime.now().toISO(),
+        })
+        await loanRepayment.save()
+
+        return response.badRequest({
+          success: false,
+          message: verificationResult.message || 'Payment verification failed',
+        })
+      }
+    } catch (error) {
+      return response.badRequest(getErrorObject(error))
+    }
+  }
+
+  /**
+   * Get user's loan repayment history
+   */
+  async getUserLoanRepayments({ auth, response, request }: HttpContext) {
+    try {
+      await auth.authenticate()
+      const user = auth.user!
+      const { page = 1, limit = 10, loanId } = request.qs()
+
+      let query = LoanRepayment.query()
+        .where('userId', user.id)
+        .preload('loan', (loanQuery) => {
+          loanQuery.select(['id', 'loanAmount', 'loanDuration', 'loanStatus'])
+        })
+        .orderBy('createdAt', 'desc')
+
+      if (loanId) {
+        query = query.where('loanId', loanId)
+      }
+
+      const repayments = await query.paginate(page, limit)
+
+      return response.ok({
+        success: true,
+        message: 'Loan repayments fetched successfully',
+        data: repayments,
       })
     } catch (error) {
       return response.badRequest(getErrorObject(error))

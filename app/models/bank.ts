@@ -13,7 +13,7 @@ export default class Bank extends BaseModel {
   declare userId: string
 
   @column()
-  declare averageSalary: string
+  declare averageSalary: number
 
   @column()
   declare bankName: string

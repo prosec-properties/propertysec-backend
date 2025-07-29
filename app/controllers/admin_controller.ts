@@ -15,16 +15,32 @@ export default class AdminController {
       const perPage = request.input('per_page', 20)
       const sortBy = request.input('sort_by', 'created_at')
       const order = request.input('order', 'desc')
+      const search = request.input('search')
 
       const orderDirection = order.toLowerCase() === 'asc' ? 'asc' : 'desc'
 
       const sortableColumns = ['created_at', 'updated_at', 'email', 'first_name', 'last_name']
       const validSortBy = sortableColumns.includes(sortBy) ? sortBy : 'created_at'
 
-      const users = await User.query()
-        .preload('profileFiles')
-        .orderBy(validSortBy, orderDirection)
-        .paginate(page, perPage)
+      let query = User.query().preload('profileFiles').orderBy(validSortBy, orderDirection)
+
+      if (search) {
+        query = query.where((builder) => {
+          builder
+            .where('full_name', 'ILIKE', `%${search}%`)
+            .orWhere('email', 'ILIKE', `%${search}%`)
+            .orWhere('phone_number', 'ILIKE', `%${search}%`)
+        })
+      }
+
+      const users = await query.paginate(page, perPage)
+
+      let baseStatsQuery = User.query()
+
+      const [totalUsers, activeUsers] = await Promise.all([
+        baseStatsQuery.clone().count('* as total'),
+        baseStatsQuery.clone().where('subscription_status', 'active').count('* as total'),
+      ])
 
       return response.ok({
         success: true,
@@ -32,6 +48,8 @@ export default class AdminController {
         data: {
           users: users.toJSON().data,
           meta: users.toJSON().meta,
+          totalUsers: totalUsers[0]?.$extras?.total || 0,
+          activeUsers: activeUsers[0]?.$extras?.total || 0,
         },
       })
     } catch (error) {
@@ -135,7 +153,7 @@ export default class AdminController {
 
       let query = PropertyPurchase.query()
         .preload('user', (userQuery) => userQuery.select('id', 'fullName', 'email'))
-        .preload('property', (propertyQuery) => 
+        .preload('property', (propertyQuery) =>
           propertyQuery.select('id', 'title', 'address', 'price', 'currency', 'availability')
         )
         .orderBy(validSortBy, orderDirection)
@@ -160,7 +178,13 @@ export default class AdminController {
     }
   }
 
-  public async updatePropertyPurchaseStatus({ auth, response, params, request, bouncer }: HttpContext) {
+  public async updatePropertyPurchaseStatus({
+    auth,
+    response,
+    params,
+    request,
+    bouncer,
+  }: HttpContext) {
     try {
       await auth.authenticate()
       await bouncer.with('UserPolicy').authorize('isAdmin')
@@ -171,7 +195,7 @@ export default class AdminController {
       if (!['PENDING', 'COMPLETED', 'CANCELLED', 'REFUNDED'].includes(status)) {
         return response.badRequest({
           success: false,
-          message: 'Invalid status. Must be one of: PENDING, COMPLETED, CANCELLED, REFUNDED'
+          message: 'Invalid status. Must be one of: PENDING, COMPLETED, CANCELLED, REFUNDED',
         })
       }
 
@@ -188,7 +212,7 @@ export default class AdminController {
       return response.ok({
         success: true,
         message: 'Property purchase status updated successfully',
-        data: { purchase }
+        data: { purchase },
       })
     } catch (error) {
       return response.internalServerError(getErrorObject(error))
