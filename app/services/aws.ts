@@ -1,6 +1,12 @@
 import env from '#start/env'
 import logger from '@adonisjs/core/services/logger'
-import { S3Client, PutObjectCommand, HeadObjectCommand, DeleteObjectCommand, GetObjectCommand } from '@aws-sdk/client-s3'
+import {
+  S3Client,
+  PutObjectCommand,
+  HeadObjectCommand,
+  DeleteObjectCommand,
+  GetObjectCommand,
+} from '@aws-sdk/client-s3'
 import axios from 'axios'
 import { Readable } from 'stream'
 import fs from 'fs'
@@ -26,11 +32,13 @@ class AWS {
   private client: S3Client
   constructor() {
     this.client = new S3Client({
-      region: env.get('AWS_REGION') || '',
+      region: 'auto',
+      endpoint: env.get('R2_ENDPOINT') || '',
       credentials: {
-        accessKeyId: env.get('AWS_CLIENT_ACCESS_KEY') || '',
-        secretAccessKey: env.get('AWS_SECRET_ACCESS_KEY') || '',
+        accessKeyId: env.get('R2_ACCESS_KEY_ID') || '',
+        secretAccessKey: env.get('R2_SECRET_ACCESS_KEY') || '',
       },
+      forcePathStyle: true, // Required for R2 compatibility
     })
   }
 
@@ -62,7 +70,11 @@ class AWS {
     }
   }
 
-  public async uploadFile(fileName: string, data: Buffer | Readable, contentType: string): Promise<string> {
+  public async uploadFile(
+    fileName: string,
+    data: Buffer | Readable,
+    contentType: string
+  ): Promise<string> {
     const uploadParams = {
       Bucket: BUCKET_NAME,
       Key: fileName,
@@ -74,7 +86,8 @@ class AWS {
       const command = new PutObjectCommand(uploadParams)
       await this.client.send(command)
       logger.info(`File uploaded successfully: ${fileName}`)
-      return `https://${BUCKET_NAME}.s3.amazonaws.com/${fileName}`
+      // return `https://${BUCKET_NAME}.s3.amazonaws.com/${fileName}`
+      return `https://dc27b5589db2bd071b61f02c1a6aad39.r2.cloudflarestorage.com/prosec-bucket/${fileName}`
     } catch (error) {
       logger.error({ error }, 'Error uploading file to AWS S3')
       throw error
@@ -87,7 +100,11 @@ class AWS {
       const fileName = fileUrl.split('/').pop() || 'file'
       const hashedFileName = fileNameHash(fileName)
 
-      await this.uploadFile(`${key}${hashedFileName}`, Buffer.from(response.data), this.getContentType(fileName))
+      await this.uploadFile(
+        `${key}${hashedFileName}`,
+        Buffer.from(response.data),
+        this.getContentType(fileName)
+      )
       return hashedFileName
     } catch (error) {
       logger.error({ error }, 'Error uploading file from URL to AWS S3')
