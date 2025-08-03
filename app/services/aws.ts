@@ -13,7 +13,7 @@ import fs from 'fs'
 import { FileMetaData } from '../interfaces/file.js'
 import { fileNameHash } from '#helpers/file'
 
-const BUCKET_NAME = env.get('AWS_BUCKET')
+const BUCKET_NAME = env.get('R2_BUCKET_NAME')
 
 export interface ImageUploadInterface {
   url: string
@@ -22,10 +22,10 @@ export interface ImageUploadInterface {
 }
 
 console.log({
-  accessKeyId: env.get('AWS_CLIENT_ACCESS_KEY'),
-  secretAccessKey: env.get('AWS_SECRET_ACCESS_KEY'),
+  accessKeyId: env.get('R2_ACCESS_KEY_ID'),
+  secretAccessKey: env.get('R2_SECRET_ACCESS_KEY'),
   region: env.get('AWS_REGION'),
-  bucket: env.get('AWS_BUCKET'),
+  bucket: env.get('R2_BUCKET_NAME'),
 })
 
 class AWS {
@@ -86,8 +86,7 @@ class AWS {
       const command = new PutObjectCommand(uploadParams)
       await this.client.send(command)
       logger.info(`File uploaded successfully: ${fileName}`)
-      // return `https://${BUCKET_NAME}.s3.amazonaws.com/${fileName}`
-      return `https://dc27b5589db2bd071b61f02c1a6aad39.r2.cloudflarestorage.com/prosec-bucket/${fileName}`
+      return `${env.get('R2_PUBLIC_URL')}/${fileName}`
     } catch (error) {
       logger.error({ error }, 'Error uploading file to AWS S3')
       throw error

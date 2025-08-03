@@ -48,10 +48,6 @@ export default await Env.create(new URL('../', import.meta.url), {
   */
   FRONT_END_URL: Env.schema.string(),
 
-  REDIS_HOST: Env.schema.string({ format: 'host' }),
-  REDIS_PORT: Env.schema.number(),
-  REDIS_PASSWORD: Env.schema.string.optional(),
-
   /*
   |----------------------------------------------------------
   | Variables for configuring the limiter package
@@ -67,8 +63,6 @@ export default await Env.create(new URL('../', import.meta.url), {
   GOOGLE_CLIENT_ID: Env.schema.string(),
   GOOGLE_CLIENT_SECRET: Env.schema.string(),
   GOOGLE_CALLBACK_URL: Env.schema.string(),
-
-  AZURE_STORAGE_CONNECTION_STRING: Env.schema.string(),
 
   PAYSTACK_PUBLIC_KEY: Env.schema.string(),
   // PAYSTACK_SECRET_KEY: Env.schema.string(),
