@@ -5,14 +5,14 @@ import path from 'path'
 
 export default class extends BaseSeeder {
   public async run() {
-    const naijaCitiesString = await fs.readFile(path.join('database/seeders', 'nigerianCities.json'), 'utf-8')
+    const naijaCitiesString = await fs.readFile(
+      path.join('database/seeders', 'nigerianCities.json'),
+      'utf-8'
+    )
     let num = 0
     const cities = JSON.parse(naijaCitiesString)
 
-
     for (const city of cities?.data) {
-
-
       console.log('city', num++, city.name)
       try {
         await City.updateOrCreate(

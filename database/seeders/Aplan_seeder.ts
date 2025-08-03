@@ -1,8 +1,8 @@
 import { AcceptedCurrencies, PlanName } from '#interfaces/payment'
 import Plan from '#models/plan'
-// import paystack from '#services/paystack'
 import { BaseSeeder } from '@adonisjs/lucid/seeders'
-import { v4 as uuidv4 } from 'uuid'
+import { v5 as uuidv5 } from 'uuid'
+import { UUID_NAMESPACES } from '../../app/constants/namespaces.js'
 
 
 const mockFeatures = {
@@ -104,12 +104,15 @@ export default class extends BaseSeeder {
     ]
 
     for (const plan of plans) {
+      // Create a consistent seed for UUID generation
+      const planSeed = `${plan.name}-${plan.duration}-${plan.price}`
+      
       await Plan.updateOrCreate(
         {
           name: plan.name as PlanName,
         },
         {
-          id: uuidv4(),
+          id: uuidv5(planSeed, UUID_NAMESPACES.PLAN),
           name: plan.name as PlanName,
           price: plan.price,
           features: plan.features,
