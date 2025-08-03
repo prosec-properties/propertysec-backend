@@ -8,7 +8,7 @@ export type TransactionStatus = 'PENDING' | 'SUCCESS' | 'FAIL' | 'INITIALIZE'
 
 export type TransactionType = 'subscription' | 'wallet:credit' | 'wallet:debit' | 'inspection' | 'property_purchase'
 
-export type PlanName = 'PRO' | 'LUX' | 'VIP' 
+export type PlanName = 'FREE' | 'GOLD' | 'PLATINUM' | 'SILVER' | 'UNLIMITED' 
 
 export interface PaystackVerifyTransactionResponse {
   id: number
