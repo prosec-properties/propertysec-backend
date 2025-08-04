@@ -24,19 +24,7 @@ export default class HttpExceptionHandler extends ExceptionHandler {
         })
     }
 
-    if (error && typeof error === 'object' && 'code' in error && error.code === 'E_VALIDATION_ERROR') {
-      const validationError = error as any
-      const firstError = validationError.messages?.errors?.[0]
-      
-      return ctx.response
-        .status(422)
-        .send({
-          success: false,
-          message: firstError?.message || 'Validation failed. Please check your input.',
-          errors: validationError.messages?.errors,
-          requestFail: true
-        })
-    }
+    // Removed global validation error handler to allow controllers to handle validation errors directly
 
     if (error && typeof error === 'object' && 'code' in error && error.code === '23505') {
       const dbError = error as any
