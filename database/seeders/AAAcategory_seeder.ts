@@ -1,27 +1,29 @@
 import Category from '#models/category'
 import { BaseSeeder } from '@adonisjs/lucid/seeders'
+import { v5 as uuidv5 } from 'uuid'
+import { UUID_NAMESPACES } from '../../app/constants/namespaces.js'
 
-// // Define category IDs as constants to reference in subcategory seeder
+// Generate category IDs using uuidv5 for consistency
 export const CATEGORY_IDS = {
-  RENT: '550e8400-e29b-41d4-a716-446655440000',
-  SALE: '550e8400-e29b-41d4-a716-446655440001',
-  SHORTLET: '550e8400-e29b-41d4-a716-446655440002',
-  FASHION: '550e8400-e29b-41d4-a716-446655440003',
-  HOME_OFFICE: '550e8400-e29b-41d4-a716-446655440004',
-  FURNITURE: '550e8400-e29b-41d4-a716-446655440005',
-  VEHICLES: '550e8400-e29b-41d4-a716-446655440006',
-  ELECTRONICS: '550e8400-e29b-41d4-a716-446655440007',
-  CONSTRUCTION: '550e8400-e29b-41d4-a716-446655440008',
-  MACHINERY: '550e8400-e29b-41d4-a716-446655440009',
-  HEALTH_BEAUTY: '550e8400-e29b-41d4-a716-446655440010',
-  SERVICES: '550e8400-e29b-41d4-a716-446655440011',
-  AGRICULTURE: '550e8400-e29b-41d4-a716-446655440012',
-  MEDICAL: '550e8400-e29b-41d4-a716-446655440013',
-  PHONES_COMPUTERS: '550e8400-e29b-41d4-a716-446655440014',
-  BOOKS: '550e8400-e29b-41d4-a716-446655440015',
-  CHILDREN: '550e8400-e29b-41d4-a716-446655440016',
-  SPORTS_ART: '550e8400-e29b-41d4-a716-446655440017',
-  OTHER: '550e8400-e29b-41d4-a716-446655440018',
+  RENT: uuidv5('category-rent-property', UUID_NAMESPACES.CATEGORY),
+  SALE: uuidv5('category-sale-property', UUID_NAMESPACES.CATEGORY),
+  SHORTLET: uuidv5('category-shortlet-property', UUID_NAMESPACES.CATEGORY),
+  FASHION: uuidv5('category-fashion-product', UUID_NAMESPACES.CATEGORY),
+  HOME_OFFICE: uuidv5('category-home-office-product', UUID_NAMESPACES.CATEGORY),
+  FURNITURE: uuidv5('category-furniture-product', UUID_NAMESPACES.CATEGORY),
+  VEHICLES: uuidv5('category-vehicles-product', UUID_NAMESPACES.CATEGORY),
+  ELECTRONICS: uuidv5('category-electronics-product', UUID_NAMESPACES.CATEGORY),
+  CONSTRUCTION: uuidv5('category-construction-product', UUID_NAMESPACES.CATEGORY),
+  MACHINERY: uuidv5('category-machinery-product', UUID_NAMESPACES.CATEGORY),
+  HEALTH_BEAUTY: uuidv5('category-health-beauty-product', UUID_NAMESPACES.CATEGORY),
+  SERVICES: uuidv5('category-services-product', UUID_NAMESPACES.CATEGORY),
+  AGRICULTURE: uuidv5('category-agriculture-product', UUID_NAMESPACES.CATEGORY),
+  MEDICAL: uuidv5('category-medical-product', UUID_NAMESPACES.CATEGORY),
+  PHONES_COMPUTERS: uuidv5('category-phones-computers-product', UUID_NAMESPACES.CATEGORY),
+  BOOKS: uuidv5('category-books-product', UUID_NAMESPACES.CATEGORY),
+  CHILDREN: uuidv5('category-children-product', UUID_NAMESPACES.CATEGORY),
+  SPORTS_ART: uuidv5('category-sports-art-product', UUID_NAMESPACES.CATEGORY),
+  OTHER: uuidv5('category-other-product', UUID_NAMESPACES.CATEGORY),
 }
 
 export default class extends BaseSeeder {

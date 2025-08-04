@@ -31,7 +31,6 @@ export default class AuthController {
         if (!isAdmin) {
           return response.badRequest(errorResponse('You are not authorized to perform this action'))
         }
-        // isAddedByAdmin = true
         meta = {
           addedByAdmin: true,
           addedBy: auth.user?.id,
@@ -91,7 +90,6 @@ export default class AuthController {
     const { email } = request.body()
 
     try {
-
       const user = await User.findByOrFail('email', email)
 
       const storedOtp = await Otp.findByOrFail('userId', user.id)
