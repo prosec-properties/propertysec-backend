@@ -1,7 +1,8 @@
 import env from '#start/env'
 import { defineConfig } from '@adonisjs/lucid'
 
-console.log('DB_PASSWORD', env.get('DB_PASSWORD'))
+// console.log('DB_PASSWORD', env.get('DB_PASSWORD'))
+console.log('DB_CONNECTION_STRING', env.get('DB_CONNECTION_STRING'))
 
 const dbConfig = defineConfig({
   connection: 'postgres',

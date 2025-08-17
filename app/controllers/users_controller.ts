@@ -62,9 +62,7 @@ export default class UsersController {
       })
     } catch (error) {
       logger.error(error)
-      return response.badRequest(
-        getErrorObject(error)
-      )
+      return response.badRequest(getErrorObject(error))
     }
   }
 
@@ -90,13 +88,13 @@ export default class UsersController {
       stateOfOrigin: payload.stateOfOrigin,
       nin: payload.nin,
       bvn: payload.bvn,
-      nextOfKin: payload.nextOfKin,
+      nextOfKinName: payload.nextOfKin,
       religion: payload.religion,
       monthlySalary: payload.monthlySalary,
       bankName: payload.bankName,
       bankAccountNumber: payload.bankAccountNumber,
       bankAccountName: payload.bankAccountName,
-      meta: payload.meta ? JSON.stringify(payload.meta) : null,
+      meta: payload.meta ?? null,
     }
 
     return await user.merge(updatableFields).save()

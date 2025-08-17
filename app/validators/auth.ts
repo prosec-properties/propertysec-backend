@@ -49,6 +49,5 @@ export const completeRegistrationValidator = vine.compile(
     phoneNumber: vine.string().minLength(11),
     role: vine.enum(IUserRoleEnum),
     email: vine.string().email().normalizeEmail(),
-
   })
 )

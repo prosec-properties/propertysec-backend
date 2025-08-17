@@ -1,40 +1,36 @@
 import SubCategory from '#models/subcategory'
 import { BaseSeeder } from '@adonisjs/lucid/seeders'
+import { v5 as uuidv5 } from 'uuid'
 import { CATEGORY_IDS } from './AAAcategory_seeder.js'
+import { UUID_NAMESPACES } from '../../app/constants/namespaces.js'
 
 export default class extends BaseSeeder {
   async run() {
     const subcategories = [
       // Rent subcategories
       {
-        id: '660e8400-e29b-41d4-a716-446655440000',
         name: 'Apartments',
         categoryId: CATEGORY_IDS.RENT,
       },
       {
-        id: '660e8400-e29b-41d4-a716-446655440001',
         name: 'Houses',
         categoryId: CATEGORY_IDS.RENT,
       },
       {
-        id: '660e8400-e29b-41d4-a716-446655440002',
         name: 'Commercial Spaces',
         categoryId: CATEGORY_IDS.RENT,
       },
 
       // Sale subcategories
       {
-        id: '660e8400-e29b-41d4-a716-446655440003',
         name: 'Apartments',
         categoryId: CATEGORY_IDS.SALE,
       },
       {
-        id: '660e8400-e29b-41d4-a716-446655440004',
         name: 'Houses',
         categoryId: CATEGORY_IDS.SALE,
       },
       {
-        id: '660e8400-e29b-41d4-a716-446655440005',
         name: 'Land',
         categoryId: CATEGORY_IDS.SALE,
       },
@@ -260,10 +256,14 @@ export default class extends BaseSeeder {
     ]
 
     for (const subcategory of subcategories) {
+      // Create a consistent seed for UUID generation
+      const subcategorySeed = `${subcategory.name}-${subcategory.categoryId}`
+      const subcategoryId = uuidv5(subcategorySeed, UUID_NAMESPACES.SUBCATEGORY)
+      
       await SubCategory.updateOrCreate(
-        { id: subcategory.id },
+        { name: subcategory.name, categoryId: subcategory.categoryId },
         {
-          id: subcategory.id,
+          id: subcategoryId,
           name: subcategory.name,
           status: 'active',
           categoryId: subcategory.categoryId,
