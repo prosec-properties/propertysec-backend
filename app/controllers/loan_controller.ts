@@ -271,11 +271,10 @@ export default class LoansController {
 
     console.log('new loan file', loan?.toJSON())
 
-    // Update all loan files to reference the actual loan ID instead of loan request ID
-    await LoanFile.query()
-      .where('loanId', loanRequest.id)
-      .where('userId', user.id)
-      .update({ loanId: loan.id })
+  // Note: loan_files.loan_id references loan_requests.id in the current schema.
+  // Do not update loan_files.loan_id to the newly created loan.id here, as that
+  // would violate the foreign key constraint. Files remain linked via the
+  // loan request context (loanRequest.id).
 
     await loanRequest.merge({ status: 'completed' }).save()
 
