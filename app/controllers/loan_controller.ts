@@ -238,13 +238,12 @@ export default class LoansController {
 
   private async handleGuarantorInfo({ request, response, user }: HandleStepParams) {
     const payload = await request.validateUsing(guarantorInfoValidator)
-    // console.log('user from guarantor info', user.id)
     const loanRequest = await LoanRequest.findBy('userId', user.id)
     if (!loanRequest) {
       return response.notFound(errorResponse('Loan request not found'))
     }
 
-    // console.log('got here 203')
+    console.log('loanRequest', loanRequest.toJSON())
 
     const guarantor = await Guarantor.updateOrCreate(
       { userId: user.id, contextId: loanRequest.id },
@@ -260,8 +259,6 @@ export default class LoansController {
       }
     )
 
-    console.log('userIfd', user.id)
-
     const loan = await Loan.create({
       userId: user.id,
       loanAmount: loanRequest.amount as ILoanAmount,
@@ -271,6 +268,8 @@ export default class LoansController {
       reasonForFunds: loanRequest.reasonForLoanRequest || '',
       hasCompletedForm: true,
     })
+
+    console.log('new loan file', loan?.toJSON())
 
     // Update all loan files to reference the actual loan ID instead of loan request ID
     await LoanFile.query()
@@ -316,9 +315,7 @@ export default class LoansController {
       await bouncer.with('UserPolicy').authorize('isAdmin')
       const { page = 1, limit = 10, search } = request.qs()
 
-      let query = Loan.query()
-        .preload('user')
-        .orderBy('created_at', 'desc')
+      let query = Loan.query().preload('user').orderBy('created_at', 'desc')
 
       if (search) {
         query = query.whereHas('user', (userQuery) => {
@@ -334,7 +331,6 @@ export default class LoansController {
       const loans = await query.paginate(page, limit)
 
       let baseStatsQuery = Loan.query()
-    
 
       const [totalLoans, activeLoans, completedLoans] = await Promise.all([
         baseStatsQuery.clone().count('* as total'),
@@ -351,7 +347,7 @@ export default class LoansController {
             totalLoans: totalLoans[0]?.$extras?.total || 0,
             activeLoans: activeLoans[0]?.$extras?.total || 0,
             completedLoans: completedLoans[0]?.$extras?.total || 0,
-          }
+          },
         },
       })
     } catch (error) {
@@ -764,14 +760,14 @@ export default class LoansController {
       const loanAmount = parseFloat(loan.loanAmount)
       const interestRate = loan.interestRate
       const durationInMonths = parseLoanDuration(loan.loanDuration)
-      
+
       const meta = loan.meta ? JSON.parse(loan.meta) : {}
-      const disbursementDate = meta.disbursement?.disbursedAt 
+      const disbursementDate = meta.disbursement?.disbursedAt
         ? DateTime.fromISO(meta.disbursement.disbursedAt)
         : loan.createdAt
 
       const totalPaid = loan.repayments
-        .filter(repayment => repayment.repaymentStatus === 'SUCCESS')
+        .filter((repayment) => repayment.repaymentStatus === 'SUCCESS')
         .reduce((sum, repayment) => sum + repayment.repaymentAmount, 0)
 
       const outstandingDetails = calculateOutstandingBalance(
@@ -814,7 +810,7 @@ export default class LoansController {
             totalOutstanding: outstandingDetails.totalOutstanding,
             monthlyPayment: loanDetails.monthlyPayment,
           },
-          repaymentHistory: loan.repayments.map(repayment => ({
+          repaymentHistory: loan.repayments.map((repayment) => ({
             id: repayment.id,
             amount: repayment.repaymentAmount,
             type: repayment.repaymentType,
@@ -823,7 +819,7 @@ export default class LoansController {
             paymentReference: repayment.paymentReference,
             repaymentDate: repayment.repaymentDate?.toISO(),
             createdAt: repayment.createdAt.toISO(),
-          }))
+          })),
         },
       })
     } catch (error) {
@@ -836,7 +832,7 @@ export default class LoansController {
       await auth.authenticate()
       const user = auth.user!
       const loanId = params.id
-      
+
       const payload = await request.validateUsing(loanRepaymentValidator)
       const { repaymentAmount, repaymentType = 'PARTIAL', paymentMethod = 'CARD' } = payload
 
@@ -877,8 +873,15 @@ export default class LoansController {
 
       // Calculate outstanding balance
       const loanAmount = parseFloat(loan.loanAmount)
-      const totalPaid = loan.repayments.reduce((sum, repayment) => sum + repayment.repaymentAmount, 0)
-      const loanDetails = calculateLoanDetails(loanAmount, loan.interestRate, parseLoanDuration(loan.loanDuration))
+      const totalPaid = loan.repayments.reduce(
+        (sum, repayment) => sum + repayment.repaymentAmount,
+        0
+      )
+      const loanDetails = calculateLoanDetails(
+        loanAmount,
+        loan.interestRate,
+        parseLoanDuration(loan.loanDuration)
+      )
       const totalDue = loanDetails.totalAmount
       const outstandingBalance = totalDue - totalPaid
 
@@ -905,7 +908,7 @@ export default class LoansController {
         repaymentType: repaymentType,
         paymentMethod: paymentMethod,
         paymentReference: paymentReference,
-        paymentProvider: 'PAYSTACK', 
+        paymentProvider: 'PAYSTACK',
         repaymentStatus: 'PENDING',
         outstandingBalance: outstandingBalance - repaymentAmount,
         principalAmount: 0, // Will be calculated after successful payment
@@ -948,7 +951,7 @@ export default class LoansController {
       await auth.authenticate()
       const user = auth.user!
       const repaymentId = params.repaymentId
-      
+
       // Validate request data
       const payload = await request.validateUsing(verifyRepaymentValidator)
       const { paymentReference, providerResponse } = payload
@@ -998,7 +1001,11 @@ export default class LoansController {
         // Calculate principal and interest breakdown
         const loan = loanRepayment.loan
         const loanAmount = parseFloat(loan.loanAmount)
-        const loanDetails = calculateLoanDetails(loanAmount, loan.interestRate, parseLoanDuration(loan.loanDuration))
+        const loanDetails = calculateLoanDetails(
+          loanAmount,
+          loan.interestRate,
+          parseLoanDuration(loan.loanDuration)
+        )
         const totalInterest = loanDetails.totalInterest
         const totalPrincipal = loanAmount
 
@@ -1019,7 +1026,8 @@ export default class LoansController {
           status: 'SUCCESS',
           reference: paymentReference,
           providerResponse: JSON.stringify(verificationResult.data || providerResponse || {}),
-          paymentMethod: loanRepayment.paymentMethod === 'CASH' ? 'WALLET' : loanRepayment.paymentMethod,
+          paymentMethod:
+            loanRepayment.paymentMethod === 'CASH' ? 'WALLET' : loanRepayment.paymentMethod,
         })
 
         // Check if loan is fully repaid
@@ -1027,7 +1035,10 @@ export default class LoansController {
           .where('loanId', loan.id)
           .where('repaymentStatus', 'SUCCESS')
 
-        const totalPaid = allRepayments.reduce((sum, repayment) => sum + repayment.repaymentAmount, 0)
+        const totalPaid = allRepayments.reduce(
+          (sum, repayment) => sum + repayment.repaymentAmount,
+          0
+        )
         const totalDue = loanDetails.totalAmount
 
         if (totalPaid >= totalDue) {
