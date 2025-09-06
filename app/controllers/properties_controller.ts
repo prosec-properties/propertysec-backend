@@ -83,6 +83,19 @@ export default class PropertiesController {
       const isSubscribed = user.subscriptionStatus === 'active'
       const { files, ...payload } = await request.validateUsing(createPropertyValidator)
 
+      const propertyExists = await Property.query()
+        .where('userId', user.id)
+        .andWhere('title', payload.title)
+        .andWhere('categoryId', payload.categoryId)
+        .first()
+
+      if (propertyExists) {
+        return response.badRequest({
+          success: false,
+          message: 'You have already created a property with this title in the same category.',
+        })
+      }
+
       if (files && Array.isArray(files)) {
         for (const file of files) {
           if (file.type?.startsWith('video/') && !isSubscribed) {
@@ -173,7 +186,7 @@ export default class PropertiesController {
 
   async show({ logger, response, params, auth }: HttpContext) {
     try {
-      let user: User | null = null
+      let user = auth?.user
       try {
         user = await auth.authenticate()
       } catch (error) {}
@@ -370,6 +383,11 @@ export default class PropertiesController {
   async destroy({ logger, response, params }: HttpContext) {
     try {
       const property = await Property.findOrFail(params.id)
+      
+      // Delete associated files and inspections first
+      await property.related('files').query().delete()
+      await property.related('inspections').query().delete()
+      
       await property.delete()
       logger.info('Property deleted successfully')
       return response.ok({
