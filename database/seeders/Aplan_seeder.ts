@@ -5,13 +5,14 @@ import { v5 as uuidv5 } from 'uuid'
 import { UUID_NAMESPACES } from '../../app/constants/namespaces.js'
 
 const mockFeatures = {
-  FREE: ['2-3 property uploads.', 'Basic listing visibility.', 'Standard support.', '', ''],
+  FREE: ['2-3 property uploads.', 'Basic listing visibility.', 'Standard support.', '', '', ''],
   SILVER: [
     '10 property uploads max.',
     'Enhanced listing visibility.',
     'Priority support.',
     'Property promotion tools.',
     'Analytics dashboard.',
+    'Video upload capability.',
   ],
   GOLD: [
     '30 property uploads max.',
@@ -19,6 +20,7 @@ const mockFeatures = {
     'Priority support.',
     'Advanced promotion tools.',
     'Detailed analytics.',
+    'Video upload capability.',
   ],
   PLATINUM: [
     '60 property uploads max.',
@@ -26,6 +28,7 @@ const mockFeatures = {
     'VIP support.',
     'Premium promotion tools.',
     'Advanced analytics & insights.',
+    'Video upload capability.',
   ],
   UNLIMITED: [
     'Unlimited property uploads.',
@@ -33,6 +36,7 @@ const mockFeatures = {
     'VIP support.',
     'All promotion tools.',
     'Complete analytics suite.',
+    'Video upload capability.',
   ],
 }
 export default class extends BaseSeeder {

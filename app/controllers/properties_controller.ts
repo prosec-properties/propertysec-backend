@@ -7,8 +7,25 @@ import PropertyFile from '#models/property_file'
 import { MultipartFile } from '@adonisjs/core/bodyparser'
 import { NIGERIA_COUNTRY_ID } from '#constants/general'
 import vine from '@vinejs/vine'
+import Subscription from '#models/subscription'
 
 export default class PropertiesController {
+  private getPropertyLimit(planName: string): number {
+    switch (planName) {
+      case 'FREE':
+        return 3 // Allow up to 3 for free users
+      case 'SILVER':
+        return 10
+      case 'GOLD':
+        return 30
+      case 'PLATINUM':
+        return 60
+      case 'UNLIMITED':
+        return Infinity
+      default:
+        return 3 // Default to free limit
+    }
+  }
   async index({ response, request, logger }: HttpContext) {
     try {
       const page = request.input('page', 1)
@@ -17,6 +34,7 @@ export default class PropertiesController {
       const { status, categories, locations, pricing, search } = request.qs()
 
       const properties = await Property.query()
+        .where('availability', '!=', 'sold')
         .if(status, (query) => {
           query.where('status', status)
         })
@@ -78,6 +96,28 @@ export default class PropertiesController {
     try {
       await auth.authenticate()
       const user = auth.user!
+
+      // Check property upload limits based on subscription
+      const currentPropertyCount = await Property.query()
+        .where('userId', user.id)
+        .count('* as total')
+
+      const userPlan = user.subscriptionStatus === 'active' && user.subscriptionId 
+        ? await Subscription.query()
+            .where('id', user.subscriptionId)
+            .preload('plan')
+            .first()
+        : null
+
+      const planName = userPlan?.plan?.name || 'FREE'
+      const propertyLimit = this.getPropertyLimit(planName)
+
+      if (currentPropertyCount[0].$extras.total >= propertyLimit) {
+        return response.forbidden({
+          success: false,
+          message: `You have reached your property upload limit (${propertyLimit}). Please upgrade your subscription to upload more properties.`,
+        })
+      }
 
       const isSubscribed = user.subscriptionStatus === 'active'
       const { files, ...payload } = await request.validateUsing(createPropertyValidator)
@@ -321,7 +361,13 @@ export default class PropertiesController {
 
       const properties = await Property.query()
         .if(status, (query) => {
-          query.where('status', status)
+          if (status === 'sold') {
+            // For sold properties, filter by availability
+            query.where('availability', 'sold')
+          } else {
+            // For other statuses, filter by status
+            query.where('status', status)
+          }
         })
         .if(search, (query) => {
           query.where('title', 'ilike', `%${search}%`)

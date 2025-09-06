@@ -105,6 +105,7 @@ export default class AffiliatesController {
       if (propertyIds.length > 0) {
         affiliatedProperties = await Property.query()
           .whereIn('id', propertyIds)
+          .where('availability', '!=', 'sold')
           // .where('status', 'published') // Assuming properties have their own published status
           .preload('files')
           .orderBy('created_at', 'desc')
