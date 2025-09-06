@@ -7,7 +7,6 @@ import PropertyFile from '#models/property_file'
 import { MultipartFile } from '@adonisjs/core/bodyparser'
 import { NIGERIA_COUNTRY_ID } from '#constants/general'
 import vine from '@vinejs/vine'
-import User from '#models/user'
 
 export default class PropertiesController {
   async index({ response, request, logger }: HttpContext) {
