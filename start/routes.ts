@@ -43,7 +43,7 @@ router
   .group(() => {
     router
       .group(() => {
-        router.post('/login', [AuthController, 'login']).use(middleware.rateLimit(['5', '900']))
+        router.post('/login', [AuthController, 'login'])
         router.post('/register', [AuthController, 'register'])
         router.post('/verify-otp', [AuthController, 'verifyOtp'])
         router.post('/resend-otp', [AuthController, 'resendOtp'])
@@ -59,7 +59,10 @@ router
       .group(() => {
         router.get('/users', [AdminController, 'fetchAllUsers'])
         router.get('/property-purchases', [AdminController, 'fetchPropertyPurchases'])
-        router.patch('/property-purchases/:purchaseId/status', [AdminController, 'updatePropertyPurchaseStatus'])
+        router.patch('/property-purchases/:purchaseId/status', [
+          AdminController,
+          'updatePropertyPurchaseStatus',
+        ])
       })
       .prefix('admin')
 
@@ -178,7 +181,7 @@ router
         router.patch('/:id/approve', [LoansController, 'approveLoan'])
         router.patch('/:id/reject', [LoansController, 'rejectLoan'])
         router.patch('/:id/disburse', [LoansController, 'disburseLoan'])
-        
+
         // Loan repayment routes
         router.get('/:id/repayment-details', [LoansController, 'getLoanRepaymentDetails'])
         router.post('/:id/repay', [LoansController, 'initializeLoanRepayment'])
@@ -194,7 +197,7 @@ router
         router.patch('/', [SettingsController, 'update'])
       })
       .prefix('settings')
-      
+
     router
       .group(() => {
         router.get('/', [InspectionDetailsController, 'index'])

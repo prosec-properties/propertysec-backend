@@ -120,19 +120,28 @@ export default class PropertiesController {
             defaultImageUrl: results[0].url,
           })
 
-          const uploadedFiles = results.map(({ filename, url, metaData }) => ({
-            fileName: filename,
-            fileUrl: url,
-            fileType: metaData.type,
-            propertyId: property?.id,
-            meta: JSON.stringify(metaData),
-          }))
+          const uploadedFiles = results.map(({ filename, url, metaData }) => {
+            let fileType: 'image' | 'video' | 'other' = 'other'
+            if (metaData.type.startsWith('image/')) {
+              fileType = 'image'
+            } else if (metaData.type.startsWith('video/')) {
+              fileType = 'video'
+            }
+            return {
+              fileName: filename,
+              fileUrl: url,
+              fileType,
+              propertyId: property?.id,
+              meta: JSON.stringify(metaData),
+            }
+          })
 
           try {
             for (const fileInfo of uploadedFiles) {
               await FilesService.createPropertyFile(fileInfo as PropertyFile)
             }
           } catch (error) {
+            console.log('my errrroooorrrr', error)
             if (property) {
               await property.delete()
             }
@@ -246,10 +255,16 @@ export default class PropertiesController {
 
           results.forEach(({ filename, url, metaData }) => {
             if (!url || !filename) return
+            let fileType: 'image' | 'video' | 'other' = 'other'
+            if (metaData.type.startsWith('image/')) {
+              fileType = 'image'
+            } else if (metaData.type.startsWith('video/')) {
+              fileType = 'video'
+            }
             uploadedFiles.push({
               fileName: filename,
               fileUrl: url,
-              fileType: metaData.type,
+              fileType,
               propertyId: property.id,
               meta: JSON.stringify(metaData),
             })

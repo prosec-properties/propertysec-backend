@@ -66,12 +66,14 @@ export const updatePropertyValidator = vine.compile(
         const category = await db.from('categories').where('id', value).first()
         return !!category
       }),
-      files: vine.array(
-        vine.file({
-          size: '20mb',
-          extnames: [...ACCEPTED_IMAGE_TYPES, ...ACCEPTED_VIDEO_TYPES],
-        })
-      ),
+      files: vine
+        .array(
+          vine.file({
+            size: '20mb',
+            extnames: [...ACCEPTED_IMAGE_TYPES, ...ACCEPTED_VIDEO_TYPES],
+          })
+        )
+        .optional(),
     })
     .optional()
 )

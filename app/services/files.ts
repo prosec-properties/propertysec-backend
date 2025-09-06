@@ -14,7 +14,6 @@ export default class FilesService {
         fileName,
         fileType,
         propertyId,
-
         meta,
       })
       logger.info('File created successfully: %s')
@@ -139,12 +138,17 @@ export default class FilesService {
       const results = await FilesService.uploadFiles(files)
 
       results.forEach(({ filename, url, metaData }) => {
-        // console.log('metaData', metaData)
         if (!url || !filename) return
+        let fileType: 'image' | 'video' | 'other' = 'other'
+        if (metaData.type.startsWith('image/')) {
+          fileType = 'image'
+        } else if (metaData.type.startsWith('video/')) {
+          fileType = 'video'
+        }
         uploadedFiles.push({
           fileName: filename,
           fileUrl: url,
-          fileType: metaData.type,
+          fileType,
           itemId: itemId,
           meta: JSON.stringify(metaData),
         })
