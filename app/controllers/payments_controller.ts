@@ -247,4 +247,5 @@ export default class PaymentsController {
       return response.badRequest(getErrorObject(error))
     }
   }
+
 }

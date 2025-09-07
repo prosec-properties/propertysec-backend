@@ -516,6 +516,7 @@ export default class LoansController {
           ])
         })
         .preload('files')
+        .preload('repayments')
         .first()
 
       if (!loan) {
