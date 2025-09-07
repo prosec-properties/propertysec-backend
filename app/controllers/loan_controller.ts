@@ -271,10 +271,10 @@ export default class LoansController {
 
     console.log('new loan file', loan?.toJSON())
 
-  // Note: loan_files.loan_id references loan_requests.id in the current schema.
-  // Do not update loan_files.loan_id to the newly created loan.id here, as that
-  // would violate the foreign key constraint. Files remain linked via the
-  // loan request context (loanRequest.id).
+    // Note: loan_files.loan_id references loan_requests.id in the current schema.
+    // Do not update loan_files.loan_id to the newly created loan.id here, as that
+    // would violate the foreign key constraint. Files remain linked via the
+    // loan request context (loanRequest.id).
 
     await loanRequest.merge({ status: 'completed' }).save()
 
@@ -626,18 +626,19 @@ export default class LoansController {
         )
         .first()
 
+
       return response.ok({
         success: true,
         message: 'User loans fetched successfully',
         data: {
           loans,
           stats: {
-            totalLoans: Number(loanStats?.totalLoans || 0),
-            totalAmount: Number(loanStats?.totalAmount || 0),
-            approvedAmount: Number(loanStats?.approvedAmount || 0),
-            disbursedAmount: Number(loanStats?.disbursedAmount || 0),
-            pendingAmount: Number(loanStats?.pendingAmount || 0),
-            rejectedAmount: Number(loanStats?.rejectedAmount || 0),
+            totalLoans: Number(loanStats?.totalloans || 0),
+            totalAmount: Number(loanStats?.totalamount || 0),
+            approvedAmount: Number(loanStats?.approvedamount || 0),
+            disbursedAmount: Number(loanStats?.disbursedamount || 0),
+            pendingAmount: Number(loanStats?.pendingamount || 0),
+            rejectedAmount: Number(loanStats?.rejectedamount || 0),
           },
         },
       })
