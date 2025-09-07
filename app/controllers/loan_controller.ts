@@ -291,15 +291,16 @@ export default class LoansController {
     fileType: ILoanFileType,
     userId: string
   ): Promise<void> {
-    if (files.length > 0) {
+    const validFiles = files.filter((file) => file.url && file.filename)
+    if (validFiles.length > 0) {
       await Promise.all(
-        files.map((file) =>
+        validFiles.map((file) =>
           LoanFile.create({
             loanId,
             userId,
-            fileName: file.metaData.name,
+            fileName: file.filename,
             fileUrl: file.url,
-            mediaType: file.metaData.type as 'image' | 'other',
+            mediaType: file.metaData.type.startsWith('image/') ? 'image' : 'other',
             fileType,
             meta: JSON.stringify(file.metaData),
           })

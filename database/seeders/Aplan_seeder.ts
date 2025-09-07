@@ -11,7 +11,7 @@ const mockFeatures = {
     'Enhanced listing visibility.',
     'Priority support.',
     'Property promotion tools.',
-    'Analytics dashboard.',
+    // 'Analytics dashboard.',
     'Video upload capability.',
   ],
   GOLD: [
@@ -19,7 +19,7 @@ const mockFeatures = {
     'Premium listing visibility.',
     'Priority support.',
     'Advanced promotion tools.',
-    'Detailed analytics.',
+    // 'Detailed analytics.',
     'Video upload capability.',
   ],
   PLATINUM: [
@@ -27,7 +27,7 @@ const mockFeatures = {
     'Top-tier listing visibility.',
     'VIP support.',
     'Premium promotion tools.',
-    'Advanced analytics & insights.',
+    // 'Advanced analytics & insights.',
     'Video upload capability.',
   ],
   UNLIMITED: [
@@ -35,7 +35,7 @@ const mockFeatures = {
     'Maximum listing visibility.',
     'VIP support.',
     'All promotion tools.',
-    'Complete analytics suite.',
+    // 'Complete analytics suite.',
     'Video upload capability.',
   ],
 }
