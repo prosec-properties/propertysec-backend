@@ -27,6 +27,7 @@ import Bank from '#models/bank'
 import db from '@adonisjs/lucid/services/db'
 import { DateTime } from 'luxon'
 import { nanoid } from 'nanoid'
+import PaystackService from '#services/paystack'
 
 export default class LoansController {
   async processLoanStep({ auth, request, response, logger }: HttpContext) {
@@ -263,18 +264,13 @@ export default class LoansController {
       userId: user.id,
       loanAmount: loanRequest.amount as ILoanAmount,
       loanDuration: loanRequest.duration as ILoanDuration,
-      interestRate: 5,
+      interestRate: 10,
       loanStatus: 'pending',
       reasonForFunds: loanRequest.reasonForLoanRequest || '',
       hasCompletedForm: true,
     })
 
     console.log('new loan file', loan?.toJSON())
-
-    // Note: loan_files.loan_id references loan_requests.id in the current schema.
-    // Do not update loan_files.loan_id to the newly created loan.id here, as that
-    // would violate the foreign key constraint. Files remain linked via the
-    // loan request context (loanRequest.id).
 
     await loanRequest.merge({ status: 'completed' }).save()
 
@@ -446,7 +442,6 @@ export default class LoansController {
       await auth.authenticate()
       const user = auth.user!
 
-      // Check if user is admin
       if (user.role !== 'admin') {
         return response.unauthorized({
           success: false,
@@ -626,7 +621,6 @@ export default class LoansController {
           )
         )
         .first()
-
 
       return response.ok({
         success: true,
@@ -836,7 +830,14 @@ export default class LoansController {
       const loanId = params.id
 
       const payload = await request.validateUsing(loanRepaymentValidator)
-      const { repaymentAmount, repaymentType = 'PARTIAL', paymentMethod = 'CARD' } = payload
+      const {
+        repaymentAmount,
+        repaymentType = 'PARTIAL',
+        paymentMethod = 'CARD',
+        email,
+        callbackUrl,
+        amount,
+      } = payload
 
       if (!repaymentAmount || repaymentAmount <= 0) {
         return response.badRequest({
@@ -894,12 +895,15 @@ export default class LoansController {
         })
       }
 
-      if (repaymentAmount > outstandingBalance) {
-        return response.badRequest({
-          success: false,
-          message: `Repayment amount cannot exceed outstanding balance of ₦${outstandingBalance.toFixed(2)}`,
-        })
-      }
+      console.log('repaymentAmount', repaymentAmount)
+      console.log('outstandingBalance', outstandingBalance)
+
+      // if (repaymentAmount > outstandingBalance) {
+      //   return response.badRequest({
+      //     success: false,
+      //     message: `Repayment amount cannot exceed outstanding balance of ₦${outstandingBalance.toFixed(2)}`,
+      //   })
+      // }
 
       const paymentReference = `LR_${nanoid(10)}`
 
@@ -912,37 +916,51 @@ export default class LoansController {
         paymentReference: paymentReference,
         paymentProvider: 'PAYSTACK',
         repaymentStatus: 'PENDING',
-        outstandingBalance: outstandingBalance - repaymentAmount,
+        // outstandingBalance: outstandingBalance - repaymentAmount,
+        outstandingBalance: repaymentAmount,
         principalAmount: 0, // Will be calculated after successful payment
         interestAmount: 0, // Will be calculated after successful payment
       })
 
-      const responseData = {
-        success: true,
-        message: 'Loan repayment initialized successfully',
-        data: {
-          repaymentId: loanRepayment.id,
-          loanId: loan.id,
-          repaymentAmount: repaymentAmount,
-          outstandingBalance: outstandingBalance - repaymentAmount,
-          paymentReference: paymentReference,
-          paystackConfig: {
-            publicKey: process.env.PAYSTACK_PUBLIC_KEY,
-            amount: repaymentAmount * 100, // Paystack expects amount in kobo
-            email: user.email,
-            reference: paymentReference,
-            currency: 'NGN',
-            metadata: {
-              loanId: loan.id,
-              repaymentId: loanRepayment.id,
-              userId: user.id,
-              repaymentType: repaymentType,
-            },
-          },
-        },
+      // rpid = repaymentId
+      const config = {
+        email,
+        callbackUrl: `${callbackUrl}?=rpid=${loanRepayment.id}`,
+        amount: Number(loan.loanAmount),
       }
 
-      return response.created(responseData)
+      const paystackResponse = await PaystackService.initializeTransaction(config)
+
+      // const responseData = {
+      //   success: true,
+      //   message: 'Loan repayment initialized successfully',
+      //   data: {
+      //     repaymentId: loanRepayment.id,
+      //     loanId: loan.id,
+      //     repaymentAmount: repaymentAmount,
+      //     outstandingBalance: outstandingBalance - repaymentAmount,
+      //     paymentReference: paymentReference,
+      //     paystackConfig: {
+      //       publicKey: process.env.PAYSTACK_PUBLIC_KEY,
+      //       amount: repaymentAmount * 100, // Paystack expects amount in kobo
+      //       email: user.email,
+      //       reference: paymentReference,
+      //       currency: 'NGN',
+      //       metadata: {
+      //         loanId: loan.id,
+      //         repaymentId: loanRepayment.id,
+      //         userId: user.id,
+      //         repaymentType: repaymentType,
+      //       },
+      //     },
+      //   },
+      // }
+
+      return response.ok({
+        success: true,
+        message: 'Payment initialized successfully',
+        data: paystackResponse,
+      })
     } catch (error) {
       return response.badRequest(getErrorObject(error))
     }
@@ -954,7 +972,6 @@ export default class LoansController {
       const user = auth.user!
       const repaymentId = params.repaymentId
 
-      // Validate request data
       const payload = await request.validateUsing(verifyRepaymentValidator)
       const { paymentReference, providerResponse } = payload
 
@@ -995,10 +1012,10 @@ export default class LoansController {
         // Update repayment status
         loanRepayment.repaymentStatus = 'SUCCESS'
         loanRepayment.repaymentDate = DateTime.now()
-        loanRepayment.meta = JSON.stringify({
-          providerResponse: verificationResult.data || providerResponse || {},
-          verifiedAt: DateTime.now().toISO(),
-        })
+        // loanRepayment.meta = JSON.stringify({
+        //   providerResponse: verificationResult.data || providerResponse || {},
+        //   verifiedAt: DateTime.now().toISO(),
+        // })
 
         // Calculate principal and interest breakdown
         const loan = loanRepayment.loan
