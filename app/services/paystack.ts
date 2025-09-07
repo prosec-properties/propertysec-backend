@@ -1,6 +1,10 @@
 import env from '#start/env'
 import axios, { AxiosInstance } from 'axios'
-import { PaystackCustomerResponse, PaystackPlanResponse, PaystackVerifyTransactionResponse } from '../interfaces/payment.js'
+import {
+  PaystackCustomerResponse,
+  PaystackPlanResponse,
+  PaystackVerifyTransactionResponse,
+} from '../interfaces/payment.js'
 import logger from '@adonisjs/core/services/logger'
 
 class PaystackService {
@@ -36,6 +40,35 @@ class PaystackService {
     }
   }
 
+  async initializeTransaction({
+    email,
+    callbackUrl,
+    amount,
+  }: {
+    email: string
+    callbackUrl: string
+    amount: number
+  }) {
+    const config = {
+      reference: new Date().getTime().toString(),
+      email,
+      channels: ['card'],
+      privateKey: process.env.PAYSTACK_SECRET_KEY,
+      callback_url: callbackUrl,
+      currency: 'NGN',
+      //Amount is in the country's lowest currency. E.g Kobo, so 20000 kobo = N200 GHS 0.1
+      amount: amount * 100,
+    }
+    try {
+      const { data } = await this.$axios.post(`/transaction/initialize`, config)
+
+      return data
+    } catch (error) {
+      console.log(error)
+      this.handleError(error)
+    }
+  }
+
   async createPlan(payload: {
     name: string
     amount: number
@@ -50,12 +83,12 @@ class PaystackService {
     }
   }
 
-  async createCustomer(payload:{
+  async createCustomer(payload: {
     email: string
     firstName?: string
     lastName?: string
     phone?: string
-  }){
+  }) {
     try {
       const { data } = await this.$axios.post<PaystackCustomerResponse>(`/customer`, payload)
       return data.data

@@ -17,8 +17,35 @@ import { DateTime } from 'luxon'
 import { nanoid } from 'nanoid'
 import pdf from '#services/pdf'
 import { PROSEC_BANK_DETAILS } from '#constants/payment'
+import PaystackService from '#services/paystack'
+import { getAuthorizationUrlValidator } from '#validators/payment'
 
 export default class PaymentsController {
+  async getAuthorizationUrl({ auth, request, response, logger }: HttpContext) {
+    try {
+      await auth.authenticate()
+
+      const { email, callbackUrl, amount } = await request.validateUsing(
+        getAuthorizationUrlValidator
+      )
+
+      const config = {
+        email,
+        callbackUrl,
+        amount,
+      }
+      const paystackResponse = await PaystackService.initializeTransaction(config)
+
+      return response.ok({
+        success: true,
+        message: 'Payment initialized successfully',
+        data: paystackResponse,
+      })
+    } catch (error) {
+      logger.error(error)
+      return response.badRequest(getErrorObject(error))
+    }
+  }
   async initializeSubscriptionPayment({ auth, request, response, logger }: HttpContext) {
     try {
       await auth.authenticate()
@@ -54,7 +81,7 @@ export default class PaymentsController {
             bankName: hasInvoice.bankName,
             acctNumber: hasInvoice.accountNumber,
             acctName: hasInvoice.accountName,
-            
+
             planName: plan.name,
             planDuration: String(plan.duration),
             pdfUrl: (
@@ -125,10 +152,10 @@ export default class PaymentsController {
           const pdfBuffer = await pdf.generatePDF({
             type: 'transfer-invoice',
             data: {
-              invoice: hasInvoice || invoice
+              invoice: hasInvoice || invoice,
             },
             user,
-          });
+          })
 
           responseObj = {
             ...responseObj,
@@ -157,7 +184,7 @@ export default class PaymentsController {
 
         responseObj = {
           ...responseObj,
-          
+
           paystackConfig: {
             publicKey: env.get('PAYSTACK_PUBLIC_KEY')!,
             amount,
