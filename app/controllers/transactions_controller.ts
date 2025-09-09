@@ -1,7 +1,10 @@
 import { getErrorObject } from '#helpers/error'
 import { koboToNaira } from '#helpers/currency'
+import { calculateLoanDetails, parseLoanDuration } from '#helpers/loan'
 import PropertyPurchaseNotification from '#mails/property_purchase_notification'
 import InspectionDetail from '#models/inspection_detail'
+import Loan from '#models/loan'
+import LoanRepayment from '#models/loan_repayment'
 import Payment from '#models/payment'
 import Plan from '#models/plan'
 import Property from '#models/property'
@@ -409,6 +412,17 @@ export default class TransactionsController {
           transactionMetadata.propertyTitle = metadata.propertyTitle
           transactionMetadata.currency = metadata.currency || 'NGN'
           break
+        case 'loan_repayment':
+          if (!metadata?.loanId) {
+            return response.badRequest({
+              success: false,
+              message: 'Loan ID is required for loan repayment',
+            })
+          }
+          transactionMetadata.loanId = metadata.loanId
+          transactionMetadata.repaymentAmount = metadata.repaymentAmount
+          transactionMetadata.repaymentType = metadata.repaymentType || 'FULL'
+          break
         default:
           return response.badRequest({
             success: false,
@@ -419,7 +433,7 @@ export default class TransactionsController {
       const config = {
         email: user.email,
         callbackUrl,
-        amount: amount * 100, // Convert to kobo for Paystack
+        amount: amount,
         metadata: transactionMetadata,
       }
 
@@ -453,10 +467,13 @@ export default class TransactionsController {
   async verifyTransaction({ auth, response, request, logger }: HttpContext) {
     try {
       await auth.authenticate()
-      const { reference } = request.body()
+      const { reference, transactionId, paymentReference } = request.body()
       const user = auth.user!
 
-      if (!reference) {
+      // Use paymentReference if provided, otherwise use reference
+      const paymentRef = paymentReference || reference
+
+      if (!paymentRef) {
         return response.badRequest({
           success: false,
           message: 'Reference is required',
@@ -465,10 +482,10 @@ export default class TransactionsController {
 
       const paystackResponse = await PaymentService.verifyTransaction({
         provider: 'paystack',
-        reference,
+        reference: paymentRef,
       })
 
-      logger.info(paystackResponse, 'Paystack Verification Response')
+      logger.info('Paystack Verification Response', paystackResponse)
 
       if (!paystackResponse) {
         return response.badRequest({
@@ -484,9 +501,9 @@ export default class TransactionsController {
         })
       }
 
-      const amountInNaira = paystackResponse.amount ? koboToNaira(paystackResponse.amount) : 0
+      const amountInNaira = paystackResponse.amount || 0
 
-      const payment = await Payment.query().where('reference', reference).first()
+      const payment = await Payment.query().where('reference', paymentRef).first()
 
       if (payment) {
         payment.status = 'SUCCESS'
@@ -494,7 +511,7 @@ export default class TransactionsController {
         await payment.save()
       }
 
-      const existingTransaction = await Transaction.query().where('reference', reference).first()
+      const existingTransaction = await Transaction.query().where('reference', paymentRef).first()
 
       if (existingTransaction) {
         return response.ok({
@@ -517,13 +534,44 @@ export default class TransactionsController {
       // Handle different transaction types
       switch (meta.type) {
         case 'subscription':
-          await this.handleSubscriptionTransaction(user, amountInNaira, payment, reference, paystackResponse, meta)
+          await this.handleSubscriptionTransaction(
+            user,
+            amountInNaira,
+            payment,
+            paymentRef,
+            paystackResponse,
+            meta
+          )
           break
         case 'inspection':
-          await this.handleInspectionTransaction(user, amountInNaira, payment, reference, paystackResponse, meta)
+          await this.handleInspectionTransaction(
+            user,
+            amountInNaira,
+            payment,
+            paymentRef,
+            paystackResponse,
+            meta
+          )
           break
         case 'property_purchase':
-          await this.handlePropertyPurchaseTransaction(user, amountInNaira, payment, reference, paystackResponse, meta)
+          await this.handlePropertyPurchaseTransaction(
+            user,
+            amountInNaira,
+            payment,
+            paymentRef,
+            paystackResponse,
+            meta
+          )
+          break
+        case 'loan_repayment':
+          await this.handleLoanRepaymentTransaction(
+            user,
+            amountInNaira,
+            payment,
+            paymentRef,
+            paystackResponse,
+            meta
+          )
           break
         default:
           return response.badRequest({
@@ -733,5 +781,84 @@ export default class TransactionsController {
       .where('type', 'affiliate')
       .increment('balance', affiliateAmount)
       .increment('totalBalance', affiliateAmount)
+  }
+
+  private async handleLoanRepaymentTransaction(
+    user: User,
+    amountInNaira: number,
+    payment: Payment | null,
+    reference: string,
+    paystackResponse: any,
+    meta: any
+  ) {
+    const loan = await Loan.query().where('id', meta.loanId).firstOrFail()
+
+    // Create transaction record
+    await Transaction.create({
+      userId: user.id,
+      transactionType: 'LOAN_REPAYMENT',
+      amount: amountInNaira,
+      paymentId: payment?.id,
+      type: 'loan_repayment',
+      isVerified: true,
+      status: 'SUCCESS',
+      actualAmount: amountInNaira,
+      date: DateTime.now().toISO(),
+      currency: 'NGN',
+      narration: `Loan repayment for loan ${loan.id}`,
+      providerStatus: 'success',
+      provider: 'PAYSTACK',
+      transactionTypeId: loan.id,
+      reference,
+      providerResponse: JSON.stringify(paystackResponse),
+    })
+
+    // Create loan repayment record
+    const loanRepayment = await LoanRepayment.create({
+      loanId: loan.id,
+      userId: user.id,
+      repaymentAmount: amountInNaira,
+      repaymentType: meta.repaymentType || 'FULL',
+      paymentMethod: 'CARD',
+      paymentReference: reference,
+      paymentProvider: 'PAYSTACK',
+      repaymentStatus: 'SUCCESS',
+      outstandingBalance: 0, // Will be calculated
+      principalAmount: 0, // Will be calculated
+      interestAmount: 0, // Will be calculated
+      repaymentDate: DateTime.now(),
+    })
+
+    // Calculate principal and interest breakdown
+    const loanAmount = parseFloat(loan.loanAmount)
+    const loanDetails = calculateLoanDetails(
+      loanAmount,
+      loan.interestRate,
+      parseLoanDuration(loan.loanDuration)
+    )
+    const totalInterest = loanDetails.totalInterest
+    const totalPrincipal = loanAmount
+
+    // Simple proportional calculation for principal/interest breakdown
+    const interestPortion = totalInterest / loanDetails.totalAmount
+    const principalPortion = totalPrincipal / loanDetails.totalAmount
+
+    loanRepayment.interestAmount = amountInNaira * interestPortion
+    loanRepayment.principalAmount = amountInNaira * principalPortion
+
+    await loanRepayment.save()
+
+    // Check if loan is fully repaid
+    const allRepayments = await LoanRepayment.query()
+      .where('loanId', loan.id)
+      .where('repaymentStatus', 'SUCCESS')
+
+    const totalPaid = allRepayments.reduce((sum, repayment) => sum + repayment.repaymentAmount, 0)
+    const totalDue = loanDetails.totalAmount
+
+    if (totalPaid >= totalDue) {
+      loan.loanStatus = 'completed'
+      await loan.save()
+    }
   }
 }

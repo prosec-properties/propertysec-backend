@@ -135,6 +135,7 @@ router
       .group(() => {
         router.post('/init', [PaymentsController, 'initializeSubscriptionPayment'])
         router.post('/authorization-url', [PaymentsController, 'getAuthorizationUrl'])
+        router.post('/verify-transaction', [TransactionsController, 'verifyTransaction'])
       })
       .use(middleware.auth())
       .prefix('payment')

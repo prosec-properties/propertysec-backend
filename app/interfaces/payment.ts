@@ -6,7 +6,7 @@ export type PaymentProviders = 'paystack' | 'flutterwave'
 
 export type TransactionStatus = 'PENDING' | 'SUCCESS' | 'FAIL' | 'INITIALIZE'
 
-export type TransactionType = 'subscription' | 'wallet:credit' | 'wallet:debit' | 'inspection' | 'property_purchase'
+export type TransactionType = 'subscription' | 'wallet:credit' | 'wallet:debit' | 'inspection' | 'property_purchase' | 'loan_repayment'
 
 export type PlanName = 'FREE' | 'GOLD' | 'PLATINUM' | 'SILVER' | 'UNLIMITED' 
 
