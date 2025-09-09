@@ -447,6 +447,7 @@ export default class TransactionsController {
         amount: amount,
         status: 'PENDING',
         provider: 'PAYSTACK',
+        paymentMethod: 'CARD',
         providerResponse: JSON.stringify(transactionMetadata),
       })
 
@@ -467,7 +468,7 @@ export default class TransactionsController {
   async verifyTransaction({ auth, response, request, logger }: HttpContext) {
     try {
       await auth.authenticate()
-      const { reference, transactionId, paymentReference } = request.body()
+      const { reference, paymentReference } = request.body()
       const user = auth.user!
 
       // Use paymentReference if provided, otherwise use reference
@@ -638,8 +639,8 @@ export default class TransactionsController {
   private async handleInspectionTransaction(
     user: User,
     amountInNaira: number,
-    payment: Payment | null,
-    reference: string,
+    _payment: Payment | null,
+    _reference: string,
     paystackResponse: any,
     meta: any
   ) {
@@ -678,8 +679,8 @@ export default class TransactionsController {
   private async handlePropertyPurchaseTransaction(
     user: User,
     amountInNaira: number,
-    payment: Payment | null,
-    reference: string,
+    _payment: Payment | null,
+    _reference: string,
     paystackResponse: any,
     meta: any
   ) {
@@ -707,7 +708,7 @@ export default class TransactionsController {
       purchaseAmount: amountInNaira,
       currency: meta.currency || 'NGN',
       purchaseStatus: 'COMPLETED',
-      transactionReference: reference,
+      transactionReference: paystackResponse.reference,
       buyerName: meta.fullName,
       buyerEmail: meta.email,
       buyerPhone: meta.phoneNumber,
@@ -715,20 +716,20 @@ export default class TransactionsController {
 
     await Property.query().where('id', meta.propertyId).update({ availability: 'sold' })
 
-    const property = await Property.findOrFail(meta.propertyId)
+    // const property = await Property.findOrFail(meta.propertyId)
 
-    await mail.send(
-      new PropertyPurchaseNotification({
-        buyerName: meta.fullName,
-        buyerEmail: meta.email,
-        propertyTitle: property.title,
-        propertyAddress: property.address,
-        purchaseAmount: amountInNaira,
-        currency: meta.currency || 'NGN',
-        transactionReference: reference,
-        purchaseDate: DateTime.now().toFormat('dd/MM/yyyy'),
-      })
-    )
+    // await mail.send(
+    //   new PropertyPurchaseNotification({
+    //     buyerName: meta.fullName,
+    //     buyerEmail: meta.email,
+    //     propertyTitle: property.title,
+    //     propertyAddress: property.address,
+    //     purchaseAmount: amountInNaira,
+    //     currency: meta.currency || 'NGN',
+    //     transactionReference: reference,
+    //     purchaseDate: DateTime.now().toFormat('dd/MM/yyyy'),
+    //   })
+    // )
 
     if (meta.affiliateSlug) {
       await this.handleAffiliateCommission(amountInNaira, meta, 'property_purchase', 0.05)

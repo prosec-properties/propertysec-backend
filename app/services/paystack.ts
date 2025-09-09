@@ -16,6 +16,7 @@ class PaystackService {
       headers: {
         authorization: 'Bearer ' + env.get('PAYSTACK_SECRET_KEY'),
       },
+      timeout: 30000, // 30 seconds timeout
     })
   }
   async verifyTransaction(
@@ -44,27 +45,28 @@ class PaystackService {
     email,
     callbackUrl,
     amount,
+    metadata,
   }: {
     email: string
     callbackUrl: string
     amount: number
+    metadata?: any
   }) {
     const config = {
       reference: new Date().getTime().toString(),
       email,
       channels: ['card'],
-      privateKey: process.env.PAYSTACK_SECRET_KEY,
       callback_url: callbackUrl,
       currency: 'NGN',
-      //Amount is in the country's lowest currency. E.g Kobo, so 20000 kobo = N200 GHS 0.1
-      amount: amount * 100,
+      amount: amount * 100, // Convert to kobo
+      ...(metadata && { metadata }),
     }
+
     try {
       const { data } = await this.$axios.post(`/transaction/initialize`, config)
-
       return data
     } catch (error) {
-      console.log(error)
+      logger.error(error, 'PaystackService.initializeTransaction Error')
       this.handleError(error)
     }
   }
