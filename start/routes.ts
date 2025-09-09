@@ -167,6 +167,8 @@ router
         router.post('/', [TransactionsController, 'store'])
         router.get('/', [TransactionsController, 'index'])
         router.get('/:reference', [TransactionsController, 'show'])
+        router.post('/initialize', [TransactionsController, 'initializeTransaction'])
+        router.post('/verify', [TransactionsController, 'verifyTransaction'])
       })
 
       .use(middleware.auth())

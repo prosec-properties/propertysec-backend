@@ -13,7 +13,7 @@ export const loanRepaymentValidator = vine.compile(
 
 export const verifyRepaymentValidator = vine.compile(
   vine.object({
-    paymentReference: vine.string().minLength(1),
+    reference: vine.string().minLength(1),
     providerResponse: vine.any().optional(),
   })
 )

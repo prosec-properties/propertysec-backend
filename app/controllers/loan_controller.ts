@@ -832,7 +832,7 @@ export default class LoansController {
       const payload = await request.validateUsing(loanRepaymentValidator)
       const {
         repaymentAmount,
-        repaymentType = 'PARTIAL',
+        repaymentType = 'FULL',
         paymentMethod = 'CARD',
         email,
         callbackUrl,
@@ -894,9 +894,6 @@ export default class LoansController {
           message: 'This loan has been fully repaid',
         })
       }
-
-      console.log('repaymentAmount', repaymentAmount)
-      console.log('outstandingBalance', outstandingBalance)
 
       // if (repaymentAmount > outstandingBalance) {
       //   return response.badRequest({
@@ -973,8 +970,24 @@ export default class LoansController {
       const repaymentId = params.repaymentId
 
       const payload = await request.validateUsing(verifyRepaymentValidator)
-      const { paymentReference, providerResponse } = payload
+      const { reference, providerResponse } = payload
 
+      const { repaymentId: rpid } = request.qs()
+      if (rpid && rpid !== repaymentId) {
+        return response.badRequest({
+          success: false,
+          message: 'Repayment ID in query does not match URL parameter',
+        })
+      }
+
+      if (!reference) {
+        return response.badRequest({
+          success: false,
+          message: 'Payment reference is required for verification',
+        })
+      }
+
+      // Fetch the repayment record
       const loanRepayment = await LoanRepayment.query()
         .where('id', repaymentId)
         .preload('loan')
@@ -1005,7 +1018,7 @@ export default class LoansController {
       // Verify payment with payment provider
       const verificationResult = await PaymentVerificationService.verifyPayment(
         loanRepayment.paymentProvider,
-        paymentReference
+        reference
       )
 
       if (verificationResult.success) {
@@ -1043,7 +1056,7 @@ export default class LoansController {
           amount: loanRepayment.repaymentAmount,
           provider: 'PAYSTACK',
           status: 'SUCCESS',
-          reference: paymentReference,
+          reference: reference,
           providerResponse: JSON.stringify(verificationResult.data || providerResponse || {}),
           paymentMethod:
             loanRepayment.paymentMethod === 'CASH' ? 'WALLET' : loanRepayment.paymentMethod,
