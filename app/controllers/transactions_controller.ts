@@ -794,10 +794,9 @@ export default class TransactionsController {
   ) {
     const loan = await Loan.query().where('id', meta.loanId).firstOrFail()
 
-    // Create transaction record
     await Transaction.create({
       userId: user.id,
-      transactionType: 'LOAN_REPAYMENT',
+      transactionType: 'LOAN_REPAYMENT ',
       amount: amountInNaira,
       paymentId: payment?.id,
       type: 'loan_repayment',
