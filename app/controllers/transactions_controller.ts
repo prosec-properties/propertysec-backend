@@ -20,6 +20,10 @@ import { DateTime } from 'luxon'
 import { nanoid } from 'nanoid'
 import mail from '@adonisjs/mail/services/main'
 import PaystackService from '#services/paystack'
+import {
+  TransactionMetadata,
+  PaystackMetadata,
+} from '../interfaces/payment.js'
 
 export default class TransactionsController {
   public async index({ auth, request, response, bouncer }: HttpContext) {
@@ -372,7 +376,7 @@ export default class TransactionsController {
       }
 
       // Prepare metadata based on transaction type
-      let transactionMetadata: any = {
+      let transactionMetadata: TransactionMetadata = {
         type,
         userId: user.id,
         email: user.email,
@@ -439,6 +443,13 @@ export default class TransactionsController {
 
       const paystackResponse = await PaystackService.initializeTransaction(config)
       logger.info(paystackResponse, 'Paystack Init Response')
+
+      if (!paystackResponse || !paystackResponse.data) {
+        return response.badRequest({
+          success: false,
+          message: 'Failed to initialize transaction with payment provider',
+        })
+      }
 
       // Create a pending payment record
       const payment = await Payment.create({
@@ -598,7 +609,7 @@ export default class TransactionsController {
     payment: Payment | null,
     reference: string,
     paystackResponse: any,
-    meta: any
+    meta: PaystackMetadata
   ) {
     const plan = await Plan.query().where('id', meta.planId).firstOrFail()
 
@@ -642,7 +653,7 @@ export default class TransactionsController {
     _payment: Payment | null,
     _reference: string,
     paystackResponse: any,
-    meta: any
+    meta: PaystackMetadata
   ) {
     await Transaction.create({
       userId: user.id,
@@ -682,7 +693,7 @@ export default class TransactionsController {
     _payment: Payment | null,
     _reference: string,
     paystackResponse: any,
-    meta: any
+    meta: PaystackMetadata
   ) {
     await Transaction.create({
       userId: user.id,
@@ -738,7 +749,7 @@ export default class TransactionsController {
 
   private async handleAffiliateCommission(
     amountInNaira: number,
-    meta: any,
+    meta: PaystackMetadata,
     type: 'inspection' | 'property_purchase',
     commissionRate: number
   ) {
@@ -790,7 +801,7 @@ export default class TransactionsController {
     payment: Payment | null,
     reference: string,
     paystackResponse: any,
-    meta: any
+    meta: PaystackMetadata
   ) {
     const loan = await Loan.query().where('id', meta.loanId).firstOrFail()
 
@@ -859,6 +870,102 @@ export default class TransactionsController {
     if (totalPaid >= totalDue) {
       loan.loanStatus = 'completed'
       await loan.save()
+    }
+  }
+
+  async refundTransaction({ auth, response, request, logger }: HttpContext) {
+    try {
+      await auth.authenticate()
+      const { reference, amount, customerNote, merchantNote } = request.body()
+      const user = auth.user!
+
+      if (!reference) {
+        return response.badRequest({
+          success: false,
+          message: 'Transaction reference is required',
+        })
+      }
+
+      // Find the transaction
+      const transaction = await Transaction.query()
+        .where('reference', reference)
+        .where('userId', user.id)
+        .first()
+
+      if (!transaction) {
+        return response.badRequest({
+          success: false,
+          message: 'Transaction not found',
+        })
+      }
+
+      // Check if transaction can be refunded (must be successful and not already refunded)
+      if (transaction.status !== 'SUCCESS') {
+        return response.badRequest({
+          success: false,
+          message: 'Only successful transactions can be refunded',
+        })
+      }
+
+      const existingRefund = await Transaction.query()
+        .where('reference', `REFUND-${reference}`)
+        .first()
+
+      if (existingRefund) {
+        return response.badRequest({
+          success: false,
+          message: 'Transaction has already been refunded',
+        })
+      }
+
+      const refundResponse = await PaystackService.refundTransaction(reference, {
+        amount: amount ? amount * 100 : undefined, // Convert to kobo if amount specified
+        customer_note: customerNote,
+        merchant_note: merchantNote,
+      })
+
+      if (!refundResponse) {
+        return response.badRequest({
+          success: false,
+          message: 'Failed to process refund',
+        })
+      }
+
+      const refundAmount = amount || transaction.amount
+
+      await Transaction.create({
+        userId: user.id,
+        transactionType: 'REFUND',
+        amount: -Math.abs(refundAmount), // Negative amount for refund
+        type: 'wallet:credit', // Refund goes back to wallet
+        isVerified: true,
+        status: 'SUCCESS',
+        actualAmount: -Math.abs(refundAmount),
+        date: DateTime.now().toISO(),
+        currency: transaction.currency,
+        narration: `Refund for transaction ${reference}`,
+        providerStatus: refundResponse.data.status,
+        provider: 'PAYSTACK',
+        reference: `REFUND-${reference}`,
+        providerResponse: JSON.stringify(refundResponse),
+      })
+
+      // Update original transaction status
+      transaction.status = 'REFUNDED'
+      await transaction.save()
+
+      return response.ok({
+        success: true,
+        message: 'Refund processed successfully',
+        data: {
+          refundReference: `REFUND-${reference}`,
+          amount: refundAmount,
+          status: refundResponse.data.status,
+        },
+      })
+    } catch (error) {
+      logger.error(error)
+      return response.badRequest(getErrorObject(error))
     }
   }
 }

@@ -4,6 +4,10 @@ import {
   PaystackCustomerResponse,
   PaystackPlanResponse,
   PaystackVerifyTransactionResponse,
+  TransactionInitializationRequest,
+  TransactionInitializationResponse,
+  PaystackRefundRequest,
+  PaystackRefundResponse,
 } from '../interfaces/payment.js'
 import logger from '@adonisjs/core/services/logger'
 
@@ -46,12 +50,7 @@ class PaystackService {
     callbackUrl,
     amount,
     metadata,
-  }: {
-    email: string
-    callbackUrl: string
-    amount: number
-    metadata?: any
-  }) {
+  }: TransactionInitializationRequest): Promise<TransactionInitializationResponse | undefined> {
     const config = {
       reference: new Date().getTime().toString(),
       email,
@@ -63,7 +62,7 @@ class PaystackService {
     }
 
     try {
-      const { data } = await this.$axios.post(`/transaction/initialize`, config)
+      const { data } = await this.$axios.post('/transaction/initialize', config)
       return data
     } catch (error) {
       logger.error(error, 'PaystackService.initializeTransaction Error')
@@ -85,6 +84,20 @@ class PaystackService {
     }
   }
 
+  async refundTransaction(reference: string, options?: Partial<PaystackRefundRequest>): Promise<PaystackRefundResponse | undefined> {
+    try {
+      const payload: PaystackRefundRequest = {
+        transaction: reference,
+        ...options,
+      }
+      const { data } = await this.$axios.post<PaystackRefundResponse>(`/refund`, payload)
+      return data
+    } catch (error) {
+      console.log(error)
+      this.handleError(error)
+    }
+  }
+
   async createCustomer(payload: {
     email: string
     firstName?: string
@@ -99,8 +112,11 @@ class PaystackService {
     }
   }
 
-  public handleError(error: any) {
-    throw error?.response?.data ?? error?.response ?? error
+  public handleError(error: unknown): never {
+    const errorMessage = error && typeof error === 'object' && 'response' in error
+      ? (error as any)?.response?.data ?? (error as any)?.response ?? error
+      : error
+    throw errorMessage
   }
 }
 

@@ -4,9 +4,9 @@ export type AcceptedCurrencies = 'NGN' | 'GHS' | 'ZAR' | 'USD' | 'PROSEC Credits
 
 export type PaymentProviders = 'paystack' | 'flutterwave'
 
-export type TransactionStatus = 'PENDING' | 'SUCCESS' | 'FAIL' | 'INITIALIZE'
+export type TransactionStatus = 'PENDING' | 'SUCCESS' | 'FAIL' | 'INITIALIZE' | 'REFUNDED'
 
-export type TransactionType = 'subscription' | 'wallet:credit' | 'wallet:debit' | 'inspection' | 'property_purchase' | 'loan_repayment'
+export type TransactionType = 'subscription' | 'wallet:credit' | 'wallet:debit' | 'inspection' | 'property_purchase' | 'loan_repayment' | 'affiliate'
 
 export type PlanName = 'FREE' | 'GOLD' | 'PLATINUM' | 'SILVER' | 'UNLIMITED' 
 
@@ -197,4 +197,142 @@ export interface PaystackCustomerResponse {
     createdAt: string; // ISO date string
     updatedAt: string; // ISO date string
   };
+}
+
+// Refund-related interfaces
+export interface PaystackRefundRequest {
+  transaction: string;
+  amount?: number;
+  currency?: string;
+  customer_note?: string;
+  merchant_note?: string;
+}
+
+export interface PaystackRefundResponse {
+  status: boolean;
+  message: string;
+  data: {
+    id: number;
+    reference: string;
+    amount: number;
+    currency: string;
+    transaction_reference: string;
+    status: 'pending' | 'successful' | 'failed';
+    customer_note?: string;
+    merchant_note?: string;
+    created_at: string;
+    updated_at: string;
+  };
+}
+
+// Transaction initialization interfaces
+export interface TransactionInitializationRequest {
+  email: string;
+  callbackUrl: string;
+  amount: number;
+  metadata?: TransactionMetadata;
+}
+
+export interface TransactionInitializationResponse {
+  status: boolean;
+  message: string;
+  data: {
+    authorization_url: string;
+    access_code: string;
+    reference: string;
+  };
+}
+
+// Transaction metadata interfaces
+export interface TransactionMetadata {
+  type: TransactionType;
+  userId: string;
+  email: string;
+  fullName: string;
+  phoneNumber: string;
+  // Subscription specific
+  planId?: string;
+  // Property specific
+  propertyId?: string;
+  propertyTitle?: string;
+  currency?: AcceptedCurrencies;
+  // Loan specific
+  loanId?: string;
+  repaymentAmount?: number;
+  repaymentType?: 'FULL' | 'PARTIAL';
+  // Affiliate
+  affiliateSlug?: string;
+  // Additional metadata
+  [key: string]: any;
+}
+
+// Transaction verification interfaces
+export interface TransactionVerificationRequest {
+  reference: string;
+  paymentReference?: string;
+}
+
+export interface TransactionVerificationResponse {
+  status: boolean;
+  message: string;
+  data: PaystackVerifyTransactionResponse;
+}
+
+// Transaction handling interfaces
+export interface SubscriptionTransactionData {
+  userId: string;
+  planId: string;
+  amount: number;
+  reference: string;
+  paystackResponse: PaystackVerifyTransactionResponse;
+}
+
+export interface InspectionTransactionData {
+  userId: string;
+  propertyId: string;
+  amount: number;
+  paystackResponse: PaystackVerifyTransactionResponse;
+  metadata: TransactionMetadata;
+}
+
+export interface PropertyPurchaseTransactionData {
+  userId: string;
+  propertyId: string;
+  propertyTitle: string;
+  amount: number;
+  currency: AcceptedCurrencies;
+  paystackResponse: PaystackVerifyTransactionResponse;
+  metadata: TransactionMetadata;
+}
+
+export interface LoanRepaymentTransactionData {
+  userId: string;
+  loanId: string;
+  amount: number;
+  repaymentType: 'FULL' | 'PARTIAL';
+  paystackResponse: PaystackVerifyTransactionResponse;
+  metadata: TransactionMetadata;
+}
+
+// Affiliate commission interface
+export interface AffiliateCommissionData {
+  affiliateSlug: string;
+  amount: number;
+  type: TransactionType;
+  propertyId?: string;
+  propertyTitle?: string;
+}
+
+// API Response wrapper
+export interface ApiResponse<T = any> {
+  success: boolean;
+  message: string;
+  data?: T;
+}
+
+// Error response interface
+export interface ErrorResponse {
+  success: false;
+  message: string;
+  error?: string;
 }
