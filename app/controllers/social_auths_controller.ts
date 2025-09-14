@@ -100,6 +100,8 @@ export default class SocialAuthController {
 
     const userInDataBase = await User.query().orWhere('email', user.email).first()
 
+    console.log('uwerInDB', { userInDataBase })
+
     if (!userInDataBase) {
       const newUser = await User.create(user)
       return {
