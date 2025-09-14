@@ -41,7 +41,7 @@ export default class AuthTokenService {
       }
 
       const token = await User.accessTokens.create(user, ['*'], {
-        expiresIn: `${FIXED_TIME_VALUES.ONE_MONTH} days`,
+        expiresIn: FIXED_TIME_VALUES.ONE_MONTH,
       })
 
       return token
