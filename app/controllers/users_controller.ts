@@ -12,8 +12,14 @@ export default class UsersController {
   async me({ auth, response, logger }: HttpContext) {
     try {
       await auth.check()
+      if (!auth.user) {
+        return response.unauthorized({
+          success: false,
+          message: 'User not authenticated',
+        })
+      }
       const user = await User.query()
-        .where('id', auth.user!.id)
+        .where('id', auth.user.id)
         .preload('properties')
         .preload('propertyAccessRequests')
         .preload('profileFiles')
