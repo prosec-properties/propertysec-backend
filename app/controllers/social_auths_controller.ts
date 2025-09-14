@@ -10,7 +10,6 @@ export default class SocialAuthController {
   async googleCallback({ response, request }: HttpContext) {
     try {
       const { accessToken, credential } = request.all()
-      console.log('Google callback request params:', { accessToken: !!accessToken, credential: !!credential })
 
       let profile: any = {}
 
@@ -79,11 +78,13 @@ export default class SocialAuthController {
 
       const responseData = {
         success: true,
-        isNew,
-        user,
-        token: token || null,
+        message: 'User authenticated successfully',
+        data: {
+          isNew,
+          user,
+          token: token || null,
+        },
       }
-      console.log('Final response:', { success: responseData.success, isNew: responseData.isNew, hasToken: !!responseData.token })
 
       return response.ok(responseData)
     } catch (error) {
