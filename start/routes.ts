@@ -188,8 +188,6 @@ router
 
         // Loan repayment routes
         router.get('/:id/repayment-details', [LoansController, 'getLoanRepaymentDetails'])
-        router.post('/:id/repay', [LoansController, 'initializeLoanRepayment'])
-        router.post('/repayments/:repaymentId/verify', [LoansController, 'verifyLoanRepayment'])
         router.get('/repayments/me', [LoansController, 'getUserLoanRepayments'])
       })
       .use(middleware.auth())

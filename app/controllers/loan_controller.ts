@@ -4,7 +4,6 @@ import { ILoanAmount, ILoanDuration, ILoanFileType } from '#interfaces/loan'
 import Loan from '#models/loan'
 import LoanFile from '#models/loan_file'
 import LoanRepayment from '#models/loan_repayment'
-import Payment from '#models/payment'
 import User from '#models/user'
 import Employment from '#models/employment'
 import Landlord from '#models/landlord'
@@ -12,7 +11,6 @@ import Guarantor from '#models/guarantor'
 import LoanRequest from '#models/loan_request'
 import { ImageUploadInterface } from '#services/azure'
 import FilesService from '#services/files'
-import PaymentVerificationService from '#services/payment_verification'
 import {
   personalInfoValidator,
   bankInfoValidator,
@@ -21,13 +19,10 @@ import {
   landlordInfoValidator,
   guarantorInfoValidator,
 } from '#validators/loan'
-import { loanRepaymentValidator, verifyRepaymentValidator } from '#validators/loan_repayment'
 import type { HttpContext } from '@adonisjs/core/http'
 import Bank from '#models/bank'
 import db from '@adonisjs/lucid/services/db'
 import { DateTime } from 'luxon'
-import { nanoid } from 'nanoid'
-import PaystackService from '#services/paystack'
 
 export default class LoansController {
   async processLoanStep({ auth, request, response, logger }: HttpContext) {
@@ -356,7 +351,13 @@ export default class LoansController {
       await auth.authenticate()
       await bouncer.with('UserPolicy').authorize('isAdmin')
 
-      const loanStats = await db.from('loans').count('* as totalLoans').first()
+      const loanStats = await db
+        .from('loans')
+        .select(
+          db.raw('COUNT(*) as totalLoans'),
+          db.raw('COALESCE(SUM(CAST(loan_amount AS INTEGER)), 0) as totalAmount')
+        )
+        .first()
 
       const approvedLoans = await db
         .query()
@@ -372,12 +373,35 @@ export default class LoansController {
         .select(db.raw('SUM(CAST(loan_amount AS INTEGER)) as amount'))
         .first()
 
+      const totalRepaid = await db
+        .query()
+        .from('loan_repayments')
+        .where('repayment_status', 'SUCCESS')
+        .select(db.raw('SUM(CAST(repayment_amount AS INTEGER)) as amount'))
+        .first()
+
+      const repaidLoanDetails = await db
+        .query()
+        .from('loan_repayments')
+        .where('repayment_status', 'SUCCESS')
+        .select(
+          db.raw('COUNT(*) as totalRepayments'),
+          db.raw('SUM(CAST(repayment_amount AS INTEGER)) as totalRepaidAmount'),
+          db.raw('SUM(CAST(principal_amount AS INTEGER)) as totalPrincipalRepaid'),
+          db.raw('SUM(CAST(interest_amount AS INTEGER)) as totalInterestRepaid'),
+          db.raw('AVG(CAST(repayment_amount AS INTEGER)) as averageRepaymentAmount')
+        )
+        .first()
+
       const statusCounts = await db
         .from('loans')
         .select('loan_status')
         .count('* as count')
         .select(db.raw('SUM(CAST(loan_amount AS INTEGER)) as totalAmount'))
         .groupBy('loan_status')
+
+      console.log({ totalRepaid: totalRepaid.amount || 0 })
+      console.log({ repaidLoanDetails })
 
       return response.ok({
         success: true,
@@ -388,6 +412,14 @@ export default class LoansController {
           statusCounts,
           approvedLoans: approvedLoans.amount || 0,
           disbursedLoans: disbursedLoans.amount || 0,
+          totalRepaid: totalRepaid.amount || 0,
+          repaidLoan: {
+            totalRepayments: Number(repaidLoanDetails?.totalrepayments || 0),
+            totalRepaidAmount: Number(repaidLoanDetails?.totalrepaidamount || 0),
+            totalPrincipalRepaid: Number(repaidLoanDetails?.totalprincipalrepaid || 0),
+            totalInterestRepaid: Number(repaidLoanDetails?.totalinterestrepaid || 0),
+            averageRepaymentAmount: Number(repaidLoanDetails?.averagerepaymentamount || 0),
+          },
         },
       })
     } catch (error) {
@@ -622,6 +654,21 @@ export default class LoansController {
         )
         .first()
 
+      // Calculate repayment statistics for the user
+      const userRepaidLoanDetails = await db
+        .query()
+        .from('loan_repayments')
+        .where('user_id', user.id)
+        .where('repayment_status', 'SUCCESS')
+        .select(
+          db.raw('COUNT(*) as totalRepayments'),
+          db.raw('SUM(CAST(repayment_amount AS INTEGER)) as totalRepaidAmount'),
+          db.raw('SUM(CAST(principal_amount AS INTEGER)) as totalPrincipalRepaid'),
+          db.raw('SUM(CAST(interest_amount AS INTEGER)) as totalInterestRepaid'),
+          db.raw('AVG(CAST(repayment_amount AS INTEGER)) as averageRepaymentAmount')
+        )
+        .first()
+
       return response.ok({
         success: true,
         message: 'User loans fetched successfully',
@@ -634,6 +681,13 @@ export default class LoansController {
             disbursedAmount: Number(loanStats?.disbursedamount || 0),
             pendingAmount: Number(loanStats?.pendingamount || 0),
             rejectedAmount: Number(loanStats?.rejectedamount || 0),
+            repaidLoan: {
+              totalRepayments: Number(userRepaidLoanDetails?.totalrepayments || 0),
+              totalRepaidAmount: Number(userRepaidLoanDetails?.totalrepaidamount || 0),
+              totalPrincipalRepaid: Number(userRepaidLoanDetails?.totalprincipalrepaid || 0),
+              totalInterestRepaid: Number(userRepaidLoanDetails?.totalinterestrepaid || 0),
+              averageRepaymentAmount: Number(userRepaidLoanDetails?.averagerepaymentamount || 0),
+            },
           },
         },
       })
@@ -818,293 +872,6 @@ export default class LoansController {
           })),
         },
       })
-    } catch (error) {
-      return response.badRequest(getErrorObject(error))
-    }
-  }
-
-  async initializeLoanRepayment({ auth, request, response, params }: HttpContext) {
-    try {
-      await auth.authenticate()
-      const user = auth.user!
-      const loanId = params.id
-
-      const payload = await request.validateUsing(loanRepaymentValidator)
-      const {
-        repaymentAmount,
-        repaymentType = 'FULL',
-        paymentMethod = 'CARD',
-        email,
-        callbackUrl,
-        amount,
-      } = payload
-
-      if (!repaymentAmount || repaymentAmount <= 0) {
-        return response.badRequest({
-          success: false,
-          message: 'Repayment amount must be greater than 0',
-        })
-      }
-
-      const loan = await Loan.query()
-        .where('id', loanId)
-        .preload('repayments', (query) => {
-          query.where('repaymentStatus', 'SUCCESS')
-        })
-        .first()
-
-      if (!loan) {
-        return response.notFound({
-          success: false,
-          message: 'Loan not found',
-        })
-      }
-
-      if (loan.userId !== user.id) {
-        return response.unauthorized({
-          success: false,
-          message: 'Unauthorized: You can only repay your own loans',
-        })
-      }
-
-      if (loan.loanStatus !== 'disbursed' && loan.loanStatus !== 'overdue') {
-        return response.badRequest({
-          success: false,
-          message: 'Only disbursed loans can be repaid',
-        })
-      }
-
-      // Calculate outstanding balance
-      const loanAmount = parseFloat(loan.loanAmount)
-      const totalPaid = loan.repayments.reduce(
-        (sum, repayment) => sum + repayment.repaymentAmount,
-        0
-      )
-      const loanDetails = calculateLoanDetails(
-        loanAmount,
-        loan.interestRate,
-        parseLoanDuration(loan.loanDuration)
-      )
-      const totalDue = loanDetails.totalAmount
-      const outstandingBalance = totalDue - totalPaid
-
-      if (outstandingBalance <= 0) {
-        return response.badRequest({
-          success: false,
-          message: 'This loan has been fully repaid',
-        })
-      }
-
-      // if (repaymentAmount > outstandingBalance) {
-      //   return response.badRequest({
-      //     success: false,
-      //     message: `Repayment amount cannot exceed outstanding balance of ₦${outstandingBalance.toFixed(2)}`,
-      //   })
-      // }
-
-      const paymentReference = `LR_${nanoid(10)}`
-
-      const loanRepayment = await LoanRepayment.create({
-        loanId: loan.id,
-        userId: user.id,
-        repaymentAmount: repaymentAmount,
-        repaymentType: repaymentType,
-        paymentMethod: paymentMethod,
-        paymentReference: paymentReference,
-        paymentProvider: 'PAYSTACK',
-        repaymentStatus: 'PENDING',
-        // outstandingBalance: outstandingBalance - repaymentAmount,
-        outstandingBalance: repaymentAmount,
-        principalAmount: 0, // Will be calculated after successful payment
-        interestAmount: 0, // Will be calculated after successful payment
-      })
-
-      // rpid = repaymentId
-      const config = {
-        email,
-        callbackUrl: `${callbackUrl}?=rpid=${loanRepayment.id}`,
-        amount: Number(loan.loanAmount),
-      }
-
-      const paystackResponse = await PaystackService.initializeTransaction(config)
-
-      // const responseData = {
-      //   success: true,
-      //   message: 'Loan repayment initialized successfully',
-      //   data: {
-      //     repaymentId: loanRepayment.id,
-      //     loanId: loan.id,
-      //     repaymentAmount: repaymentAmount,
-      //     outstandingBalance: outstandingBalance - repaymentAmount,
-      //     paymentReference: paymentReference,
-      //     paystackConfig: {
-      //       publicKey: process.env.PAYSTACK_PUBLIC_KEY,
-      //       amount: repaymentAmount * 100, // Paystack expects amount in kobo
-      //       email: user.email,
-      //       reference: paymentReference,
-      //       currency: 'NGN',
-      //       metadata: {
-      //         loanId: loan.id,
-      //         repaymentId: loanRepayment.id,
-      //         userId: user.id,
-      //         repaymentType: repaymentType,
-      //       },
-      //     },
-      //   },
-      // }
-
-      return response.ok({
-        success: true,
-        message: 'Payment initialized successfully',
-        data: paystackResponse,
-      })
-    } catch (error) {
-      return response.badRequest(getErrorObject(error))
-    }
-  }
-
-  async verifyLoanRepayment({ auth, request, response, params }: HttpContext) {
-    try {
-      await auth.authenticate()
-      const user = auth.user!
-      const repaymentId = params.repaymentId
-
-      const payload = await request.validateUsing(verifyRepaymentValidator)
-      const { reference, providerResponse } = payload
-
-      const { repaymentId: rpid } = request.qs()
-      if (rpid && rpid !== repaymentId) {
-        return response.badRequest({
-          success: false,
-          message: 'Repayment ID in query does not match URL parameter',
-        })
-      }
-
-      if (!reference) {
-        return response.badRequest({
-          success: false,
-          message: 'Payment reference is required for verification',
-        })
-      }
-
-      // Fetch the repayment record
-      const loanRepayment = await LoanRepayment.query()
-        .where('id', repaymentId)
-        .preload('loan')
-        .first()
-
-      if (!loanRepayment) {
-        return response.notFound({
-          success: false,
-          message: 'Loan repayment not found',
-        })
-      }
-
-      // Check if user owns the repayment
-      if (loanRepayment.userId !== user.id) {
-        return response.unauthorized({
-          success: false,
-          message: 'Unauthorized: You can only verify your own repayments',
-        })
-      }
-
-      if (loanRepayment.repaymentStatus !== 'PENDING') {
-        return response.badRequest({
-          success: false,
-          message: 'This repayment has already been processed',
-        })
-      }
-
-      // Verify payment with payment provider
-      const verificationResult = await PaymentVerificationService.verifyPayment(
-        loanRepayment.paymentProvider,
-        reference
-      )
-
-      if (verificationResult.success) {
-        // Update repayment status
-        loanRepayment.repaymentStatus = 'SUCCESS'
-        loanRepayment.repaymentDate = DateTime.now()
-        // loanRepayment.meta = JSON.stringify({
-        //   providerResponse: verificationResult.data || providerResponse || {},
-        //   verifiedAt: DateTime.now().toISO(),
-        // })
-
-        // Calculate principal and interest breakdown
-        const loan = loanRepayment.loan
-        const loanAmount = parseFloat(loan.loanAmount)
-        const loanDetails = calculateLoanDetails(
-          loanAmount,
-          loan.interestRate,
-          parseLoanDuration(loan.loanDuration)
-        )
-        const totalInterest = loanDetails.totalInterest
-        const totalPrincipal = loanAmount
-
-        // Simple proportional calculation for principal/interest breakdown
-        const interestPortion = totalInterest / loanDetails.totalAmount
-        const principalPortion = totalPrincipal / loanDetails.totalAmount
-
-        loanRepayment.interestAmount = loanRepayment.repaymentAmount * interestPortion
-        loanRepayment.principalAmount = loanRepayment.repaymentAmount * principalPortion
-
-        await loanRepayment.save()
-
-        // Create payment record
-        await Payment.create({
-          userId: user.id,
-          amount: loanRepayment.repaymentAmount,
-          provider: 'PAYSTACK',
-          status: 'SUCCESS',
-          reference: reference,
-          providerResponse: JSON.stringify(verificationResult.data || providerResponse || {}),
-          paymentMethod:
-            loanRepayment.paymentMethod === 'CASH' ? 'WALLET' : loanRepayment.paymentMethod,
-        })
-
-        // Check if loan is fully repaid
-        const allRepayments = await LoanRepayment.query()
-          .where('loanId', loan.id)
-          .where('repaymentStatus', 'SUCCESS')
-
-        const totalPaid = allRepayments.reduce(
-          (sum, repayment) => sum + repayment.repaymentAmount,
-          0
-        )
-        const totalDue = loanDetails.totalAmount
-
-        if (totalPaid >= totalDue) {
-          loan.loanStatus = 'completed'
-          await loan.save()
-        }
-
-        return response.ok({
-          success: true,
-          message: 'Loan repayment verified successfully',
-          data: {
-            repaymentId: loanRepayment.id,
-            amount: loanRepayment.repaymentAmount,
-            status: loanRepayment.repaymentStatus,
-            outstandingBalance: loanRepayment.outstandingBalance,
-            loanStatus: loan.loanStatus,
-            isLoanCompleted: loan.loanStatus === 'completed',
-          },
-        })
-      } else {
-        // Payment verification failed
-        loanRepayment.repaymentStatus = 'FAILED'
-        loanRepayment.meta = JSON.stringify({
-          providerResponse: verificationResult.data || providerResponse || {},
-          errorMessage: verificationResult.message,
-          failedAt: DateTime.now().toISO(),
-        })
-        await loanRepayment.save()
-
-        return response.badRequest({
-          success: false,
-          message: verificationResult.message || 'Payment verification failed',
-        })
-      }
     } catch (error) {
       return response.badRequest(getErrorObject(error))
     }
