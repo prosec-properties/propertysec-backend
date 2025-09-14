@@ -10,18 +10,25 @@ export default class SocialAuthController {
   async googleCallback({ response, request }: HttpContext) {
     try {
       const { accessToken, credential } = request.all()
+      console.log('Google callback request params:', { accessToken: !!accessToken, credential: !!credential })
 
       let profile: any = {}
 
       if (credential) {
+        console.log('Decoding credential JWT')
         const data = jwt.decode(credential)
+        console.log('Decoded credential data:', data)
         profile = data
       }
 
       if (accessToken) {
+        console.log('Fetching profile with access token')
         const data = await getGoogleUserProfile(accessToken)
+        console.log('Profile data from API:', data)
         profile = data
       }
+
+      console.log('Final profile:', profile)
 
       const userDetails = {
         email: profile.email,
@@ -30,7 +37,10 @@ export default class SocialAuthController {
         avatar: profile.picture,
       }
 
+      console.log('User details:', userDetails)
+
       if (!userDetails.email) {
+        console.log('No email in profile, returning error')
         return response.badRequest({
           success: false,
           message: 'Email is required',
@@ -44,7 +54,10 @@ export default class SocialAuthController {
         role: 'buyer',
       })
 
+      console.log('User creation result:', { user: !!user, isNew })
+
       if (!user) {
+        console.log('User creation failed')
         return response.badRequest({
           success: false,
           message: 'Could not create user',
@@ -54,19 +67,25 @@ export default class SocialAuthController {
       let token
 
       if (!isNew && user.hasCompletedRegistration) {
+        console.log('Generating auth token for existing user')
         token = await AuthToken.generateAuthToken(user)
+        console.log('Token generated:', !!token)
       }
 
       if (!isNew && user.hasCompletedRegistration && !token) {
+        console.log('Token generation failed')
         return response.badRequest(errorResponse)
       }
 
-      return response.ok({
+      const responseData = {
         success: true,
         isNew,
         user,
         token: token || null,
-      })
+      }
+      console.log('Final response:', { success: responseData.success, isNew: responseData.isNew, hasToken: !!responseData.token })
+
+      return response.ok(responseData)
     } catch (error) {
       return response.badRequest(errorResponse(error.message))
     }
@@ -100,16 +119,19 @@ export default class SocialAuthController {
 
     const userInDataBase = await User.query().orWhere('email', user.email).first()
 
-    console.log('uwerInDB', { userInDataBase })
+    console.log('uwerInDB', { userInDataBase: !!userInDataBase, email: user.email })
 
     if (!userInDataBase) {
+      console.log('Creating new user')
       const newUser = await User.create(user)
+      console.log('New user created:', !!newUser)
       return {
         user: newUser,
         isNew: true,
       }
     }
 
+    console.log('Existing user found, updating fields')
     if (!userInDataBase.emailVerified) {
       userInDataBase.emailVerified = true
     }
@@ -119,6 +141,7 @@ export default class SocialAuthController {
     }
 
     await userInDataBase.save()
+    console.log('Existing user updated')
 
     return {
       user: userInDataBase,
