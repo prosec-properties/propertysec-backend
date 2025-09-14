@@ -2,6 +2,10 @@ import { getErrorObject } from '#helpers/error'
 import Property from '#models/property'
 import PropertyPurchase from '#models/property_purchase'
 import User from '#models/user'
+import InspectionDetail from '#models/inspection_detail'
+import Loan from '#models/loan'
+import UserSetting from '#models/user_setting'
+import Subscription from '#models/subscription'
 import type { HttpContext } from '@adonisjs/core/http'
 
 export default class AdminController {
@@ -10,7 +14,6 @@ export default class AdminController {
       await auth.authenticate()
       await bouncer.with('UserPolicy').authorize('isAdmin')
 
-      // Get query parameters with defaults
       const page = request.input('page', 1)
       const perPage = request.input('per_page', 20)
       const sortBy = request.input('sort_by', 'created_at')
@@ -71,6 +74,12 @@ export default class AdminController {
           message: 'Cannot delete admin user',
         })
       }
+
+      await InspectionDetail.query().where('userId', userId).delete()
+      await Loan.query().where('userId', userId).delete()
+      await UserSetting.query().where('userId', userId).delete()
+      await Subscription.query().where('userId', userId).delete()
+
       await user.delete()
       return response.ok({
         success: true,
