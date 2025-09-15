@@ -40,7 +40,7 @@ export default class AdminController {
 
       let baseStatsQuery = User.query()
 
-      const [totalUsers, activeUsers] = await Promise.all([
+      const [totalUsers, subscribedUsers] = await Promise.all([
         baseStatsQuery.clone().count('* as total'),
         baseStatsQuery.clone().where('subscription_status', 'active').count('* as total'),
       ])
@@ -52,7 +52,7 @@ export default class AdminController {
           users: users.toJSON().data,
           meta: users.toJSON().meta,
           totalUsers: totalUsers[0]?.$extras?.total || 0,
-          activeUsers: activeUsers[0]?.$extras?.total || 0,
+          subscribedUsers: subscribedUsers[0]?.$extras?.total || 0,
         },
       })
     } catch (error) {
