@@ -261,7 +261,7 @@ export interface TransactionMetadata {
   repaymentAmount?: number;
   repaymentType?: 'FULL' | 'PARTIAL';
   // Affiliate
-  affiliateSlug?: string;
+  affiliateId?: string;
   // Additional metadata
   [key: string]: any;
 }
@@ -316,7 +316,7 @@ export interface LoanRepaymentTransactionData {
 
 // Affiliate commission interface
 export interface AffiliateCommissionData {
-  affiliateSlug: string;
+  affiliateId: string;
   amount: number;
   type: TransactionType;
   propertyId?: string;

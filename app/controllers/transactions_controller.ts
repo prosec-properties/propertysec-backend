@@ -188,8 +188,8 @@ export default class TransactionsController {
             propertyId: meta.propertyId,
           })
 
-          if (!!meta.affiliateSlug) {
-            const affliate = await User.query().where('slug', meta.affiliateSlug).firstOrFail()
+          if (!!meta.affiliateId) {
+            const affliate = await User.query().where('id', meta.affiliateId).firstOrFail()
 
             if (!amountInNaira) return
 
@@ -209,7 +209,6 @@ export default class TransactionsController {
               providerStatus: 'success',
               provider: 'PAYSTACK',
               reference: 'AFF-' + nanoid(),
-              slug: meta.affiliateSlug,
               propertyId: meta.propertyId,
               providerResponse: JSON.stringify(paystackPaymentData),
             })
@@ -285,8 +284,8 @@ export default class TransactionsController {
             })
           )
 
-          if (!!meta.affiliateSlug) {
-            const affliate = await User.query().where('slug', meta.affiliateSlug).firstOrFail()
+          if (!!meta.affiliateId) {
+            const affliate = await User.query().where('id', meta.affiliateId).firstOrFail()
 
             if (!amountInNaira) return
 
@@ -306,7 +305,6 @@ export default class TransactionsController {
               providerStatus: 'success',
               provider: 'PAYSTACK',
               reference: 'AFF-PROP-' + nanoid(),
-              slug: meta.affiliateSlug,
               propertyId: meta.propertyId,
               providerResponse: JSON.stringify(paystackPaymentData),
             })
@@ -682,9 +680,9 @@ export default class TransactionsController {
       propertyId: meta.propertyId,
     })
 
-    if (meta.affiliateSlug) {
-      await this.handleAffiliateCommission(amountInNaira, meta, 'inspection', 0.1)
-    }
+    // if (meta.affiliateId) {
+    //   await this.handleAffiliateCommission(amountInNaira, meta, 'inspection', 0.1)
+    // }
   }
 
   private async handlePropertyPurchaseTransaction(
@@ -742,7 +740,7 @@ export default class TransactionsController {
     //   })
     // )
 
-    if (meta.affiliateSlug) {
+    if (meta.affiliateId) {
       await this.handleAffiliateCommission(amountInNaira, meta, 'property_purchase', 0.05)
     }
   }
@@ -753,7 +751,7 @@ export default class TransactionsController {
     type: 'inspection' | 'property_purchase',
     commissionRate: number
   ) {
-    const affliate = await User.query().where('slug', meta.affiliateSlug).firstOrFail()
+    const affliate = await User.query().where('id', meta.affiliateId).firstOrFail()
 
     const affiliateAmount = amountInNaira * commissionRate
 
@@ -771,7 +769,6 @@ export default class TransactionsController {
       providerStatus: 'success',
       provider: 'PAYSTACK',
       reference: 'AFF-' + nanoid(),
-      slug: meta.affiliateSlug,
       propertyId: meta.propertyId,
       providerResponse: JSON.stringify({ commission: true }),
     })

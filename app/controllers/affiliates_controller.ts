@@ -93,11 +93,9 @@ export default class AffiliatesController {
       await auth.authenticate()
       const user = auth.user!
 
-      // Get all active affiliate entries for the current user
       const affiliateEntries = await AffiliateProperty.query().where('affiliateUserId', user.id)
       // .where('isActive', true)
 
-      // console.log('Affiliate Entries:', affiliateEntries)
 
       const propertyIds = affiliateEntries.map((entry) => entry.propertyId)
 
@@ -106,13 +104,13 @@ export default class AffiliatesController {
         affiliatedProperties = await Property.query()
           .whereIn('id', propertyIds)
           .where('availability', '!=', 'sold')
-          // .where('status', 'published') // Assuming properties have their own published status
+          .where('status', 'published')
           .preload('files')
           .orderBy('created_at', 'desc')
       }
 
       const myProducts = await Product.query()
-        // .where('status', 'published')
+        .where('status', 'published')
         .where('userId', user.id)
         .preload('files')
         .orderBy('created_at', 'desc')
@@ -152,7 +150,6 @@ export default class AffiliatesController {
           .where('propertyId', itemId)
           .delete()
       } else if (itemType === 'product') {
-        // Handle product removal logic if needed
         // This would depend on your product-affiliate relationship
       } else {
         return response.badRequest({
