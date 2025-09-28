@@ -187,7 +187,8 @@ export default class AffiliatesController {
 
       const affiliateTransactions = await db
         .from('transactions')
-        .where('slug', user.slug)
+        .where('userId', user.id)
+        .where('type', 'property_purchase')
         .count('*')
         .first()
 

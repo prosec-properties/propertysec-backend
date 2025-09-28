@@ -1,6 +1,6 @@
 import { ACCEPTED_IMAGE_TYPES } from '#constants/general'
 import vine from '@vinejs/vine'
-import { PROPERTY_TYPE_ENUMS } from '../interfaces/property.js'
+import { PROPERTY_PURPOSE_ENUMS, PROPERTY_TYPE_ENUMS } from '../interfaces/property.js'
 import { CURRENCIES_ENUM } from '#interfaces/payment'
 import { ACCEPTED_VIDEO_TYPES } from '../constants/general.js'
 
@@ -16,7 +16,7 @@ export const createPropertyValidator = vine.compile(
     bathrooms: vine.number(),
     toilets: vine.number(),
     street: vine.string(),
-    // append: vine.string().nullable(),
+    purpose: vine.enum(['sale', 'rent', 'shortlet']),
 
     stateId: vine.string().exists(async (db, value) => {
       const state = await db.from('states').where('id', value).first()
@@ -53,6 +53,7 @@ export const updatePropertyValidator = vine.compile(
       toilets: vine.number(),
       street: vine.string(),
       append: vine.string().optional(),
+      purpose: vine.enum(PROPERTY_PURPOSE_ENUMS),
 
       stateId: vine.string().exists(async (db, value) => {
         const state = await db.from('states').where('id', value).first()

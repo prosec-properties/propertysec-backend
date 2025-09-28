@@ -1,6 +1,7 @@
 import { getErrorObject } from '#helpers/error'
 import { koboToNaira } from '#helpers/currency'
 import { calculateLoanDetails, parseLoanDuration } from '#helpers/loan'
+import { AFFILIATE_COMMISSION_RATES } from '#constants/general'
 import PropertyPurchaseNotification from '#mails/property_purchase_notification'
 import InspectionDetail from '#models/inspection_detail'
 import Loan from '#models/loan'
@@ -193,19 +194,19 @@ export default class TransactionsController {
 
             if (!amountInNaira) return
 
-            const affiliateAmount = amountInNaira * 0.1 // 10% of the payment amount
+            const affiliateAmount = amountInNaira * AFFILIATE_COMMISSION_RATES.RENT_SHORTLET // 5% commission for inspections
 
             await Transaction.create({
               userId: affliate.id,
-              transactionType: 'PROPERTY_INSPECTION',
+              transactionType: 'PROPERTY_PURCHASE',
               amount: affiliateAmount,
-              type: 'inspection',
+              type: 'property_purchase',
               isVerified: true,
               status: 'SUCCESS',
               actualAmount: affiliateAmount,
               date: DateTime.now().toISO(),
               currency: 'NGN',
-              narration: `Affiliate payment for subscription.`,
+              narration: `Affiliate commission for property purchase.`,
               providerStatus: 'success',
               provider: 'PAYSTACK',
               reference: 'AFF-' + nanoid(),
@@ -289,7 +290,11 @@ export default class TransactionsController {
 
             if (!amountInNaira) return
 
-            const affiliateAmount = amountInNaira * 0.05 // 5% of the property purchase amount
+            const property = await Property.findOrFail(meta.propertyId)
+            const commissionRate = property.purpose === 'sale' 
+              ? AFFILIATE_COMMISSION_RATES.SALE 
+              : AFFILIATE_COMMISSION_RATES.RENT_SHORTLET
+            const affiliateAmount = amountInNaira * commissionRate
 
             await Transaction.create({
               userId: affliate.id,
@@ -301,7 +306,7 @@ export default class TransactionsController {
               actualAmount: affiliateAmount,
               date: DateTime.now().toISO(),
               currency: meta.currency || 'NGN',
-              narration: `Affiliate commission for property purchase: ${meta.propertyTitle}`,
+              narration: `Affiliate commission for property ${property.purpose}: ${meta.propertyTitle}`,
               providerStatus: 'success',
               provider: 'PAYSTACK',
               reference: 'AFF-PROP-' + nanoid(),
@@ -725,7 +730,7 @@ export default class TransactionsController {
 
     await Property.query().where('id', meta.propertyId).update({ availability: 'sold' })
 
-    // const property = await Property.findOrFail(meta.propertyId)
+    const property = await Property.findOrFail(meta.propertyId)
 
     // await mail.send(
     //   new PropertyPurchaseNotification({
@@ -741,14 +746,17 @@ export default class TransactionsController {
     // )
 
     if (meta.affiliateId) {
-      await this.handleAffiliateCommission(amountInNaira, meta, 'property_purchase', 0.05)
+      const commissionRate = property.purpose === 'sale' 
+        ? AFFILIATE_COMMISSION_RATES.SALE 
+        : AFFILIATE_COMMISSION_RATES.RENT_SHORTLET
+      await this.handleAffiliateCommission(amountInNaira, meta, 'property_purchase', commissionRate)
     }
   }
 
   private async handleAffiliateCommission(
     amountInNaira: number,
     meta: PaystackMetadata,
-    type: 'inspection' | 'property_purchase',
+    type: 'property_purchase',
     commissionRate: number
   ) {
     const affliate = await User.query().where('id', meta.affiliateId).firstOrFail()
@@ -757,7 +765,7 @@ export default class TransactionsController {
 
     await Transaction.create({
       userId: affliate.id,
-      transactionType: type === 'inspection' ? 'PROPERTY_INSPECTION' : 'PROPERTY_PURCHASE',
+      transactionType: 'PROPERTY_PURCHASE',
       amount: affiliateAmount,
       type: type,
       isVerified: true,
@@ -765,7 +773,7 @@ export default class TransactionsController {
       actualAmount: affiliateAmount,
       date: DateTime.now().toISO(),
       currency: 'NGN',
-      narration: `Affiliate commission for ${type}: ${meta.propertyTitle || 'property'}`,
+      narration: `Affiliate commission for ${type === 'property_purchase' ? 'property purchase' : 'property'}`,
       providerStatus: 'success',
       provider: 'PAYSTACK',
       reference: 'AFF-' + nanoid(),

@@ -36,3 +36,8 @@ export const NUMERIC_STRING = '0123456789'
 export const ALPHA_NUMERIC_STRING = `${ALPHA_STRING}${NUMERIC_STRING}`
 
 export const NIGERIA_COUNTRY_ID = "161"
+
+export const AFFILIATE_COMMISSION_RATES = {
+  SALE: 0.02, // 2% for sale properties
+  RENT_SHORTLET: 0.05, // 5% for rent/shortlet properties
+} as const
