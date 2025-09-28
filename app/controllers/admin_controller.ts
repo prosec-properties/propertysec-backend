@@ -254,4 +254,243 @@ export default class AdminController {
       return response.internalServerError(getErrorObject(error))
     }
   }
+
+  public async fetchUserProperties({ auth, response, request, params, bouncer }: HttpContext) {
+    try {
+      await auth.authenticate()
+      await bouncer.with('UserPolicy').authorize('isAdmin')
+
+      const { userId } = params
+      const page = request.input('page', 1)
+      const perPage = request.input('per_page', 20)
+      const sortBy = request.input('sort_by', 'created_at')
+      const order = request.input('order', 'desc')
+
+      const orderDirection = order.toLowerCase() === 'asc' ? 'asc' : 'desc'
+      const sortableColumns = ['created_at', 'updated_at', 'title', 'price', 'status']
+      const validSortBy = sortableColumns.includes(sortBy) ? sortBy : 'created_at'
+
+      const user = await User.findOrFail(userId)
+
+      const properties = await Property.query()
+        .where('userId', userId)
+        .preload('files')
+        .orderBy(validSortBy, orderDirection)
+        .paginate(page, perPage)
+
+      return response.ok({
+        success: true,
+        message: 'User properties fetched successfully',
+        data: {
+          properties: properties.toJSON().data,
+          meta: properties.toJSON().meta,
+          user: user.toJSON(),
+        },
+      })
+    } catch (error) {
+      return response.internalServerError(getErrorObject(error))
+    }
+  }
+
+  public async updateUserProperty({ auth, response, request, params, bouncer }: HttpContext) {
+    try {
+      await auth.authenticate()
+      await bouncer.with('UserPolicy').authorize('isAdmin')
+
+      const { userId, propertyId } = params
+      const updateData = request.only([
+        'title',
+        'description',
+        'price',
+        'currency',
+        'status',
+        'availability',
+        'bedrooms',
+        'bathrooms',
+        'toilets',
+        'address',
+        'street',
+        'cityId',
+        'stateId',
+        'countryId',
+        'categoryId',
+        'type',
+        'purpose',
+        'meta',
+      ])
+
+      const property = await Property.findOrFail(propertyId)
+
+      // Ensure the property belongs to the user
+      if (property.userId !== userId) {
+        return response.badRequest({
+          success: false,
+          message: 'Property does not belong to the specified user',
+        })
+      }
+
+      await property.merge(updateData).save()
+
+      return response.ok({
+        success: true,
+        message: 'Property updated successfully',
+        data: { property },
+      })
+    } catch (error) {
+      return response.internalServerError(getErrorObject(error))
+    }
+  }
+
+  public async fetchAffiliateProperties({ auth, response, request, params, bouncer }: HttpContext) {
+    try {
+      await auth.authenticate()
+      await bouncer.with('UserPolicy').authorize('isAdmin')
+
+      const { affiliateId } = params
+      const page = request.input('page', 1)
+      const perPage = request.input('per_page', 20)
+      const sortBy = request.input('sort_by', 'created_at')
+      const order = request.input('order', 'desc')
+
+      const orderDirection = order.toLowerCase() === 'asc' ? 'asc' : 'desc'
+      const sortableColumns = ['created_at', 'updated_at', 'title', 'price', 'status']
+      const validSortBy = sortableColumns.includes(sortBy) ? sortBy : 'created_at'
+
+      const affiliate = await User.findOrFail(affiliateId)
+
+      if (affiliate.role !== 'affiliate') {
+        return response.badRequest({
+          success: false,
+          message: 'User is not an affiliate',
+        })
+      }
+
+      const properties = await Property.query()
+        .where('affiliateId', affiliateId)
+        .preload('files')
+        .preload('user', (userQuery) => userQuery.select('id', 'fullName', 'email'))
+        .orderBy(validSortBy, orderDirection)
+        .paginate(page, perPage)
+
+      return response.ok({
+        success: true,
+        message: 'Affiliate properties fetched successfully',
+        data: {
+          properties: properties.toJSON().data,
+          meta: properties.toJSON().meta,
+          affiliate: affiliate.toJSON(),
+        },
+      })
+    } catch (error) {
+      return response.internalServerError(getErrorObject(error))
+    }
+  }
+
+  public async fetchBuyerInspectedProperties({
+    auth,
+    response,
+    request,
+    params,
+    bouncer,
+  }: HttpContext) {
+    try {
+      await auth.authenticate()
+      await bouncer.with('UserPolicy').authorize('isAdmin')
+
+      const { buyerId } = params
+      const page = request.input('page', 1)
+      const perPage = request.input('per_page', 20)
+      const sortBy = request.input('sort_by', 'created_at')
+      const order = request.input('order', 'desc')
+
+      const orderDirection = order.toLowerCase() === 'asc' ? 'asc' : 'desc'
+      const sortableColumns = ['created_at', 'updated_at', 'inspectionAmount', 'inspectionStatus']
+      const validSortBy = sortableColumns.includes(sortBy) ? sortBy : 'created_at'
+
+      const buyer = await User.findOrFail(buyerId)
+
+      if (buyer.role !== 'buyer') {
+        return response.badRequest({
+          success: false,
+          message: 'User is not a buyer',
+        })
+      }
+
+      const inspections = await InspectionDetail.query()
+        .where('userId', buyerId)
+        .preload('property', (propertyQuery) =>
+          propertyQuery
+            .preload('files')
+            .select('id', 'title', 'address', 'price', 'currency', 'status', 'availability')
+        )
+        .orderBy(validSortBy, orderDirection)
+        .paginate(page, perPage)
+
+      return response.ok({
+        success: true,
+        message: 'Buyer inspected properties fetched successfully',
+        data: {
+          inspections: inspections.toJSON().data,
+          meta: inspections.toJSON().meta,
+          buyer: buyer.toJSON(),
+        },
+      })
+    } catch (error) {
+      return response.internalServerError(getErrorObject(error))
+    }
+  }
+
+  public async fetchBuyerPurchasedProperties({
+    auth,
+    response,
+    request,
+    params,
+    bouncer,
+  }: HttpContext) {
+    try {
+      await auth.authenticate()
+      await bouncer.with('UserPolicy').authorize('isAdmin')
+
+      const { buyerId } = params
+      const page = request.input('page', 1)
+      const perPage = request.input('per_page', 20)
+      const sortBy = request.input('sort_by', 'created_at')
+      const order = request.input('order', 'desc')
+
+      const orderDirection = order.toLowerCase() === 'asc' ? 'asc' : 'desc'
+      const sortableColumns = ['created_at', 'updated_at', 'purchaseAmount', 'purchaseStatus']
+      const validSortBy = sortableColumns.includes(sortBy) ? sortBy : 'created_at'
+
+      const buyer = await User.findOrFail(buyerId)
+
+      if (buyer.role !== 'buyer') {
+        return response.badRequest({
+          success: false,
+          message: 'User is not a buyer',
+        })
+      }
+
+      const purchases = await PropertyPurchase.query()
+        .where('userId', buyerId)
+        .preload('property', (propertyQuery) =>
+          propertyQuery
+            .preload('files')
+            .select('id', 'title', 'address', 'price', 'currency', 'status', 'availability')
+        )
+        .orderBy(validSortBy, orderDirection)
+        .paginate(page, perPage)
+
+      return response.ok({
+        success: true,
+        message: 'Buyer purchased properties fetched successfully',
+        data: {
+          purchases: purchases.toJSON().data,
+          meta: purchases.toJSON().meta,
+          buyer: buyer.toJSON(),
+        },
+      })
+    } catch (error) {
+      return response.internalServerError(getErrorObject(error))
+    }
+  }
 }

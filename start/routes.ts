@@ -63,6 +63,11 @@ router
           AdminController,
           'updatePropertyPurchaseStatus',
         ])
+        router.get('/users/:userId/properties', [AdminController, 'fetchUserProperties'])
+        router.patch('/users/:userId/properties/:propertyId', [AdminController, 'updateUserProperty'])
+        router.get('/affiliates/:affiliateId/properties', [AdminController, 'fetchAffiliateProperties'])
+        router.get('/buyers/:buyerId/inspected-properties', [AdminController, 'fetchBuyerInspectedProperties'])
+        router.get('/buyers/:buyerId/purchased-properties', [AdminController, 'fetchBuyerPurchasedProperties'])
       })
       .prefix('admin')
 
