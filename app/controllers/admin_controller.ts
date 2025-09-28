@@ -315,7 +315,6 @@ export default class AdminController {
         'countryId',
         'categoryId',
         'type',
-        'purpose',
         'meta',
       ])
 

@@ -31,11 +31,6 @@ export const PROPERTY_TYPE_ENUMS = [
   'Petrol Station',
 ] as const
 
-
-export const PROPERTY_PURPOSE_ENUMS = ['sale', 'rent', 'shortlet'] as const
-
-export type IPropertyPurpose = (typeof PROPERTY_PURPOSE_ENUMS)[number]
-
 export type IPropertyType = (typeof PROPERTY_TYPE_ENUMS)[number]
 
 export type IPropertyStatus = 'draft' | 'published' | 'pending' | 'closed' | 'rejected'

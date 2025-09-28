@@ -4,7 +4,7 @@ import type { BelongsTo, HasMany, HasOne } from '@adonisjs/lucid/types/relations
 import User from './user.js'
 import Category from './category.js'
 import { v4 as uuidv4 } from 'uuid'
-import type { IPropertyPurpose, IPropertyType } from '../interfaces/property.js'
+import type { IPropertyType } from '../interfaces/property.js'
 import PropertyFile from './property_file.js'
 import type { IProductAvailability, IProductStatus } from '#interfaces/product'
 import InspectionDetail from './inspection_detail.js'
@@ -24,9 +24,6 @@ export default class Property extends BaseModel {
 
   @column()
   declare type: IPropertyType
-
-  @column()
-  declare purpose: IPropertyPurpose
 
   @column()
   declare bedrooms: number

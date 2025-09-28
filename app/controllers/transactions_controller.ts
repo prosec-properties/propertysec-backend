@@ -2,6 +2,7 @@ import { getErrorObject } from '#helpers/error'
 import { koboToNaira } from '#helpers/currency'
 import { calculateLoanDetails, parseLoanDuration } from '#helpers/loan'
 import { AFFILIATE_COMMISSION_RATES } from '#constants/general'
+import { CATEGORY_IDS } from '#database/seeders/AAAcategory_seeder'
 import PropertyPurchaseNotification from '#mails/property_purchase_notification'
 import InspectionDetail from '#models/inspection_detail'
 import Loan from '#models/loan'
@@ -291,7 +292,7 @@ export default class TransactionsController {
             if (!amountInNaira) return
 
             const property = await Property.findOrFail(meta.propertyId)
-            const commissionRate = property.purpose === 'sale' 
+            const commissionRate = property.categoryId === CATEGORY_IDS.SALE 
               ? AFFILIATE_COMMISSION_RATES.SALE 
               : AFFILIATE_COMMISSION_RATES.RENT_SHORTLET
             const affiliateAmount = amountInNaira * commissionRate
@@ -306,7 +307,7 @@ export default class TransactionsController {
               actualAmount: affiliateAmount,
               date: DateTime.now().toISO(),
               currency: meta.currency || 'NGN',
-              narration: `Affiliate commission for property ${property.purpose}: ${meta.propertyTitle}`,
+              narration: `Affiliate commission for property ${property.category?.name || 'property'}: ${meta.propertyTitle}`,
               providerStatus: 'success',
               provider: 'PAYSTACK',
               reference: 'AFF-PROP-' + nanoid(),
@@ -746,7 +747,7 @@ export default class TransactionsController {
     // )
 
     if (meta.affiliateId) {
-      const commissionRate = property.purpose === 'sale' 
+      const commissionRate = property.categoryId === CATEGORY_IDS.SALE 
         ? AFFILIATE_COMMISSION_RATES.SALE 
         : AFFILIATE_COMMISSION_RATES.RENT_SHORTLET
       await this.handleAffiliateCommission(amountInNaira, meta, 'property_purchase', commissionRate)
