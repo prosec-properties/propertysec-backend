@@ -8,7 +8,7 @@ import {
   column,
   hasOne,
 } from '@adonisjs/lucid/orm'
-import type { AcceptedCurrencies, TransactionStatus, TransactionType } from '#interfaces/payment'
+import type { AcceptedCurrencies, ITransactionType, TransactionStatus, TransactionType } from '#interfaces/payment'
 import { v4 as uuidv4 } from 'uuid'
 import type { BelongsTo, HasOne } from '@adonisjs/lucid/types/relations'
 import User from './user.js'
@@ -23,7 +23,7 @@ export default class Transaction extends BaseModel {
   declare userId: string
 
   @column({ serializeAs: 'transactionType' })
-  declare transactionType: 'SUBSCRIPTION' | 'PROPERTY_INSPECTION' | 'LOAN_REPAYMENT ' | 'PROPERTY_PURCHASE' | 'REFUND'
+  declare transactionType: ITransactionType
 
   @column({ serializeAs: 'transactionTypeId' })
   declare transactionTypeId: string

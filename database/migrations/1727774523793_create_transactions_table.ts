@@ -1,3 +1,4 @@
+import { TRANSACTION_TYPE_ENUM } from '#interfaces/payment'
 import { BaseSchema } from '@adonisjs/lucid/schema'
 import { v4 as uuidv4 } from 'uuid'
 
@@ -8,7 +9,7 @@ export default class extends BaseSchema {
     this.schema.createTable(this.tableName, (table) => {
       table.uuid('id').primary().notNullable().unique().defaultTo(uuidv4())
       table.uuid('user_id').notNullable().references('id').inTable('users').onDelete('CASCADE')
-      table.enum('transaction_type', ['SUBSCRIPTION', 'PROPERTY_INSPECTION', 'LOAN_REPAYMENT ']).notNullable()
+      table.enum('transaction_type', Object.values(TRANSACTION_TYPE_ENUM)).notNullable()
       table.uuid('transaction_type_id').notNullable()
       table.uuid('payment_id').notNullable()
       table.decimal('amount').notNullable()
