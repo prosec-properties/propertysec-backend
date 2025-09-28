@@ -265,6 +265,7 @@ export default class AdminController {
       const perPage = request.input('per_page', 20)
       const sortBy = request.input('sort_by', 'created_at')
       const order = request.input('order', 'desc')
+      const status = request.input('status')
 
       const orderDirection = order.toLowerCase() === 'asc' ? 'asc' : 'desc'
       const sortableColumns = ['created_at', 'updated_at', 'title', 'price', 'status']
@@ -272,9 +273,19 @@ export default class AdminController {
 
       const user = await User.findOrFail(userId)
 
-      const properties = await Property.query()
+      const propertiesQuery = Property.query()
         .where('userId', userId)
         .preload('files')
+
+      if (status && status !== 'all') {
+        if (status === 'sold') {
+          propertiesQuery.where('availability', 'sold')
+        } else {
+          propertiesQuery.where('status', status)
+        }
+      }
+
+      const properties = await propertiesQuery
         .orderBy(validSortBy, orderDirection)
         .paginate(page, perPage)
 
