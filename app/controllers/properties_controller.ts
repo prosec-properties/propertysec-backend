@@ -8,6 +8,7 @@ import { MultipartFile } from '@adonisjs/core/bodyparser'
 import { NIGERIA_COUNTRY_ID } from '#constants/general'
 import vine from '@vinejs/vine'
 import Subscription from '#models/subscription'
+import User from '#models/user'
 import aws from '#services/aws'
 
 export default class PropertiesController {
@@ -96,19 +97,32 @@ export default class PropertiesController {
   async store({ auth, request, response, logger }: HttpContext) {
     try {
       await auth.authenticate()
-      const user = auth.user!
+      const authenticatedUser = auth.user!
 
-      // Check property upload limits based on subscription
+      // Check if admin is creating property for another user
+      const targetUserId = request.input('userId')
+      let targetUserIdForProperty = authenticatedUser.id
+      let targetUserSubscriptionStatus = authenticatedUser.subscriptionStatus
+      let targetUserSubscriptionId = authenticatedUser.subscriptionId
+
+      if (targetUserId && authenticatedUser.role === 'admin') {
+        const foundUser = await User.findOrFail(targetUserId)
+        targetUserIdForProperty = foundUser.id
+        targetUserSubscriptionStatus = foundUser.subscriptionStatus
+        targetUserSubscriptionId = foundUser.subscriptionId
+      }
+
       const currentPropertyCount = await Property.query()
-        .where('userId', user.id)
+        .where('userId', targetUserIdForProperty)
         .count('* as total')
 
-      const userPlan = user.subscriptionStatus === 'active' && user.subscriptionId 
-        ? await Subscription.query()
-            .where('id', user.subscriptionId)
-            .preload('plan')
-            .first()
-        : null
+      const userPlan =
+        targetUserSubscriptionStatus === 'active' && targetUserSubscriptionId
+          ? await Subscription.query()
+              .where('id', targetUserSubscriptionId)
+              .preload('plan')
+              .first()
+          : null
 
       const planName = userPlan?.plan?.name || 'FREE'
       const propertyLimit = this.getPropertyLimit(planName)
@@ -116,15 +130,15 @@ export default class PropertiesController {
       if (currentPropertyCount[0].$extras.total >= propertyLimit) {
         return response.forbidden({
           success: false,
-          message: `You have reached your property upload limit (${propertyLimit}). Please upgrade your subscription to upload more properties.`,
+          message: `The user has reached their property upload limit (${propertyLimit}). Please upgrade their subscription to upload more properties.`,
         })
       }
 
-      const isSubscribed = user.subscriptionStatus === 'active'
+      const isSubscribed = targetUserSubscriptionStatus === 'active'
       const { files, ...payload } = await request.validateUsing(createPropertyValidator)
 
       const propertyExists = await Property.query()
-        .where('userId', user.id)
+        .where('userId', targetUserIdForProperty)
         .andWhere('title', payload.title)
         .andWhere('categoryId', payload.categoryId)
         .first()
@@ -132,7 +146,7 @@ export default class PropertiesController {
       if (propertyExists) {
         return response.badRequest({
           success: false,
-          message: 'You have already created a property with this title in the same category.',
+          message: 'The user has already created a property with this title in the same category.',
         })
       }
 
@@ -166,7 +180,7 @@ export default class PropertiesController {
           property = await Property.create({
             ...payload,
             status: 'draft',
-            userId: user.id,
+            userId: targetUserIdForProperty,
             availability: 'available',
             views: 0,
             countryId: NIGERIA_COUNTRY_ID,
@@ -442,11 +456,11 @@ export default class PropertiesController {
   async destroy({ logger, response, params }: HttpContext) {
     try {
       const property = await Property.findOrFail(params.id)
-      
+
       // Delete associated files and inspections first
       await property.related('files').query().delete()
       await property.related('inspections').query().delete()
-      
+
       await property.delete()
       logger.info('Property deleted successfully')
       return response.ok({

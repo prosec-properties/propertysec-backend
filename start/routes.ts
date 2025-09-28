@@ -68,6 +68,7 @@ router
         router.get('/affiliates/:affiliateId/properties', [AdminController, 'fetchAffiliateProperties'])
         router.get('/buyers/:buyerId/inspected-properties', [AdminController, 'fetchBuyerInspectedProperties'])
         router.get('/buyers/:buyerId/purchased-properties', [AdminController, 'fetchBuyerPurchasedProperties'])
+        router.post('/properties', [PropertiesController, 'store'])
       })
       .prefix('admin')
 
