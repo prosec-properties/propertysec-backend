@@ -70,6 +70,7 @@ router
       .group(() => {
         router.get('/me', [UsersController, 'me'])
         router.patch('/update-profile', [UsersController, 'updateProfile'])
+        router.patch('/admin/:userId', [UsersController, 'adminUpdateUser'])
         router.delete('/delete-file/:id', [UsersController, 'deleteFile'])
         router.get('/:id', [UsersController, 'showAUser'])
         router.post('/buyer/approve/:userId', [AdminController, 'approveBuyerUser'])

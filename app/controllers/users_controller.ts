@@ -245,4 +245,48 @@ export default class UsersController {
       return response.internalServerError(getErrorObject(error))
     }
   }
+
+  async adminUpdateUser({ auth, request, response, params, bouncer, logger }: HttpContext) {
+    try {
+      await auth.authenticate()
+      await bouncer.with('UserPolicy').authorize('isAdmin')
+
+      const { userId } = params
+      const user = await User.findOrFail(userId)
+
+      const payload = await request.validateUsing(updateProfileValidator)
+
+      // Update user fields
+      if (payload.fullName) user.fullName = payload.fullName
+      if (payload.phoneNumber) user.phoneNumber = payload.phoneNumber
+      if (payload.nin) user.nin = payload.nin
+      if (payload.bvn) user.bvn = payload.bvn
+      if (payload.stateOfResidence) user.stateOfResidence = payload.stateOfResidence
+      if (payload.nationality) user.nationality = payload.nationality
+      if (payload.bankAccountNumber) user.bankAccountNumber = payload.bankAccountNumber
+      if (payload.bankAccountName) user.bankAccountName = payload.bankAccountName
+      if (payload.businessName) user.businessName = payload.businessName
+      if (payload.businessRegNo) user.businessRegNo = payload.businessRegNo
+      if (payload.businessAddress) user.businessAddress = payload.businessAddress
+      if (payload.cityOfResidence) user.cityOfResidence = payload.cityOfResidence
+      if (payload.homeAddress) user.homeAddress = payload.homeAddress
+      if (payload.stateOfOrigin) user.stateOfOrigin = payload.stateOfOrigin
+      if (payload.nextOfKin) user.nextOfKinName = payload.nextOfKin
+      if (payload.religion) user.religion = payload.religion
+      if (payload.monthlySalary) user.monthlySalary = payload.monthlySalary
+      if (payload.bankName) user.bankName = payload.bankName
+
+      await user.save()
+
+      logger.info('User updated successfully by admin')
+      return response.ok({
+        success: true,
+        message: 'User updated successfully',
+        data: user,
+      })
+    } catch (error) {
+      logger.error(error)
+      return response.internalServerError(getErrorObject(error))
+    }
+  }
 }

@@ -227,4 +227,31 @@ export default class AdminController {
       return response.internalServerError(getErrorObject(error))
     }
   }
+
+  async impersonateUser({ auth, response, params, bouncer }: HttpContext) {
+    try {
+      await auth.authenticate()
+      await bouncer.with('UserPolicy').authorize('isAdmin')
+
+      const { userId } = params
+      const targetUser = await User.findOrFail(userId)
+
+      // Generate a token for the target user
+      const token = await User.accessTokens.create(targetUser, ['*'], {
+        expiresIn: '24hours', // Shorter expiry for impersonation
+      })
+
+      return response.ok({
+        success: true,
+        message: 'Impersonation token generated successfully',
+        data: {
+          token: token.toJSON(),
+          user: targetUser.toJSON(),
+          impersonatedBy: auth.user!.id,
+        },
+      })
+    } catch (error) {
+      return response.internalServerError(getErrorObject(error))
+    }
+  }
 }
