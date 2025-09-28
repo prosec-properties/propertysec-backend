@@ -83,6 +83,8 @@ router
         router.post('/buyer/approve/:userId', [AdminController, 'approveBuyerUser'])
         router.post('/buyer/reject/:userId', [AdminController, 'rejectBuyerUser'])
         router.delete('/:userId', [AdminController, 'deleteUser'])
+        router.get('/me/purchased-properties', [UsersController, 'getMyPurchasedProperties'])
+        router.get('/me/inspected-properties', [UsersController, 'getMyInspectedProperties'])
       })
       .prefix('users')
 

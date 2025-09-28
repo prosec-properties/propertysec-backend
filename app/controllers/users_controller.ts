@@ -7,6 +7,8 @@ import type { HttpContext } from '@adonisjs/core/http'
 import hash from '@adonisjs/core/services/hash'
 import { FILE_CATEGORY_ENUM } from '#interfaces/file'
 import db from '@adonisjs/lucid/services/db'
+import PropertyPurchase from '#models/property_purchase'
+import InspectionDetail from '#models/inspection_detail'
 
 export default class UsersController {
   async me({ auth, response, logger }: HttpContext) {
@@ -283,6 +285,102 @@ export default class UsersController {
         success: true,
         message: 'User updated successfully',
         data: user,
+      })
+    } catch (error) {
+      logger.error(error)
+      return response.internalServerError(getErrorObject(error))
+    }
+  }
+
+  async getMyPurchasedProperties({ auth, request, response, logger }: HttpContext) {
+    try {
+      await auth.authenticate()
+      const user = auth.user!
+
+      if (user.role !== 'buyer') {
+        return response.forbidden({
+          success: false,
+          message: 'Only buyers can access this resource',
+        })
+      }
+
+      const page = request.input('page', 1)
+      const perPage = request.input('per_page', 20)
+      const sortBy = request.input('sort_by', 'created_at')
+      const order = request.input('order', 'desc')
+
+      const orderDirection = order.toLowerCase() === 'asc' ? 'asc' : 'desc'
+      const sortableColumns = ['created_at', 'updated_at', 'purchaseAmount', 'purchaseStatus']
+      const validSortBy = sortableColumns.includes(sortBy) ? sortBy : 'created_at'
+
+      const purchases = await PropertyPurchase.query()
+        .where('userId', user.id)
+        .preload('property', (propertyQuery) =>
+          propertyQuery
+            .preload('files')
+            .preload('user', (userQuery) =>
+              userQuery.select('id', 'fullName', 'email', 'phoneNumber')
+            )
+            .select('id', 'title', 'address', 'price', 'currency', 'status', 'availability', 'userId')
+        )
+        .orderBy(validSortBy, orderDirection)
+        .paginate(page, perPage)
+
+      return response.ok({
+        success: true,
+        message: 'Purchased properties fetched successfully',
+        data: {
+          purchases: purchases.toJSON().data,
+          meta: purchases.toJSON().meta,
+        },
+      })
+    } catch (error) {
+      logger.error(error)
+      return response.internalServerError(getErrorObject(error))
+    }
+  }
+
+  async getMyInspectedProperties({ auth, request, response, logger }: HttpContext) {
+    try {
+      await auth.authenticate()
+      const user = auth.user!
+
+      if (user.role !== 'buyer') {
+        return response.forbidden({
+          success: false,
+          message: 'Only buyers can access this resource',
+        })
+      }
+
+      const page = request.input('page', 1)
+      const perPage = request.input('per_page', 20)
+      const sortBy = request.input('sort_by', 'created_at')
+      const order = request.input('order', 'desc')
+
+      const orderDirection = order.toLowerCase() === 'asc' ? 'asc' : 'desc'
+      const sortableColumns = ['created_at', 'updated_at', 'inspectionAmount', 'inspectionStatus']
+      const validSortBy = sortableColumns.includes(sortBy) ? sortBy : 'created_at'
+
+      const inspections = await InspectionDetail.query()
+        .where('userId', user.id)
+        .preload('property', (propertyQuery) =>
+          propertyQuery
+            .preload('files')
+            .preload('user', (userQuery) =>
+              userQuery.select('id', 'fullName', 'email', 'phoneNumber')
+            )
+            .select('id', 'title', 'address', 'price', 'currency', 'status', 'availability', 'userId')
+        )
+        .orderBy(validSortBy, orderDirection)
+        .paginate(page, perPage)
+
+      return response.ok({
+        success: true,
+        message: 'Inspected properties fetched successfully',
+        data: {
+          inspections: inspections.toJSON().data,
+          meta: inspections.toJSON().meta,
+        },
       })
     } catch (error) {
       logger.error(error)

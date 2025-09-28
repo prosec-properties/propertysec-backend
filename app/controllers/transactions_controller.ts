@@ -548,9 +548,11 @@ export default class TransactionsController {
       }
 
       // Handle different transaction types
+      let transactionData: any = null;
+
       switch (meta.type) {
         case 'subscription':
-          await this.handleSubscriptionTransaction(
+          transactionData = await this.handleSubscriptionTransaction(
             user,
             amountInNaira,
             payment,
@@ -560,7 +562,7 @@ export default class TransactionsController {
           )
           break
         case 'inspection':
-          await this.handleInspectionTransaction(
+          transactionData = await this.handleInspectionTransaction(
             user,
             amountInNaira,
             payment,
@@ -570,7 +572,7 @@ export default class TransactionsController {
           )
           break
         case 'property_purchase':
-          await this.handlePropertyPurchaseTransaction(
+          transactionData = await this.handlePropertyPurchaseTransaction(
             user,
             amountInNaira,
             payment,
@@ -580,7 +582,7 @@ export default class TransactionsController {
           )
           break
         case 'loan_repayment':
-          await this.handleLoanRepaymentTransaction(
+          transactionData = await this.handleLoanRepaymentTransaction(
             user,
             amountInNaira,
             payment,
@@ -599,7 +601,11 @@ export default class TransactionsController {
       return response.ok({
         message: 'Transaction verified and processed successfully!',
         success: true,
-        data: paystackResponse,
+        data: {
+          ...paystackResponse,
+          transactionData,
+          type: meta.type,
+        },
       })
     } catch (error) {
       logger.error(error)
@@ -659,7 +665,7 @@ export default class TransactionsController {
     paystackResponse: any,
     meta: PaystackMetadata
   ) {
-    await Transaction.create({
+    const transaction = await Transaction.create({
       userId: user.id,
       transactionType: 'PROPERTY_INSPECTION',
       amount: amountInNaira,
@@ -673,10 +679,11 @@ export default class TransactionsController {
       providerStatus: 'success',
       provider: 'PAYSTACK',
       reference: 'INS-' + nanoid(),
+      transactionTypeId: meta.propertyId,
       providerResponse: JSON.stringify(paystackResponse),
     })
 
-    await InspectionDetail.create({
+    const inspection = await InspectionDetail.create({
       inspectionAmount: amountInNaira,
       inspectionStatus: 'COMPLETED',
       userId: meta.userId,
@@ -686,9 +693,17 @@ export default class TransactionsController {
       propertyId: meta.propertyId,
     })
 
+    const property = await Property.findOrFail(meta.propertyId)
+
     // if (meta.affiliateId) {
     //   await this.handleAffiliateCommission(amountInNaira, meta, 'inspection', 0.1)
     // }
+
+    return {
+      transaction,
+      inspection,
+      property,
+    }
   }
 
   private async handlePropertyPurchaseTransaction(
@@ -699,7 +714,7 @@ export default class TransactionsController {
     paystackResponse: any,
     meta: PaystackMetadata
   ) {
-    await Transaction.create({
+    const transaction = await Transaction.create({
       userId: user.id,
       transactionType: 'PROPERTY_PURCHASE',
       amount: amountInNaira,
@@ -717,7 +732,7 @@ export default class TransactionsController {
       providerResponse: JSON.stringify(paystackResponse),
     })
 
-    await PropertyPurchase.create({
+    const purchase = await PropertyPurchase.create({
       userId: user.id,
       propertyId: meta.propertyId,
       purchaseAmount: amountInNaira,
@@ -751,6 +766,12 @@ export default class TransactionsController {
         ? AFFILIATE_COMMISSION_RATES.SALE 
         : AFFILIATE_COMMISSION_RATES.RENT_SHORTLET
       await this.handleAffiliateCommission(amountInNaira, meta, 'property_purchase', commissionRate)
+    }
+
+    return {
+      transaction,
+      purchase,
+      property,
     }
   }
 
@@ -813,7 +834,7 @@ export default class TransactionsController {
 
     await Transaction.create({
       userId: user.id,
-      transactionType: 'LOAN_REPAYMENT ',
+      transactionType: 'LOAN_REPAYMENT',
       amount: amountInNaira,
       paymentId: payment?.id,
       type: 'loan_repayment',
