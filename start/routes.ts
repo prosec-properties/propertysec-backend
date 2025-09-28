@@ -51,7 +51,7 @@ router
         router.post('/reset-password', [AuthController, 'resetPassword'])
         router.get('/google/callback', [SocialAuthController, 'googleCallback'])
         router.post('/complete-registration', [AuthController, 'completeRegistration'])
-        router.get('/logout', [AuthController, 'logout']).use(middleware.auth())
+        router.get('/logout', [AuthController, 'logout'])
       })
       .prefix('auth')
 
