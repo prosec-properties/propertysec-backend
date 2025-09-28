@@ -8,6 +8,7 @@ import { MultipartFile } from '@adonisjs/core/bodyparser'
 import { NIGERIA_COUNTRY_ID } from '#constants/general'
 import vine from '@vinejs/vine'
 import Subscription from '#models/subscription'
+import aws from '#services/aws'
 
 export default class PropertiesController {
   private getPropertyLimit(planName: string): number {
@@ -334,7 +335,20 @@ export default class PropertiesController {
         }
       }
 
-      const { files: _, ...restPayload } = payload
+      // Handle removed images
+      if (payload.removedImages && Array.isArray(payload.removedImages)) {
+        for (const imageId of payload.removedImages) {
+          const imageToDelete = await PropertyFile.find(imageId)
+          if (imageToDelete) {
+            // Delete the file from storage
+            await aws.deleteFile(imageToDelete.fileName)
+            // Delete the record
+            await imageToDelete.delete()
+          }
+        }
+      }
+
+      const { files: _, removedImages: __, ...restPayload } = payload
       await property.merge(restPayload).save()
 
       logger.info('Property updated successfully')

@@ -75,6 +75,7 @@ export const updatePropertyValidator = vine.compile(
           })
         )
         .optional(),
+      removedImages: vine.array(vine.string()).optional(),
     })
     .optional()
 )
