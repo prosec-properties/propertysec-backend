@@ -59,6 +59,7 @@ router
       .group(() => {
         router.get('/users', [AdminController, 'fetchAllUsers'])
         router.get('/property-purchases', [AdminController, 'fetchPropertyPurchases'])
+        router.get('/properties/:propertyId/purchases', [AdminController, 'fetchPropertyPurchases'])
         router.patch('/property-purchases/:purchaseId/status', [
           AdminController,
           'updatePropertyPurchaseStatus',

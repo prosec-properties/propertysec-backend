@@ -278,6 +278,14 @@ export default class PropertiesController {
       const isSubscribed = user.subscriptionStatus === 'active'
 
       const property = await Property.findOrFail(params.id)
+
+      if (property.availability === 'sold') {
+        return response.forbidden({
+          success: false,
+          message: 'Cannot edit a property that has been sold.',
+        })
+      }
+
       const payload = await request.validateUsing(updatePropertyValidator)
 
       if (!payload) {
@@ -456,6 +464,13 @@ export default class PropertiesController {
   async destroy({ logger, response, params }: HttpContext) {
     try {
       const property = await Property.findOrFail(params.id)
+
+      if (property.availability === 'sold') {
+        return response.badRequest({
+          success: false,
+          message: 'Cannot delete a sold property',
+        })
+      }
 
       // Delete associated files and inspections first
       await property.related('files').query().delete()

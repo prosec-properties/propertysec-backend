@@ -143,10 +143,26 @@ export default class AdminController {
     }
   }
 
-  public async fetchPropertyPurchases({ auth, response, request, bouncer }: HttpContext) {
+  public async fetchPropertyPurchases({ auth, response, request, params, bouncer }: HttpContext) {
     try {
       await auth.authenticate()
-      await bouncer.with('UserPolicy').authorize('isAdmin')
+      const user = auth.user!
+      const propertyId = params.propertyId || request.input('propertyId')
+
+      if (propertyId) {
+        const property = await Property.findOrFail(propertyId)
+        
+        // Allow property owner, affiliates, or admins to view purchases for this property
+        if (user.role !== 'admin' && property.userId !== user.id && user.role !== 'affiliate') {
+          return response.forbidden({
+            success: false,
+            message: 'You do not have permission to view purchases for this property',
+          })
+        }
+      } else {
+        // If no propertyId, only admins can view all purchases
+        await bouncer.with('UserPolicy').authorize('isAdmin')
+      }
 
       // Get query parameters with defaults
       const page = request.input('page', 1)
@@ -161,13 +177,16 @@ export default class AdminController {
       const validSortBy = sortableColumns.includes(sortBy) ? sortBy : 'created_at'
 
       let query = PropertyPurchase.query()
-        .preload('user', (userQuery) => userQuery.select('id', 'fullName', 'email'))
+        .preload('user', (userQuery) => userQuery.select('id', 'fullName', 'email', 'phoneNumber'))
         .preload('property', (propertyQuery) =>
           propertyQuery.select('id', 'title', 'address', 'price', 'currency', 'availability')
         )
         .orderBy(validSortBy, orderDirection)
 
-      // Filter by status if provided
+      if (propertyId) {
+        query = query.where('propertyId', propertyId)
+      }
+
       if (status && status.trim() !== '') {
         query = query.where('purchaseStatus', status)
       }
@@ -330,6 +349,14 @@ export default class AdminController {
       ])
 
       const property = await Property.findOrFail(propertyId)
+
+      // Prevent editing sold properties
+      if (property.availability === 'sold') {
+        return response.forbidden({
+          success: false,
+          message: 'Cannot edit a property that has been sold.',
+        })
+      }
 
       // Ensure the property belongs to the user
       if (property.userId !== userId) {
