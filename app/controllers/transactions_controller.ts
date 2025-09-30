@@ -946,7 +946,7 @@ export default class TransactionsController {
       }
 
       const refundResponse = await PaystackService.refundTransaction(reference, {
-        amount: amount ? amount * 100 : undefined, // Convert to kobo if amount specified
+        amount: amount ? amount : undefined, 
         customer_note: customerNote,
         merchant_note: merchantNote,
       })
