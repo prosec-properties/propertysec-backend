@@ -94,10 +94,11 @@ export default class PropertiesController {
     }
   }
 
-  async store({ auth, request, response, logger }: HttpContext) {
+  async store({ auth, request, response, logger, bouncer }: HttpContext) {
     try {
       await auth.authenticate()
       const authenticatedUser = auth.user!
+      await bouncer.with('UserPolicy').authorize('canUploadProperties')
 
       // Check if admin is creating property for another user
       const targetUserId = request.input('userId')
@@ -118,10 +119,7 @@ export default class PropertiesController {
 
       const userPlan =
         targetUserSubscriptionStatus === 'active' && targetUserSubscriptionId
-          ? await Subscription.query()
-              .where('id', targetUserSubscriptionId)
-              .preload('plan')
-              .first()
+          ? await Subscription.query().where('id', targetUserSubscriptionId).preload('plan').first()
           : null
 
       const planName = userPlan?.plan?.name || 'FREE'
@@ -271,10 +269,12 @@ export default class PropertiesController {
     }
   }
 
-  async update({ logger, response, request, params, auth }: HttpContext) {
+  async update({ logger, response, request, params, auth, bouncer }: HttpContext) {
     try {
       await auth.authenticate()
       const user = auth.user!
+      await bouncer.with('UserPolicy').authorize('canUploadProperties')
+
       const isSubscribed = user.subscriptionStatus === 'active'
 
       const property = await Property.findOrFail(params.id)
@@ -385,10 +385,11 @@ export default class PropertiesController {
     }
   }
 
-  async myProperties({ auth, response, request, logger }: HttpContext) {
+  async myProperties({ auth, response, request, logger, bouncer }: HttpContext) {
     try {
       await auth.authenticate()
       const user = auth.user!
+      await bouncer.with('UserPolicy').authorize('canUploadProperties')
 
       const page = request.input('page', 1)
       const limit = request.input('limit', 10)
@@ -403,6 +404,7 @@ export default class PropertiesController {
           } else {
             // For other statuses, filter by status
             query.where('status', status)
+            query.where('availability', '!=', 'sold')
           }
         })
         .if(search, (query) => {
@@ -461,8 +463,11 @@ export default class PropertiesController {
     }
   }
 
-  async destroy({ logger, response, params }: HttpContext) {
+  async destroy({ auth, logger, response, params, bouncer }: HttpContext) {
     try {
+      await auth.authenticate()
+      await bouncer.with('UserPolicy').authorize('canUploadProperties')
+
       const property = await Property.findOrFail(params.id)
 
       if (property.availability === 'sold') {
@@ -487,19 +492,11 @@ export default class PropertiesController {
     }
   }
 
-  async updatePropertyStatus({ auth, logger, response, request, params }: HttpContext) {
+  async updatePropertyStatus({ auth, bouncer, logger, response, request, params }: HttpContext) {
     try {
-      const user = await auth.authenticate()
+      await auth.authenticate()
+      await bouncer.with('UserPolicy').authorize('isAdmin')
 
-      if (user.role !== 'admin') {
-        logger.error(
-          'PropertiesController.updatePropertyStatus - You are not authorized to perform this action'
-        )
-        return response.forbidden({
-          success: false,
-          message: 'You are not authorized to perform this action',
-        })
-      }
       const { status, reason } = await vine
         .compile(
           vine.object({

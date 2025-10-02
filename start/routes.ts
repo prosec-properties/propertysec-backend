@@ -175,7 +175,6 @@ router
 
     router
       .group(() => {
-        router.post('/', [TransactionsController, 'store'])
         router.get('/', [TransactionsController, 'index'])
         router.get('/:reference', [TransactionsController, 'show'])
         router.post('/initialize', [TransactionsController, 'initializeTransaction'])

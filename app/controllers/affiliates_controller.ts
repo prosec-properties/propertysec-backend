@@ -1,7 +1,6 @@
 import { getErrorObject } from '#helpers/error'
 import { propertyCommission } from '#helpers/general'
 import AffiliateProperty from '#models/affiliate_property'
-import Product from '#models/product'
 import Property from '#models/property'
 import Wallet from '#models/wallet'
 import { addToAffiliateShopValidator } from '#validators/affiliate'
@@ -88,40 +87,30 @@ export default class AffiliatesController {
     }
   }
 
-  async myShop({ auth, response }: HttpContext) {
+  async myShop({ auth, response, bouncer }: HttpContext) {
     try {
       await auth.authenticate()
+      await bouncer.with('UserPolicy').authorize('isAffiliate')
+
       const user = auth.user!
 
-      const affiliateEntries = await AffiliateProperty.query().where('affiliateUserId', user.id)
-      // .where('isActive', true)
-
-
-      const propertyIds = affiliateEntries.map((entry) => entry.propertyId)
-
-      let affiliatedProperties: Property[] = []
-      if (propertyIds.length > 0) {
-        affiliatedProperties = await Property.query()
-          .whereIn('id', propertyIds)
-          .where('availability', '!=', 'sold')
-          .where('status', 'published')
-          .preload('files')
-          .orderBy('created_at', 'desc')
-      }
-
-      const myProducts = await Product.query()
-        .where('status', 'published')
-        .where('userId', user.id)
-        .preload('files')
+      const affiliateProperties = await AffiliateProperty.query()
+        .where('affiliateUserId', user.id)
+        .where('isActive', true)
+        .preload('property', (query) => {
+          query.preload('files')
+        })
         .orderBy('created_at', 'desc')
+
+      const properties = affiliateProperties.map((ap) => ap.property)
 
       return response.ok({
         success: true,
         message: 'Shop items fetched successfully',
         data: {
-          properties: affiliatedProperties,
-          products: myProducts,
-          totalItems: affiliatedProperties.length + myProducts.length,
+          properties,
+          products: [],
+          totalItems: properties.length,
         },
       })
     } catch (error) {
