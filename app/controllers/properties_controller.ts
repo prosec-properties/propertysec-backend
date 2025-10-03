@@ -39,15 +39,18 @@ export default class PropertiesController {
       const isAdmin = user?.role === 'admin'
 
       const properties = await Property.query()
-        .if(isAdmin, (query) => {
+        .if(!isAdmin, (query) => {
           query.where('availability', '!=', 'sold')
-          query.where('status', 'published')
+          if (!status) {
+            query.where('status', 'published')
+          }
         })
-        .if(status === 'sold' && isAdmin, (query) => {
-          query.where('availability', 'sold')
-        })
-        .if(status && isAdmin, (query) => {
-          query.where('status', status)
+        .if(status, (query) => {
+          if (status === 'sold') {
+            query.where('availability', 'sold')
+          } else {
+            query.where('status', status)
+          }
         })
         .if(search, (query) => {
           query.where('title', 'ilike', `%${search}%`)
@@ -536,10 +539,8 @@ export default class PropertiesController {
       const properties = await Property.query()
         .if(status, (query) => {
           if (status === 'sold') {
-            // For sold properties, filter by availability
             query.where('availability', 'sold')
           } else {
-            // For other statuses, filter by status
             query.where('status', status)
             query.where('availability', '!=', 'sold')
           }
