@@ -1,11 +1,12 @@
 import { BaseSeeder } from '@adonisjs/lucid/seeders'
 import User from '#models/user'
-import hash from '@adonisjs/core/services/hash'
 
 export default class AdminUserSeeder extends BaseSeeder {
   public async run() {
     const email = 'livebuystore@gmail.com'
     const password = 'Prosec12345$'
+
+    console.log('Checking for existing admin user with email:', email)
 
     const existing = await User.findBy('email', email)
     if (existing) {
@@ -13,18 +14,6 @@ export default class AdminUserSeeder extends BaseSeeder {
       let needsSave = false
       if (existing.role !== 'admin') {
         existing.role = 'admin'
-        needsSave = true
-      }
-      // If password looks unhashed or missing, reset it
-      try {
-        const ok = await hash.verify(existing.password, password)
-        if (!ok) {
-          existing.password = await hash.make(password)
-          needsSave = true
-        }
-      } catch {
-        // Stored password not hashed; re-hash
-        existing.password = await hash.make(password)
         needsSave = true
       }
       if (!existing.emailVerified) {
@@ -39,15 +28,30 @@ export default class AdminUserSeeder extends BaseSeeder {
       return
     }
 
-    await User.create({
-      fullName: 'PropertySec Admin',
-      email,
-      password: await hash.make(password),
-      role: 'admin',
-      emailVerified: true,
-      hasCompletedProfile: false,
-      hasCompletedRegistration: true,
-      authProvider: 'email',
-    })
+    console.log('Creating admin user with email:', email)
+
+    await User.updateOrCreate(
+      { email },
+      {
+        fullName: 'PropertySec Admin',
+        password,
+        role: 'admin',
+        emailVerified: true,
+        hasCompletedProfile: false,
+        hasCompletedRegistration: true,
+        authProvider: 'email',
+      }
+    )
+
+    // await User.create({
+    //   fullName: 'PropertySec Admin',
+    //   email,
+    //   password,
+    //   role: 'admin',
+    //   emailVerified: true,
+    //   hasCompletedProfile: false,
+    //   hasCompletedRegistration: true,
+    //   authProvider: 'email',
+    // })
   }
 }

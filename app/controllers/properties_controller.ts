@@ -37,6 +37,7 @@ export default class PropertiesController {
 
       const properties = await Property.query()
         .where('availability', '!=', 'sold')
+        .where('status', 'published')
         .if(status, (query) => {
           query.where('status', status)
         })
@@ -61,39 +62,165 @@ export default class PropertiesController {
           const pricingArray = Array.isArray(parsedPricing) ? parsedPricing : [parsedPricing]
 
           pricingArray.forEach((priceFilter) => {
-            // Extract the numeric part and the operator (+ or -)
             const match = priceFilter.match(/(\d+)([+-])/)
-
             if (match) {
               const [, priceValue, operator] = match
               const price = parseInt(priceValue, 10)
-
               if (operator === '+') {
-                // Price above the specified value
                 query.where('price', '>=', price)
               } else if (operator === '-') {
-                // Price below the specified value
                 query.where('price', '<=', price)
               }
             }
           })
         })
         .preload('files')
+        .preload('user', (userQuery) => {
+          userQuery.preload('subscription', (subscriptionQuery) => {
+            subscriptionQuery.preload('plan')
+          })
+        })
         .orderBy('created_at', 'desc')
         .paginate(page, limit)
 
-      logger.info('Properties fetched successfully')
+      // Convert the entire paginator to JSON first
+      const propertiesJSON = properties.toJSON()
+
+      const rankedData = propertiesJSON.data.map((property) => {
+        // Convert the property to a clean object
+        const cleanProperty = {
+          id: property.id,
+          userId: property.userId,
+          affiliateId: property.affiliateId,
+          countryId: property.countryId,
+          stateId: property.stateId,
+          cityId: property.cityId,
+          address: property.address,
+          title: property.title,
+          categoryId: property.categoryId,
+          type: property.type,
+          bedrooms: property.bedrooms,
+          bathrooms: property.bathrooms,
+          toilets: property.toilets,
+          street: property.street,
+          price: property.price,
+          currency: property.currency,
+          append: property.append,
+          description: property.description,
+          views: property.views,
+          availability: property.availability,
+          status: property.status,
+          defaultImageUrl: property.defaultImageUrl,
+          meta: property.meta,
+          createdAt: property.createdAt,
+          updatedAt: property.updatedAt,
+          // Convert files to clean objects
+          files: property.files
+            ? property.files.map((file: any) => ({
+                id: file.id,
+                propertyId: file.propertyId,
+                url: file.url,
+                type: file.type,
+                size: file.size,
+                mimeType: file.mimeType,
+                isDefault: file.isDefault,
+                meta: file.meta,
+                createdAt: file.createdAt,
+                updatedAt: file.updatedAt,
+              }))
+            : [],
+          // Convert user to clean object
+          user: property.user
+            ? {
+                id: property.user.id,
+                email: property.user.email,
+                emailVerified: property.user.emailVerified,
+                authProvider: property.user.authProvider,
+                role: property.user.role,
+                fullName: property.user.fullName,
+                slug: property.user.slug,
+                phoneNumber: property.user.phoneNumber,
+                avatarUrl: property.user.avatarUrl,
+                isVerified: property.user.isVerified,
+                hasCompletedProfile: property.user.hasCompletedProfile,
+                hasCompletedRegistration: property.user.hasCompletedRegistration,
+                createdAt: property.user.createdAt,
+                updatedAt: property.user.updatedAt,
+                subscriptionId: property.user.subscriptionId,
+                subscriptionStatus: property.user.subscriptionStatus,
+                subscriptionStartDate: property.user.subscriptionStartDate,
+                subscriptionEndDate: property.user.subscriptionEndDate,
+                // Convert subscription to clean object
+                subscription: property.user.subscription
+                  ? {
+                      id: property.user.subscription.id,
+                      userId: property.user.subscription.userId,
+                      planId: property.user.subscription.planId,
+                      status: property.user.subscription.status,
+                      startDate: property.user.subscription.startDate,
+                      endDate: property.user.subscription.endDate,
+                      // Convert plan to clean object
+                      plan: property.user.subscription.plan
+                        ? {
+                            id: property.user.subscription.plan.id,
+                            name: property.user.subscription.plan.name,
+                            description: property.user.subscription.plan.description,
+                            price: property.user.subscription.plan.price,
+                            currency: property.user.subscription.plan.currency,
+                            features: property.user.subscription.plan.features,
+                            maxProperties: property.user.subscription.plan.maxProperties,
+                            isActive: property.user.subscription.plan.isActive,
+                            createdAt: property.user.subscription.plan.createdAt,
+                            updatedAt: property.user.subscription.plan.updatedAt,
+                          }
+                        : null,
+                    }
+                  : null,
+              }
+            : null,
+        }
+
+        // Calculate rank based on plan name
+        const planName = cleanProperty.user?.subscription?.plan?.name || null
+        let rankScore = 5 // Default for FREE or no plan
+
+        if (planName === 'UNLIMITED') rankScore = 1
+        else if (planName === 'PLATINUM') rankScore = 2
+        else if (planName === 'GOLD') rankScore = 3
+        else if (planName === 'SILVER') rankScore = 4
+        else if (planName === 'FREE') rankScore = 5
+
+        return {
+          ...cleanProperty,
+          _rank: rankScore,
+        }
+      })
+
+      // Sort by rank score (lower number = higher priority)
+      rankedData.sort((a, b) => {
+        if (a._rank !== b._rank) {
+          return a._rank - b._rank
+        }
+        return new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime()
+      })
+
+      // Create the final response
+      const responseData = {
+        meta: propertiesJSON.meta,
+        data: rankedData,
+      }
+
+      logger.info('Properties fetched and ranked successfully')
       return response.ok({
         success: true,
         message: 'Properties fetched successfully',
-        data: properties.toJSON(),
+        data: responseData,
       })
     } catch (error) {
       console.error(error)
       return response.badRequest(getErrorObject(error))
     }
   }
-
   async store({ auth, request, response, logger, bouncer }: HttpContext) {
     try {
       await auth.authenticate()
@@ -128,7 +255,7 @@ export default class PropertiesController {
       if (currentPropertyCount[0].$extras.total >= propertyLimit) {
         return response.forbidden({
           success: false,
-          message: `The user has reached their property upload limit (${propertyLimit}). Please upgrade their subscription to upload more properties.`,
+          message: `You have reached your property upload limit (${propertyLimit}). Please upgrade your subscription to upload more properties.`,
         })
       }
 
@@ -144,7 +271,7 @@ export default class PropertiesController {
       if (propertyExists) {
         return response.badRequest({
           success: false,
-          message: 'The user has already created a property with this title in the same category.',
+          message: 'You have already created a property with this title in the same category.',
         })
       }
 
