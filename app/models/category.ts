@@ -4,6 +4,7 @@ import { v4 as uuidv4 } from 'uuid'
 import type { HasMany } from '@adonisjs/lucid/types/relations'
 import string from '@adonisjs/core/helpers/string'
 import Subcategory from './subcategory.js'
+import Property from './property.js'
 import type { ICategoryType, IStatus } from '#interfaces/general'
 
 export default class Category extends BaseModel {
@@ -75,4 +76,7 @@ export default class Category extends BaseModel {
 
   @hasMany(() => Subcategory)
   declare subcategories: HasMany<typeof Subcategory>
+
+  @hasMany(() => Property)
+  declare properties: HasMany<typeof Property>
 }

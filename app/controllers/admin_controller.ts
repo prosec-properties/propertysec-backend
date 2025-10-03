@@ -295,6 +295,7 @@ export default class AdminController {
       const propertiesQuery = Property.query()
         .where('userId', userId)
         .preload('files')
+        .preload('category')
 
       if (status && status !== 'all') {
         if (status === 'sold') {
@@ -405,6 +406,7 @@ export default class AdminController {
       const properties = await Property.query()
         .where('affiliateId', affiliateId)
         .preload('files')
+        .preload('category')
         .preload('user', (userQuery) => userQuery.select('id', 'fullName', 'email'))
         .orderBy(validSortBy, orderDirection)
         .paginate(page, perPage)

@@ -28,17 +28,25 @@ export default class PropertiesController {
         return 3 // Default to free limit
     }
   }
-  async index({ response, request, logger }: HttpContext) {
+  async index({ response, request, logger, auth }: HttpContext) {
     try {
       const page = request.input('page', 1)
       const limit = request.input('limit', 20)
 
       const { status, categories, locations, pricing, search } = request.qs()
 
+      const user = auth?.user
+      const isAdmin = user?.role === 'admin'
+
       const properties = await Property.query()
-        .where('availability', '!=', 'sold')
-        .where('status', 'published')
-        .if(status, (query) => {
+        .if(isAdmin, (query) => {
+          query.where('availability', '!=', 'sold')
+          query.where('status', 'published')
+        })
+        .if(status === 'sold' && isAdmin, (query) => {
+          query.where('availability', 'sold')
+        })
+        .if(status && isAdmin, (query) => {
           query.where('status', status)
         })
         .if(search, (query) => {
@@ -75,6 +83,7 @@ export default class PropertiesController {
           })
         })
         .preload('files')
+        .preload('category')
         .preload('user', (userQuery) => {
           userQuery.preload('subscription', (subscriptionQuery) => {
             subscriptionQuery.preload('plan')
@@ -379,6 +388,7 @@ export default class PropertiesController {
         })
         .preload('files')
         .preload('user')
+        .preload('category')
         .firstOrFail()
 
       if (property.status === 'published' && property.userId !== auth.user?.id) {
@@ -575,6 +585,7 @@ export default class PropertiesController {
         })
         .where('userId', user.id)
         .preload('files')
+        .preload('category')
         .orderBy('created_at', 'desc')
         .paginate(page, limit)
 
