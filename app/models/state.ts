@@ -3,6 +3,7 @@ import { BaseModel, column, hasMany, hasOne } from '@adonisjs/lucid/orm'
 import type { HasMany, HasOne } from '@adonisjs/lucid/types/relations'
 import Country from './country.js'
 import City from './city.js'
+import Property from './property.js'
 
 export interface ICities {
   id: number
@@ -43,4 +44,7 @@ export default class State extends BaseModel {
 
   @hasMany(() => City)
   declare cities: HasMany<typeof City>
+
+  @hasMany(() => Property)
+  declare properties: HasMany<typeof Property>
 }

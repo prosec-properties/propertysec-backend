@@ -151,7 +151,7 @@ export default class AdminController {
 
       if (propertyId) {
         const property = await Property.findOrFail(propertyId)
-        
+
         // Allow property owner, affiliates, or admins to view purchases for this property
         if (user.role !== 'admin' && property.userId !== user.id && user.role !== 'affiliate') {
           return response.forbidden({
@@ -296,6 +296,7 @@ export default class AdminController {
         .where('userId', userId)
         .preload('files')
         .preload('category')
+        .preload('state')
 
       if (status && status !== 'all') {
         if (status === 'sold') {
@@ -407,6 +408,7 @@ export default class AdminController {
         .where('affiliateId', affiliateId)
         .preload('files')
         .preload('category')
+        .preload('state')
         .preload('user', (userQuery) => userQuery.select('id', 'fullName', 'email'))
         .orderBy(validSortBy, orderDirection)
         .paginate(page, perPage)

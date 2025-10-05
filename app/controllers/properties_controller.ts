@@ -87,6 +87,7 @@ export default class PropertiesController {
         })
         .preload('files')
         .preload('category')
+        .preload('state')
         .preload('user', (userQuery) => {
           userQuery.preload('subscription', (subscriptionQuery) => {
             subscriptionQuery.preload('plan')
@@ -188,6 +189,18 @@ export default class PropertiesController {
                         : null,
                     }
                   : null,
+              }
+            : null,
+          category: property.category
+            ? {
+                id: property.category.id,
+                name: property.category.name,
+              }
+            : null,
+          state: property.state
+            ? {
+                id: property.state.id,
+                name: property.state.name,
               }
             : null,
         }
@@ -392,6 +405,7 @@ export default class PropertiesController {
         .preload('files')
         .preload('user')
         .preload('category')
+        .preload('state')
         .firstOrFail()
 
       if (property.status === 'published' && property.userId !== auth.user?.id) {
@@ -587,6 +601,7 @@ export default class PropertiesController {
         .where('userId', user.id)
         .preload('files')
         .preload('category')
+        .preload('state')
         .orderBy('created_at', 'desc')
         .paginate(page, limit)
 
