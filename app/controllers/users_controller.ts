@@ -345,13 +345,6 @@ export default class UsersController {
       await auth.authenticate()
       const user = auth.user!
 
-      if (user.role !== 'buyer') {
-        return response.forbidden({
-          success: false,
-          message: 'Only buyers can access this resource',
-        })
-      }
-
       const page = request.input('page', 1)
       const perPage = request.input('per_page', 20)
       const sortBy = request.input('sort_by', 'created_at')
@@ -376,7 +369,7 @@ export default class UsersController {
 
       return response.ok({
         success: true,
-        message: 'Inspected properties fetched successfully',
+        message: 'Inspection payments fetched successfully',
         data: {
           inspections: inspections.toJSON().data,
           meta: inspections.toJSON().meta,

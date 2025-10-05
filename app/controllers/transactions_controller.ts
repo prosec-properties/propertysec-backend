@@ -415,7 +415,7 @@ export default class TransactionsController {
 
     const inspection = await InspectionDetail.create({
       inspectionAmount: amountInNaira,
-      inspectionStatus: 'COMPLETED',
+      inspectionStatus: 'PENDING',
       userId: meta.userId,
       name: meta.fullName,
       email: meta.email,
