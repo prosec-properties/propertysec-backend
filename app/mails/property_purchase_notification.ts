@@ -1,4 +1,4 @@
-import { COMPANY_EMAIL } from '#constants/general'
+import { EMAIL } from '#constants/general'
 import { BaseMail } from '@adonisjs/mail'
 
 interface PropertyPurchaseData {
@@ -13,7 +13,7 @@ interface PropertyPurchaseData {
 }
 
 export default class PropertyPurchaseNotification extends BaseMail {
-  from = COMPANY_EMAIL
+  from = EMAIL.PROSEC
   subject = 'Property Purchase Confirmation'
   purchaseData: PropertyPurchaseData
 

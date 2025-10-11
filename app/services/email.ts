@@ -1,5 +1,5 @@
 import { EMAIL_TEMPLATES } from '#constants/auth'
-import { COMPANY_EMAIL } from '#constants/general'
+import { EMAIL } from '#constants/general'
 import mail from '@adonisjs/mail/services/main'
 
 interface EmailPayload {
@@ -27,11 +27,20 @@ class Email {
     })
   }
 
+  async sendWelcomeMail(email: string, userName: string) {
+    await this.sendEmail({
+      email,
+      template: EMAIL_TEMPLATES.WELCOME_EMAIL,
+      data: { userName },
+      subject: 'Welcome to Prosec Properties!',
+    })
+  }
+
   private async sendEmail({ email, subject, template, data }: EmailPayload) {
     await mail.sendLater((message) => {
       message
         .to(email)
-        .from(COMPANY_EMAIL)
+        .from(EMAIL.PROSEC)
         .subject(subject)
         .htmlView(template, { ...data })
     })

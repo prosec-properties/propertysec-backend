@@ -1,6 +1,6 @@
-// export const COMPANY_EMAIL = 'mailtrap@javanslem.me'
-export const COMPANY_EMAIL = ' mailtrap@demomailtrap.com'
-
+export const EMAIL = {
+  PROSEC: 'team@propertyprosec.com',
+}
 export const ACCEPTED_IMAGE_TYPES = [
   'png',
   'jpg',
@@ -24,10 +24,7 @@ export const ACCEPTED_IMAGE_TYPES = [
   'ICO',
 ]
 
-export const ACCEPTED_VIDEO_TYPES = [
-  'mp4', 'MP4', 'webp', 'WEBP', 'mov'
-]
-
+export const ACCEPTED_VIDEO_TYPES = ['mp4', 'MP4', 'webp', 'WEBP', 'mov']
 
 export const CURRENCIES = ['USD', 'NGN', 'GBP', 'EUR', 'ZAR', 'KES', 'GHS', 'XOF']
 
@@ -35,7 +32,7 @@ export const ALPHA_STRING = 'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxy
 export const NUMERIC_STRING = '0123456789'
 export const ALPHA_NUMERIC_STRING = `${ALPHA_STRING}${NUMERIC_STRING}`
 
-export const NIGERIA_COUNTRY_ID = "161"
+export const NIGERIA_COUNTRY_ID = '161'
 
 export const AFFILIATE_COMMISSION_RATES = {
   SALE: 0.02, // 2% for sale properties

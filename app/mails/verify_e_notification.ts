@@ -1,11 +1,11 @@
 import { EMAIL_TEMPLATES } from '#constants/auth'
-import { COMPANY_EMAIL } from '#constants/general'
+import { EMAIL } from '#constants/general'
 import { BaseMail } from '@adonisjs/mail'
 
 export default class VerifyENotification extends BaseMail {
   email: string
   otp: string
-  from = COMPANY_EMAIL
+  from = EMAIL.PROSEC
   subject: string
   emailTemplate: string
   resetLink?: string

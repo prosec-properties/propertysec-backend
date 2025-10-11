@@ -38,6 +38,8 @@ export default class UserService {
       const otp = await Otp.findByOrFail('userId', user.id)
 
       await otp.delete()
+
+      await emailService.sendWelcomeMail(user.email, user.fullName || user.email)
     } catch (error) {
       throw error
     }

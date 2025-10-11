@@ -3,7 +3,7 @@ import User from '#models/user'
 
 export default class AdminUserSeeder extends BaseSeeder {
   public async run() {
-    const email = 'livebuystore@gmail.com'
+    const email = 'propertyseconline@gmail.com'
     const password = 'Prosec12345$'
 
     console.log('Checking for existing admin user with email:', email)

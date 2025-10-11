@@ -8,6 +8,7 @@ export const REDIS_AUTH_USER_TOKEN_PREFIX = 'auth-user-token:'
 export const EMAIL_TEMPLATES = {
   VERIFY_EMAIL_OTP: 'emails/verify_email_otp',
   RESET_PASSWORD_OTP: 'emails/reset_password_otp',
+  WELCOME_EMAIL: 'emails/welcome_email',
 } as const
 
 export const OTP_LENGTH = 6
