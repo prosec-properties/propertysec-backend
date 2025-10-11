@@ -6,7 +6,7 @@ export default class AdminUserSeeder extends BaseSeeder {
     const email = 'propertyseconline@gmail.com'
     const password = 'Prosec12345$'
 
-    console.log('Checking for existing admin user with email:', email)
+  console.log('Checking for existing admin user with email:', email)
 
     const existing = await User.findBy('email', email)
     if (existing) {
