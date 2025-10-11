@@ -38,6 +38,7 @@ export default class PropertyPurchaseNotification extends BaseMail {
         currency: this.purchaseData.currency,
         transactionReference: this.purchaseData.transactionReference,
         purchaseDate: this.purchaseData.purchaseDate,
+        supportEmail: EMAIL.SUPPORT,
       })
   }
 

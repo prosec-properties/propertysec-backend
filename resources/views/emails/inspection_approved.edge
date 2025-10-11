@@ -1,0 +1,37 @@
+@mjml({
+  fonts: {
+    Niramit: 'https://fonts.googleapis.com/css?family=Niramit:400,500,700'
+  }
+})
+<mjml >
+  <mj-body background-color="#F2F2F2">
+    <mj-section background-color="#FFFFFF">
+      <mj-column>
+
+        <mj-text font-size="20px" color="#2B2B2B" font-family="Niramit">Inspection Request Approved!</mj-text>
+        <mj-text font-size="16px" color="#464646" font-family="Murecho">Hi {{userName}},</mj-text>
+
+        <mj-text font-size="16px" color="#464646" font-family="Murecho">Your inspection request has been approved. Here are the details:</mj-text>
+
+        <mj-text font-size="16px" color="#464646" font-family="Murecho"><strong>Property:</strong> {{propertyTitle}}</mj-text>
+        <mj-text font-size="16px" color="#464646" font-family="Murecho"><strong>Inspection ID:</strong> {{inspectionId}}</mj-text>
+        <mj-text font-size="16px" color="#464646" font-family="Murecho"><strong>Inspection Fee:</strong> ₦{{inspectionAmount}}</mj-text>
+
+        <mj-text font-size="16px" color="#464646" font-family="Murecho">Please proceed with the payment to schedule your inspection. Our team will contact you shortly to arrange a suitable date and time.</mj-text>
+
+      </mj-column>
+
+    </mj-section>
+    <mj-section>
+    <mj-column >
+      <mj-text align="center"><span  style="color: #464646">Sent by </span> <span style="color: #080808">Property Sec</span> </mj-text>
+        <mj-text align="center">Privacy Policy | Terms and Conditions</mj-text>
+
+       <mj-text align="center"><span style="color: #464646">If you have any questions please contact us at</span>  <span>{{supportEmail}}</span> </mj-text>
+
+
+      </mj-column>
+    </mj-section>
+  </mj-body>
+</mjml>
+@end

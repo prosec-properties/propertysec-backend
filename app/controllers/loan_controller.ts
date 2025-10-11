@@ -23,6 +23,10 @@ import type { HttpContext } from '@adonisjs/core/http'
 import Bank from '#models/bank'
 import db from '@adonisjs/lucid/services/db'
 import { DateTime } from 'luxon'
+import mail from '@adonisjs/mail/services/main'
+import LoanApprovedNotification from '#mails/loan_approved_notification'
+import LoanRejectedNotification from '#mails/loan_rejected_notification'
+import LoanDisbursedNotification from '#mails/loan_disbursed_notification'
 
 export default class LoansController {
   async processLoanStep({ auth, request, response, logger }: HttpContext) {
@@ -459,6 +463,18 @@ export default class LoansController {
       loan.loanStatus = 'approved'
       await loan.save()
 
+      // Send email notification to the loan applicant
+      const loanUser = await User.findOrFail(loan.userId)
+      await mail.send(
+        new LoanApprovedNotification({
+          userEmail: loanUser.email,
+          userName: loanUser.fullName || loanUser.email,
+          loanAmount: parseFloat(loan.loanAmount),
+          loanId: loan.id,
+          loanDuration: loan.loanDuration,
+        })
+      )
+
       return response.ok({
         success: true,
         message: 'Loan approved successfully',
@@ -505,6 +521,18 @@ export default class LoansController {
         loan.meta = JSON.stringify({ rejectionReason: reason })
       }
       await loan.save()
+
+      // Send email notification to the loan applicant
+      const loanUser = await User.findOrFail(loan.userId)
+      await mail.send(
+        new LoanRejectedNotification({
+          userEmail: loanUser.email,
+          userName: loanUser.fullName || loanUser.email,
+          loanAmount: parseFloat(loan.loanAmount),
+          loanId: loan.id,
+          reason: reason,
+        })
+      )
 
       return response.ok({
         success: true,
@@ -759,6 +787,22 @@ export default class LoansController {
       })
 
       await loan.save()
+
+      // Send email notification to the loan applicant
+      const loanUser = await User.findOrFail(loan.userId)
+      await mail.send(
+        new LoanDisbursedNotification({
+          userEmail: loanUser.email,
+          userName: loanUser.fullName || loanUser.email,
+          loanAmount: parseFloat(loan.loanAmount),
+          loanId: loan.id,
+          disbursementDate: new Date().toLocaleDateString('en-US', {
+            year: 'numeric',
+            month: 'long',
+            day: 'numeric',
+          }),
+        })
+      )
 
       return response.ok({
         success: true,

@@ -32,6 +32,7 @@ export default class PropertyRejectedNotification extends BaseMail {
         propertyTitle: this.propertyData.propertyTitle,
         propertyId: this.propertyData.propertyId,
         reason: this.propertyData.reason,
+        supportEmail: EMAIL.SUPPORT,
       })
   }
 

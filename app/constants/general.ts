@@ -1,5 +1,6 @@
 export const EMAIL = {
   PROSEC: 'team@propertyprosec.com',
+  SUPPORT: 'propertyseconline@gmail.com',
 }
 export const ACCEPTED_IMAGE_TYPES = [
   'png',

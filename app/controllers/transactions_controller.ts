@@ -18,6 +18,8 @@ import PaymentService from '#services/payment'
 import type { HttpContext } from '@adonisjs/core/http'
 import { DateTime } from 'luxon'
 import { nanoid } from 'nanoid'
+import mail from '@adonisjs/mail/services/main'
+import PropertyPurchaseNotification from '#mails/property_purchase_notification'
 import PaystackService from '#services/paystack'
 import { TransactionMetadata, PaystackMetadata } from '../interfaces/payment.js'
 
@@ -474,18 +476,18 @@ export default class TransactionsController {
 
     const property = await Property.findOrFail(meta.propertyId)
 
-    // await mail.send(
-    //   new PropertyPurchaseNotification({
-    //     buyerName: meta.fullName,
-    //     buyerEmail: meta.email,
-    //     propertyTitle: property.title,
-    //     propertyAddress: property.address,
-    //     purchaseAmount: amountInNaira,
-    //     currency: meta.currency || 'NGN',
-    //     transactionReference: reference,
-    //     purchaseDate: DateTime.now().toFormat('dd/MM/yyyy'),
-    //   })
-    // )
+    await mail.send(
+      new PropertyPurchaseNotification({
+        buyerName: meta.fullName,
+        buyerEmail: meta.email,
+        propertyTitle: property.title,
+        propertyAddress: property.address,
+        purchaseAmount: amountInNaira,
+        currency: meta.currency || 'NGN',
+        transactionReference: transaction.reference,
+        purchaseDate: DateTime.now().toFormat('dd/MM/yyyy'),
+      })
+    )
 
     if (meta.affiliateId) {
       const commissionRate =

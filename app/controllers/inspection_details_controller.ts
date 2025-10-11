@@ -1,7 +1,13 @@
 import { getErrorObject } from '#helpers/error'
 import type { HttpContext } from '@adonisjs/core/http'
 import InspectionDetail from '#models/inspection_detail'
+import User from '#models/user'
+import Property from '#models/property'
 import vine from '@vinejs/vine'
+import mail from '@adonisjs/mail/services/main'
+import InspectionApprovedNotification from '#mails/inspection_approved_notification'
+import InspectionRejectedNotification from '#mails/inspection_rejected_notification'
+import InspectionCompletedNotification from '#mails/inspection_completed_notification'
 
 export default class InspectionDetailsController {
   async store({ request, auth, response, logger }: HttpContext) {
@@ -245,6 +251,32 @@ export default class InspectionDetailsController {
 
       await inspection.save()
 
+      // Send email notification to the inspection requester
+      const inspectionUser = await User.findOrFail(inspection.userId)
+      const property = await Property.findOrFail(inspection.propertyId)
+
+      if (payload.approvalStatus === 'approved') {
+        await mail.send(
+          new InspectionApprovedNotification({
+            userEmail: inspectionUser.email,
+            userName: inspectionUser.fullName || inspectionUser.email,
+            propertyTitle: property.title,
+            inspectionId: inspection.id,
+            inspectionAmount: inspection.inspectionAmount || 0,
+          })
+        )
+      } else {
+        await mail.send(
+          new InspectionRejectedNotification({
+            userEmail: inspectionUser.email,
+            userName: inspectionUser.fullName || inspectionUser.email,
+            propertyTitle: property.title,
+            inspectionId: inspection.id,
+            reason: 'Inspection request was not approved',
+          })
+        )
+      }
+
       return response.ok({
         success: true,
         message: `Inspection request ${payload.approvalStatus} successfully!`,
@@ -294,6 +326,22 @@ export default class InspectionDetailsController {
       const inspection = await InspectionDetail.findOrFail(id)
       inspection.inspectionStatus = payload.inspectionStatus as 'PENDING' | 'COMPLETED'
       await inspection.save()
+
+      // Send email notification if inspection is completed and has a report
+      if (payload.inspectionStatus === 'COMPLETED' && inspection.inspectionReport) {
+        const inspectionUser = await User.findOrFail(inspection.userId)
+        const property = await Property.findOrFail(inspection.propertyId)
+
+        await mail.send(
+          new InspectionCompletedNotification({
+            userEmail: inspectionUser.email,
+            userName: inspectionUser.fullName || inspectionUser.email,
+            propertyTitle: property.title,
+            inspectionId: inspection.id,
+            inspectionReport: inspection.inspectionReport,
+          })
+        )
+      }
 
       return response.ok({
         success: true,

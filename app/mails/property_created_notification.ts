@@ -30,6 +30,7 @@ export default class PropertyCreatedNotification extends BaseMail {
         userName: this.propertyData.userName,
         propertyTitle: this.propertyData.propertyTitle,
         propertyId: this.propertyData.propertyId,
+        supportEmail: EMAIL.SUPPORT,
       })
   }
 
