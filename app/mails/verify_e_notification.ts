@@ -24,11 +24,15 @@ export default class VerifyENotification extends BaseMail {
    * the email is sent or queued.
    */
   prepare() {
-    this.message.to(this.email).htmlView(this.emailTemplate, {
-      resetLink: this.resetLink,
-      otp: this.otp,
-      supportEmail: EMAIL.SUPPORT,
-    })
+    this.message
+      .to(this.email)
+      .from(this.from)
+      .subject(this.subject)
+      .htmlView(this.emailTemplate, {
+        resetLink: this.resetLink,
+        otp: this.otp,
+        supportEmail: EMAIL.SUPPORT,
+      })
   }
 
   getSubject() {
