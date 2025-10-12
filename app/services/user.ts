@@ -5,43 +5,48 @@ import emailService from '#services/email'
 import { FIXED_TIME_VALUES } from '#constants/time'
 import Otp from '#models/otp'
 import { DateTime } from 'luxon'
+import logger from '@adonisjs/core/services/logger'
 
 export default class UserService {
   static async verifyEmail(user: User) {
+    const otp = customAlphabet(RANDOM_OTP_NUMBERS, OTP_LENGTH)()
+    const expiresAt = DateTime.now().plus({ minutes: FIXED_TIME_VALUES.TWENTY_MINUTES })
+
+    const existingOtp = await Otp.findBy('userId', user.id)
+
+    if (existingOtp) {
+      await existingOtp.delete()
+    }
+
+    await Otp.create({
+      userId: user.id,
+      expiresAt,
+      code: otp,
+    })
+
     try {
-      const otp = customAlphabet(RANDOM_OTP_NUMBERS, OTP_LENGTH)()
-      const expiresAt = DateTime.now().plus({ minutes: FIXED_TIME_VALUES.TWENTY_MINUTES })
-
-      const hasExistingOtp = await Otp.findBy('userId', user.id)
-
-      if (hasExistingOtp) {
-        await hasExistingOtp.delete()
-      }
-
-      await Otp.create({
-        userId: user.id,
-        expiresAt,
-        code: otp,
-      })
-
       await emailService.sendEmailVerificationMail(user.email, otp)
     } catch (error) {
+      await Otp.query().where('userId', user.id).delete()
+      logger.error({ err: error, userId: user.id }, 'Email verification dispatch failed')
       throw error
     }
   }
 
   static async emailIsVerified(user: User) {
-    try {
-      user.emailVerified = true
-      user.save()
+    user.emailVerified = true
+    await user.save()
 
-      const otp = await Otp.findByOrFail('userId', user.id)
+    const otp = await Otp.findBy('userId', user.id)
 
+    if (otp) {
       await otp.delete()
+    }
 
+    try {
       await emailService.sendWelcomeMail(user.email, user.fullName || user.email)
     } catch (error) {
-      throw error
+      logger.warn({ err: error, userId: user.id }, 'Failed to send welcome email after verification')
     }
   }
 }

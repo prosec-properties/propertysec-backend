@@ -23,6 +23,7 @@ export default class AuthController {
     const payload = await request.validateUsing(registerUserValidator)
     // let isAddedByAdmin = false
     let meta
+    let createdUser: User | null = null
 
     try {
       if (auth.user) {
@@ -42,7 +43,7 @@ export default class AuthController {
         return response.badRequest(errorResponse('User already exists'))
       }
 
-      const user = await User.create({
+      createdUser = await User.create({
         ...payload,
         emailVerified: false,
         hasCompletedProfile: false,
@@ -50,15 +51,30 @@ export default class AuthController {
         meta: JSON.stringify(meta),
       })
 
-      await UserService.verifyEmail(user)
+      await UserService.verifyEmail(createdUser)
 
       response.ok({
         success: true,
         message: 'Please verify your email',
-        data: user,
+        data: createdUser,
       })
     } catch (error) {
-      return response.badRequest(getErrorObject(error))
+      if (createdUser) {
+        await Otp.query().where('userId', createdUser.id).delete()
+        await createdUser.delete()
+      }
+
+      if (error?.code === 'ETIMEDOUT') {
+        return response.status(503).send(
+          errorResponse('Unable to send verification email at the moment. Please try again shortly.')
+        )
+      }
+
+      return response.badRequest(
+        getErrorObject(error, {
+          controller: 'AuthController.register',
+        })
+      )
     }
   }
 
