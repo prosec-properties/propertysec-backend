@@ -370,11 +370,19 @@ export default class LoansController {
         .select(db.raw('SUM(CAST(loan_amount AS INTEGER)) as amount'))
         .first()
 
+      const allDisbursedLoans = await db
+        .query()
+        .from('loans')
+        .where('loan_status', 'disbursed')
+        .select('id', 'loan_amount', 'loan_status')
+
+      console.log('All disbursed loans:', allDisbursedLoans)
+
       const disbursedLoans = await db
         .query()
         .from('loans')
         .where('loan_status', 'disbursed')
-        .select(db.raw('SUM(CAST(loan_amount AS INTEGER)) as amount'))
+        .select(db.raw('COALESCE(SUM(CAST(loan_amount AS INTEGER)), 0) as amount'))
         .first()
 
       const totalRepaid = await db
@@ -553,22 +561,36 @@ export default class LoansController {
       const loan = await Loan.query()
         .where('id', loanId)
         .preload('user', (userQuery) => {
-          userQuery.select([
-            'id',
-            'fullName',
-            'email',
-            'phoneNumber',
-            'role',
-            'homeAddress',
-            'stateOfOrigin',
-            'nationality',
-            'religion',
-            'nextOfKinName',
-            'avatarUrl',
-            'hasCompletedProfile',
-            'createdAt',
-            'updatedAt',
-          ])
+          userQuery
+            .select([
+              'id',
+              'fullName',
+              'email',
+              'phoneNumber',
+              'role',
+              'homeAddress',
+              'stateOfOrigin',
+              'nationality',
+              'religion',
+              'nextOfKinName',
+              'avatarUrl',
+              'hasCompletedProfile',
+              'createdAt',
+              'updatedAt',
+            ])
+            .preload('profileFiles', (fileQuery) => {
+              fileQuery.select([
+                'id',
+                'userId',
+                'fileUrl',
+                'fileName',
+                'fileType',
+                'fileCategory',
+                'meta',
+                'createdAt',
+                'updatedAt',
+              ])
+            })
         })
         .preload('files')
         .preload('repayments')
@@ -593,6 +615,7 @@ export default class LoansController {
       const loanRequest = await LoanRequest.query()
         .where('userId', loan.userId)
         .where('status', 'completed')
+        .preload('files')
         .orderBy('createdAt', 'desc')
         .first()
 
@@ -610,11 +633,11 @@ export default class LoansController {
         ])
 
         relatedData = {
-          loanRequest,
-          bank,
-          employment,
-          guarantor,
-          landlord,
+          loanRequest: loanRequest.serialize(),
+          bank: bank ? bank.serialize() : null,
+          employment: employment ? employment.serialize() : null,
+          guarantor: guarantor ? guarantor.serialize() : null,
+          landlord: landlord ? landlord.serialize() : null,
         }
       }
 
