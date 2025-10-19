@@ -21,13 +21,6 @@ export interface ImageUploadInterface {
   metaData: FileMetaData
 }
 
-console.log({
-  accessKeyId: env.get('R2_ACCESS_KEY_ID'),
-  secretAccessKey: env.get('R2_SECRET_ACCESS_KEY'),
-  region: env.get('AWS_REGION'),
-  bucket: env.get('R2_BUCKET_NAME'),
-})
-
 class AWS {
   private client: S3Client
   constructor() {
