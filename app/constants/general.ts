@@ -1,6 +1,8 @@
+import env from '#start/env'
+
 export const EMAIL = {
-  PROSEC: 'team@propertyprosec.com',
-  SUPPORT: 'propertyseconline@gmail.com',
+  PROSEC: env.get('EMAIL_FROM_ADDRESS', 'team@propertyprosec.com'),
+  SUPPORT: env.get('SUPPORT_EMAIL', 'propertyseconline@gmail.com'),
 }
 export const ACCEPTED_IMAGE_TYPES = [
   'png',

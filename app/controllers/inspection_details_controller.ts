@@ -8,7 +8,6 @@ import mail from '@adonisjs/mail/services/main'
 import InspectionApprovedNotification from '#mails/inspection_approved_notification'
 import InspectionRejectedNotification from '#mails/inspection_rejected_notification'
 import InspectionCompletedNotification from '#mails/inspection_completed_notification'
-import frontendEmailService from '#services/frontend_email'
 
 export default class InspectionDetailsController {
   async store({ request, auth, response, logger }: HttpContext) {
@@ -256,34 +255,17 @@ export default class InspectionDetailsController {
       const inspectionUser = await User.findOrFail(inspection.userId)
       const property = await Property.findOrFail(inspection.propertyId)
 
-      if (payload.approvalStatus === 'approved') {
-        const emailSent = await frontendEmailService.sendInspectionApprovedEmail(inspectionUser.email, {
-          userName: inspectionUser.fullName || inspectionUser.email,
-          propertyTitle: property.title,
-          inspectionId: inspection.id,
-          inspectionAmount: Number(inspection.inspectionAmount || 0),
-        })
-
-        if (!emailSent) {
+        if (payload.approvalStatus === 'approved') {
           await mail.send(
             new InspectionApprovedNotification({
               userEmail: inspectionUser.email,
               userName: inspectionUser.fullName || inspectionUser.email,
               propertyTitle: property.title,
               inspectionId: inspection.id,
-              inspectionAmount: inspection.inspectionAmount || 0,
+              inspectionAmount: Number(inspection.inspectionAmount || 0),
             })
           )
-        }
       } else {
-        const emailSent = await frontendEmailService.sendInspectionRejectedEmail(inspectionUser.email, {
-          userName: inspectionUser.fullName || inspectionUser.email,
-          propertyTitle: property.title,
-          inspectionId: inspection.id,
-          reason: 'Inspection request was not approved',
-        })
-
-        if (!emailSent) {
           await mail.send(
             new InspectionRejectedNotification({
               userEmail: inspectionUser.email,
@@ -293,7 +275,6 @@ export default class InspectionDetailsController {
               reason: 'Inspection request was not approved',
             })
           )
-        }
       }
 
       return response.ok({
@@ -351,14 +332,6 @@ export default class InspectionDetailsController {
         const inspectionUser = await User.findOrFail(inspection.userId)
         const property = await Property.findOrFail(inspection.propertyId)
 
-        const emailSent = await frontendEmailService.sendInspectionCompletedEmail(inspectionUser.email, {
-          userName: inspectionUser.fullName || inspectionUser.email,
-          propertyTitle: property.title,
-          inspectionId: inspection.id,
-          inspectionReport: inspection.inspectionReport,
-        })
-
-        if (!emailSent) {
           await mail.send(
             new InspectionCompletedNotification({
               userEmail: inspectionUser.email,
@@ -368,7 +341,6 @@ export default class InspectionDetailsController {
               inspectionReport: inspection.inspectionReport,
             })
           )
-        }
       }
 
       return response.ok({

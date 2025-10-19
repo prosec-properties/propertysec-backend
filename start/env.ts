@@ -36,17 +36,10 @@ export default await Env.create(new URL('../', import.meta.url), {
   | Variables for configuring the mail package
   |----------------------------------------------------------
   */
-  SMTP_HOST: Env.schema.string(),
-  SMTP_PORT: Env.schema.number(),
-  SMTP_USERNAME: Env.schema.string(),
-  SMTP_PASSWORD: Env.schema.string(),
-  SMTP_SECURE: Env.schema.boolean.optional(),
-  SMTP_IGNORE_TLS: Env.schema.boolean.optional(),
-  SMTP_REQUIRE_TLS: Env.schema.boolean.optional(),
-
-  USE_FRONTEND_EMAILS: Env.schema.boolean.optional(),
-  FRONTEND_EMAIL_ENDPOINT: Env.schema.string.optional(),
-  FRONTEND_EMAIL_API_KEY: Env.schema.string.optional(),
+  BREVO_API_KEY: Env.schema.string(),
+  BREVO_BASE_URL: Env.schema.string.optional(),
+  EMAIL_FROM_ADDRESS: Env.schema.string(),
+  SUPPORT_EMAIL: Env.schema.string.optional(),
 
   /*
   |----------------------------------------------------------

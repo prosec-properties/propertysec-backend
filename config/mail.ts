@@ -1,8 +1,10 @@
 import env from '#start/env'
 import { defineConfig, transports } from '@adonisjs/mail'
 
+const supportEmail = env.get('SUPPORT_EMAIL', '')
+
 const mailConfig = defineConfig({
-  default: 'smtp',
+  default: 'brevo',
 
   /**
    * The mailers object can be used to configure multiple mailers
@@ -10,27 +12,14 @@ const mailConfig = defineConfig({
    * options.
    */
   mailers: {
-    smtp: transports.smtp({
-      host: env.get('SMTP_HOST'),
-      port: env.get('SMTP_PORT'),
-      secure: env.get('SMTP_SECURE', false),
-      ignoreTLS: env.get('SMTP_IGNORE_TLS', false),
-      requireTLS: env.get('SMTP_REQUIRE_TLS', false),
-      /**
-       * Uncomment the auth block if your SMTP
-       * server needs authentication
-       */
-      auth: {
-        type: 'login',
-        user: env.get('SMTP_USERNAME'),
-        pass: env.get('SMTP_PASSWORD'),
-      },
+    brevo: transports.brevo({
+      key: env.get('BREVO_API_KEY'),
+      baseUrl: env.get('BREVO_BASE_URL', 'https://api.brevo.com/v3'),
     }),
   },
+
+  from: env.get('EMAIL_FROM_ADDRESS'),
+  replyTo: supportEmail || undefined,
 })
 
 export default mailConfig
-
-declare module '@adonisjs/mail/types' {
-  export interface MailersList extends InferMailers<typeof mailConfig> {}
-}
