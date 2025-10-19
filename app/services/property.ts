@@ -29,32 +29,34 @@ export default class PropertyService {
   }
 
   static async fetchProperties({ page, limit, filters, isAdmin }: FetchPropertiesOptions) {
-    const { status: statusFilter, categories, locations, pricing, search } = filters
+    const { status: rawStatus, categories, locations, pricing, search } = filters
+
+    const normalizedStatus = rawStatus?.toString().trim().toLowerCase()
+    const effectiveStatus = normalizedStatus && normalizedStatus !== 'all' ? normalizedStatus : null
+    const statusIsSold = effectiveStatus === 'sold'
 
     const properties = await Property.query()
       .if(!isAdmin, (query) => {
-        query.where('availability', '!=', 'sold')
-        if (!statusFilter) {
+        if (!statusIsSold) {
+          query.where('availability', '!=', 'sold')
+        }
+
+        if (!effectiveStatus) {
           query.where('status', 'published')
         }
       })
-      .if(statusFilter, (query) => {
-        if (!statusFilter) {
-          return
-        }
-        if (statusFilter === 'sold') {
+      .if(effectiveStatus, (query) => {
+        if (statusIsSold) {
           query.where('availability', 'sold')
         } else {
-          if (isAdmin && statusFilter !== 'all') {
-            query.where('status', statusFilter)
-          } else {
-            query.where('status', statusFilter)
-          }
+          query.where('status', effectiveStatus!)
         }
       })
       .if(search, (query) => {
-        query.where('title', 'ilike', `%${search}%`)
-        query.orWhere('address', 'ilike', `%${search}%`)
+        query.where((builder) => {
+          builder.where('title', 'ilike', `%${search}%`)
+          builder.orWhere('address', 'ilike', `%${search}%`)
+        })
       })
       .if(categories, (query) => {
         const parsedCategories = this.parseJson(categories)

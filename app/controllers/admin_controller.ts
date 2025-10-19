@@ -8,6 +8,7 @@ import UserSetting from '#models/user_setting'
 import Subscription from '#models/subscription'
 import type { HttpContext } from '@adonisjs/core/http'
 import PropertyService from '#services/property'
+import { IUserRoleEnum } from '../interfaces/user.js'
 
 export default class AdminController {
   public async fetchAllUsers({ auth, response, request, bouncer }: HttpContext) {
@@ -20,6 +21,13 @@ export default class AdminController {
       const sortBy = request.input('sort_by', 'created_at')
       const order = request.input('order', 'desc')
       const search = request.input('search')
+      const roleInput = request.input('role')
+      const normalizedRole =
+        typeof roleInput === 'string' ? roleInput.toLowerCase() : null
+      const shouldFilterByRole =
+        !!normalizedRole &&
+        normalizedRole !== 'all' &&
+        (IUserRoleEnum as readonly string[]).includes(normalizedRole)
 
       const orderDirection = order.toLowerCase() === 'asc' ? 'asc' : 'desc'
 
@@ -27,6 +35,10 @@ export default class AdminController {
       const validSortBy = sortableColumns.includes(sortBy) ? sortBy : 'created_at'
 
       let query = User.query().preload('profileFiles').orderBy(validSortBy, orderDirection)
+
+      if (shouldFilterByRole && normalizedRole) {
+        query = query.where('role', normalizedRole)
+      }
 
       if (search) {
         query = query.where((builder) => {
@@ -40,6 +52,10 @@ export default class AdminController {
       const users = await query.paginate(page, perPage)
 
       let baseStatsQuery = User.query()
+
+      if (shouldFilterByRole && normalizedRole) {
+        baseStatsQuery = baseStatsQuery.where('role', normalizedRole)
+      }
 
       const [totalUsers, subscribedUsers] = await Promise.all([
         baseStatsQuery.clone().count('* as total'),
