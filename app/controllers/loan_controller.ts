@@ -27,6 +27,7 @@ import mail from '@adonisjs/mail/services/main'
 import LoanApprovedNotification from '#mails/loan_approved_notification'
 import LoanRejectedNotification from '#mails/loan_rejected_notification'
 import LoanDisbursedNotification from '#mails/loan_disbursed_notification'
+import frontendEmailService from '#services/frontend_email'
 
 export default class LoansController {
   async processLoanStep({ auth, request, response, logger }: HttpContext) {
@@ -473,15 +474,24 @@ export default class LoansController {
 
       // Send email notification to the loan applicant
       const loanUser = await User.findOrFail(loan.userId)
-      await mail.send(
-        new LoanApprovedNotification({
-          userEmail: loanUser.email,
-          userName: loanUser.fullName || loanUser.email,
-          loanAmount: parseFloat(loan.loanAmount),
-          loanId: loan.id,
-          loanDuration: loan.loanDuration,
-        })
-      )
+      const emailSent = await frontendEmailService.sendLoanApprovedEmail(loanUser.email, {
+        userName: loanUser.fullName || loanUser.email,
+        loanAmount: parseFloat(loan.loanAmount),
+        loanId: loan.id,
+        loanDuration: loan.loanDuration,
+      })
+
+      if (!emailSent) {
+        await mail.send(
+          new LoanApprovedNotification({
+            userEmail: loanUser.email,
+            userName: loanUser.fullName || loanUser.email,
+            loanAmount: parseFloat(loan.loanAmount),
+            loanId: loan.id,
+            loanDuration: loan.loanDuration,
+          })
+        )
+      }
 
       return response.ok({
         success: true,
@@ -532,15 +542,24 @@ export default class LoansController {
 
       // Send email notification to the loan applicant
       const loanUser = await User.findOrFail(loan.userId)
-      await mail.send(
-        new LoanRejectedNotification({
-          userEmail: loanUser.email,
-          userName: loanUser.fullName || loanUser.email,
-          loanAmount: parseFloat(loan.loanAmount),
-          loanId: loan.id,
-          reason: reason,
-        })
-      )
+      const emailSent = await frontendEmailService.sendLoanRejectedEmail(loanUser.email, {
+        userName: loanUser.fullName || loanUser.email,
+        loanAmount: parseFloat(loan.loanAmount),
+        loanId: loan.id,
+        reason: reason || 'No specific reason provided',
+      })
+
+      if (!emailSent) {
+        await mail.send(
+          new LoanRejectedNotification({
+            userEmail: loanUser.email,
+            userName: loanUser.fullName || loanUser.email,
+            loanAmount: parseFloat(loan.loanAmount),
+            loanId: loan.id,
+            reason: reason || 'No specific reason provided',
+          })
+        )
+      }
 
       return response.ok({
         success: true,
@@ -813,19 +832,30 @@ export default class LoansController {
 
       // Send email notification to the loan applicant
       const loanUser = await User.findOrFail(loan.userId)
-      await mail.send(
-        new LoanDisbursedNotification({
-          userEmail: loanUser.email,
-          userName: loanUser.fullName || loanUser.email,
-          loanAmount: parseFloat(loan.loanAmount),
-          loanId: loan.id,
-          disbursementDate: new Date().toLocaleDateString('en-US', {
-            year: 'numeric',
-            month: 'long',
-            day: 'numeric',
-          }),
-        })
-      )
+      const disbursementDate = new Date().toLocaleDateString('en-US', {
+        year: 'numeric',
+        month: 'long',
+        day: 'numeric',
+      })
+
+      const emailSent = await frontendEmailService.sendLoanDisbursedEmail(loanUser.email, {
+        userName: loanUser.fullName || loanUser.email,
+        loanAmount: parseFloat(loan.loanAmount),
+        loanId: loan.id,
+        disbursementDate,
+      })
+
+      if (!emailSent) {
+        await mail.send(
+          new LoanDisbursedNotification({
+            userEmail: loanUser.email,
+            userName: loanUser.fullName || loanUser.email,
+            loanAmount: parseFloat(loan.loanAmount),
+            loanId: loan.id,
+            disbursementDate,
+          })
+        )
+      }
 
       return response.ok({
         success: true,

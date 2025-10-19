@@ -44,6 +44,10 @@ export default await Env.create(new URL('../', import.meta.url), {
   SMTP_IGNORE_TLS: Env.schema.boolean.optional(),
   SMTP_REQUIRE_TLS: Env.schema.boolean.optional(),
 
+  USE_FRONTEND_EMAILS: Env.schema.boolean.optional(),
+  FRONTEND_EMAIL_ENDPOINT: Env.schema.string.optional(),
+  FRONTEND_EMAIL_API_KEY: Env.schema.string.optional(),
+
   /*
   |----------------------------------------------------------
   | Variables for configuring the frontend URL

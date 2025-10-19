@@ -14,6 +14,7 @@ import mail from '@adonisjs/mail/services/main'
 import PropertyCreatedNotification from '#mails/property_created_notification'
 import PropertyPublishedNotification from '#mails/property_published_notification'
 import PropertyRejectedNotification from '#mails/property_rejected_notification'
+import frontendEmailService from '#services/frontend_email'
 import PropertyService from '#services/property'
 
 export default class PropertiesController {
@@ -194,14 +195,23 @@ export default class PropertiesController {
 
           // Send email notification to the property owner
           const propertyOwner = await User.findOrFail(targetUserIdForProperty)
-          await mail.send(
-            new PropertyCreatedNotification({
-              userEmail: propertyOwner.email,
-              userName: propertyOwner.fullName || propertyOwner.email,
-              propertyTitle: property.title,
-              propertyId: property.id,
-            })
-          )
+
+          const propertyCreatedEmailSent = await frontendEmailService.sendPropertyCreatedEmail(propertyOwner.email, {
+            userName: propertyOwner.fullName || propertyOwner.email,
+            propertyTitle: property.title,
+            propertyId: property.id,
+          })
+
+          if (!propertyCreatedEmailSent) {
+            await mail.send(
+              new PropertyCreatedNotification({
+                userEmail: propertyOwner.email,
+                userName: propertyOwner.fullName || propertyOwner.email,
+                propertyTitle: property.title,
+                propertyId: property.id,
+              })
+            )
+          }
 
           return response.created({
             success: true,
@@ -511,24 +521,41 @@ export default class PropertiesController {
 
       // Send email notification based on status
       if (status === 'published') {
-        await mail.send(
-          new PropertyPublishedNotification({
-            userEmail: propertyUser.email,
-            userName: propertyUser.fullName || propertyUser.email,
-            propertyTitle: property.title,
-            propertyId: property.id,
-          })
-        )
+        const emailSent = await frontendEmailService.sendPropertyPublishedEmail(propertyUser.email, {
+          userName: propertyUser.fullName || propertyUser.email,
+          propertyTitle: property.title,
+          propertyId: property.id,
+        })
+
+        if (!emailSent) {
+          await mail.send(
+            new PropertyPublishedNotification({
+              userEmail: propertyUser.email,
+              userName: propertyUser.fullName || propertyUser.email,
+              propertyTitle: property.title,
+              propertyId: property.id,
+            })
+          )
+        }
       } else if (status === 'rejected') {
-        await mail.send(
-          new PropertyRejectedNotification({
-            userEmail: propertyUser.email,
-            userName: propertyUser.fullName || propertyUser.email,
-            propertyTitle: property.title,
-            propertyId: property.id,
-            reason: reason || 'No reason provided',
-          })
-        )
+        const emailSent = await frontendEmailService.sendPropertyRejectedEmail(propertyUser.email, {
+          userName: propertyUser.fullName || propertyUser.email,
+          propertyTitle: property.title,
+          propertyId: property.id,
+          reason: reason || 'No reason provided',
+        })
+
+        if (!emailSent) {
+          await mail.send(
+            new PropertyRejectedNotification({
+              userEmail: propertyUser.email,
+              userName: propertyUser.fullName || propertyUser.email,
+              propertyTitle: property.title,
+              propertyId: property.id,
+              reason: reason || 'No reason provided',
+            })
+          )
+        }
       }
 
       logger.info('Property status updated successfully')

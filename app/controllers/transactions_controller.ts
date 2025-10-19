@@ -22,6 +22,7 @@ import mail from '@adonisjs/mail/services/main'
 import PropertyPurchaseNotification from '#mails/property_purchase_notification'
 import PaystackService from '#services/paystack'
 import { TransactionMetadata, PaystackMetadata } from '../interfaces/payment.js'
+import frontendEmailService from '#services/frontend_email'
 
 export default class TransactionsController {
   public async index({ auth, request, response, bouncer }: HttpContext) {
@@ -476,18 +477,30 @@ export default class TransactionsController {
 
     const property = await Property.findOrFail(meta.propertyId)
 
-    await mail.send(
-      new PropertyPurchaseNotification({
-        buyerName: meta.fullName,
-        buyerEmail: meta.email,
-        propertyTitle: property.title,
-        propertyAddress: property.address,
-        purchaseAmount: amountInNaira,
-        currency: meta.currency || 'NGN',
-        transactionReference: transaction.reference,
-        purchaseDate: DateTime.now().toFormat('dd/MM/yyyy'),
-      })
-    )
+    const emailSent = await frontendEmailService.sendPropertyPurchaseEmail(meta.email, {
+      buyerName: meta.fullName,
+      propertyTitle: property.title,
+      propertyAddress: property.address,
+      purchaseAmount: amountInNaira,
+      currency: meta.currency || 'NGN',
+      transactionReference: transaction.reference,
+      purchaseDate: DateTime.now().toFormat('dd/MM/yyyy'),
+    })
+
+    if (!emailSent) {
+      await mail.send(
+        new PropertyPurchaseNotification({
+          buyerName: meta.fullName,
+          buyerEmail: meta.email,
+          propertyTitle: property.title,
+          propertyAddress: property.address,
+          purchaseAmount: amountInNaira,
+          currency: meta.currency || 'NGN',
+          transactionReference: transaction.reference,
+          purchaseDate: DateTime.now().toFormat('dd/MM/yyyy'),
+        })
+      )
+    }
 
     if (meta.affiliateId) {
       const commissionRate =
