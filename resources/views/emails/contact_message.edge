@@ -1,0 +1,37 @@
+@mjml({
+  fonts: {
+    Inter: 'https://fonts.googleapis.com/css2?family=Inter:wght@400;600&display=swap'
+  }
+})
+<mjml>
+  <mj-body background-color="#F5F6F8" font-family="Inter, Arial, sans-serif">
+    <mj-section background-color="#FFFFFF" padding="32px 24px">
+      <mj-column>
+        <mj-text font-size="20px" font-weight="600" color="#0F172A">New Contact Message</mj-text>
+        <mj-text font-size="16px" color="#334155">You received a new message from the website contact form.</mj-text>
+
+        <mj-divider border-color="#E2E8F0" padding="16px 0" />
+
+        <mj-text font-size="16px" color="#0F172A"><strong>Name:</strong> {{firstName}} {{lastName}}</mj-text>
+        <mj-text font-size="16px" color="#0F172A"><strong>Email:</strong> {{email}}</mj-text>
+        <mj-text font-size="16px" color="#0F172A"><strong>Phone Number:</strong> {{phoneNumber}}</mj-text>
+
+        <mj-divider border-color="#E2E8F0" padding="16px 0" />
+
+        <mj-text font-size="16px" color="#0F172A" line-height="1.6">
+          <strong>Message:</strong><br />
+          {{message}}
+        </mj-text>
+      </mj-column>
+    </mj-section>
+
+    <mj-section padding="0 24px 24px" background-color="#F5F6F8">
+      <mj-column>
+        <mj-text align="center" font-size="14px" color="#64748B">
+          This message was sent via the Property Sec contact form.
+        </mj-text>
+      </mj-column>
+    </mj-section>
+  </mj-body>
+</mjml>
+@end

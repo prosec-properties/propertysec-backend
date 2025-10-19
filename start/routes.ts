@@ -28,6 +28,7 @@ import AdminController from '#controllers/admin_controller'
 import InvoicesController from '#controllers/invoices_controller'
 import SettingsController from '#controllers/settings_controller'
 import InspectionDetailsController from '#controllers/inspection_details_controller'
+import ContactController from '#controllers/contact_controller'
 
 router.get('/', async () => {
   return {
@@ -221,6 +222,8 @@ router
         router.patch('/', [SettingsController, 'update'])
       })
       .prefix('settings')
+
+    router.post('/contact', [ContactController, 'send'])
 
     router
       .group(() => {
