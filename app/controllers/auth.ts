@@ -17,6 +17,8 @@ import { setSearchParams } from '#helpers/general'
 import UserService from '#services/user'
 import Otp from '#models/otp'
 import { DateTime } from 'luxon'
+import emitter from '@adonisjs/core/services/emitter'
+import logger from '@adonisjs/core/services/logger'
 
 export default class AuthController {
   async register({ request, response, auth }: HttpContext) {
@@ -57,6 +59,27 @@ export default class AuthController {
         success: true,
         message: 'Please verify your email',
         data: createdUser,
+      })
+
+      setImmediate(() => {
+        if (!createdUser) {
+          return
+        }
+
+        emitter
+          .emit('user:registered', {
+            userId: createdUser.id,
+            email: createdUser.email,
+          })
+          .catch((error) => {
+            logger.error(
+              {
+                err: error,
+                userId: createdUser?.id,
+              },
+              'Failed handling user:registered event after sign up'
+            )
+          })
       })
     } catch (error) {
       if (createdUser) {

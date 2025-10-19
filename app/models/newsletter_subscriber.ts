@@ -4,7 +4,7 @@ import type { HasOne } from '@adonisjs/lucid/types/relations'
 import User from './user.js'
 import { v4 as uuidv4 } from 'uuid'
 
-export default class Newsletter extends BaseModel {
+export default class NewsletterSubscriber extends BaseModel {
   @column({ isPrimary: true })
   declare id: string
 
@@ -33,7 +33,7 @@ export default class Newsletter extends BaseModel {
   declare updatedAt: DateTime
 
   @beforeCreate()
-  static generateUUID(model: Newsletter) {
+  static generateUUID(model: NewsletterSubscriber) {
     model.id = uuidv4()
   }
 

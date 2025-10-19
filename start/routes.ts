@@ -29,6 +29,7 @@ import InvoicesController from '#controllers/invoices_controller'
 import SettingsController from '#controllers/settings_controller'
 import InspectionDetailsController from '#controllers/inspection_details_controller'
 import ContactController from '#controllers/contact_controller'
+import NewsletterController from '#controllers/newsletter_controller'
 
 router.get('/', async () => {
   return {
@@ -224,6 +225,7 @@ router
       .prefix('settings')
 
     router.post('/contact', [ContactController, 'send'])
+  router.post('/newsletter/subscribe', [NewsletterController, 'subscribe'])
 
     router
       .group(() => {

@@ -34,6 +34,7 @@ export default class SettingsController {
 
       settings.merge(payload)
       await settings.save()
+      await settings.refresh()
       logger.info('SettingsController.update - Settings updated successfully')
 
       return response.ok({
@@ -49,13 +50,17 @@ export default class SettingsController {
 
   static async getSettings(userId: string) {
     try {
-      let settings = await Setting.query().where('user_id', userId).first()
+      const settings = await Setting.firstOrCreate(
+        { userId },
+        {
+          userId,
+          emailNotificationsFeatureUpdates: true,
+          emailNotificationsListingUpdates: true,
+        }
+      )
 
-      if (!settings) {
-        settings = await Setting.create({
-          userId: userId,
-        })
-      }
+      await settings.refresh()
+
       return settings
     } catch (error) {
       throw error
