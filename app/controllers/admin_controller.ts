@@ -7,6 +7,7 @@ import Loan from '#models/loan'
 import UserSetting from '#models/user_setting'
 import Subscription from '#models/subscription'
 import type { HttpContext } from '@adonisjs/core/http'
+import PropertyService from '#services/property'
 
 export default class AdminController {
   public async fetchAllUsers({ auth, response, request, bouncer }: HttpContext) {
@@ -54,6 +55,39 @@ export default class AdminController {
           totalUsers: totalUsers[0]?.$extras?.total || 0,
           subscribedUsers: subscribedUsers[0]?.$extras?.total || 0,
         },
+      })
+    } catch (error) {
+      return response.internalServerError(getErrorObject(error))
+    }
+  }
+
+  public async fetchProperties({ auth, response, request, bouncer }: HttpContext) {
+    try {
+      await auth.authenticate()
+      await bouncer.with('UserPolicy').authorize('isAdmin')
+
+  const page = Number(request.input('page', 1)) || 1
+  const limitInput = request.input('limit', request.input('per_page', 20))
+  const limit = Number(limitInput) || 20
+      const { status, categories, locations, pricing, search } = request.qs()
+
+      const data = await PropertyService.fetchProperties({
+        page,
+        limit,
+        filters: {
+          status,
+          categories,
+          locations,
+          pricing,
+          search,
+        },
+        isAdmin: true,
+      })
+
+      return response.ok({
+        success: true,
+        message: 'Properties fetched successfully',
+        data,
       })
     } catch (error) {
       return response.internalServerError(getErrorObject(error))

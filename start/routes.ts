@@ -58,6 +58,7 @@ router
     router
       .group(() => {
         router.get('/users', [AdminController, 'fetchAllUsers'])
+        router.get('/properties', [AdminController, 'fetchProperties'])
         router.get('/property-purchases', [AdminController, 'fetchPropertyPurchases'])
         router.get('/properties/:propertyId/purchases', [AdminController, 'fetchPropertyPurchases'])
         router.patch('/property-purchases/:purchaseId/status', [
@@ -65,10 +66,22 @@ router
           'updatePropertyPurchaseStatus',
         ])
         router.get('/users/:userId/properties', [AdminController, 'fetchUserProperties'])
-        router.patch('/users/:userId/properties/:propertyId', [AdminController, 'updateUserProperty'])
-        router.get('/affiliates/:affiliateId/properties', [AdminController, 'fetchAffiliateProperties'])
-        router.get('/buyers/:buyerId/inspected-properties', [AdminController, 'fetchBuyerInspectedProperties'])
-        router.get('/buyers/:buyerId/purchased-properties', [AdminController, 'fetchBuyerPurchasedProperties'])
+        router.patch('/users/:userId/properties/:propertyId', [
+          AdminController,
+          'updateUserProperty',
+        ])
+        router.get('/affiliates/:affiliateId/properties', [
+          AdminController,
+          'fetchAffiliateProperties',
+        ])
+        router.get('/buyers/:buyerId/inspected-properties', [
+          AdminController,
+          'fetchBuyerInspectedProperties',
+        ])
+        router.get('/buyers/:buyerId/purchased-properties', [
+          AdminController,
+          'fetchBuyerPurchasedProperties',
+        ])
         router.post('/properties', [PropertiesController, 'store'])
       })
       .prefix('admin')
