@@ -1,6 +1,6 @@
 import { basename } from 'node:path'
 import { readFile } from 'node:fs/promises'
-import got, { HTTPError } from 'got'
+import axios, { AxiosError } from 'axios'
 import { createTransport } from 'nodemailer'
 import { MailResponse, errors } from '@adonisjs/mail'
 
@@ -209,19 +209,19 @@ class NodeMailerTransport {
 
     try {
       const payload = await this.#buildPayload(mail.data)
-      const response: { messageId?: string } = await got
-        .post(`${this.#baseUrl()}/smtp/email`, {
-          responseType: 'json',
-          json: payload,
+      const response = await axios.post(
+        `${this.#baseUrl()}/smtp/email`,
+        payload,
+        {
           headers: {
             accept: 'application/json',
             'api-key': this.#config.key,
             'content-type': 'application/json',
           },
-        })
-        .json()
+        }
+      )
 
-      const brevoMessageId = response.messageId
+      const brevoMessageId = response.data?.messageId
       const messageId = brevoMessageId ? brevoMessageId.replace(/^<|>$/g, '') : mail.message.messageId()
 
       callback(null, { envelope, messageId })
@@ -237,9 +237,9 @@ class NodeMailerTransport {
   }
 
   #normalizeError(error: unknown): Error {
-    if (error instanceof HTTPError) {
-      const status = error.response?.statusCode
-      const detail = this.#extractErrorDetail(error)
+    if (axios.isAxiosError(error)) {
+      const status = error.response?.status
+      const detail = this.#extractAxiosErrorDetail(error)
       const message = detail
         ? `Brevo API responded with status ${status}: ${detail}`
         : `Brevo API responded with status ${status}`
@@ -249,8 +249,8 @@ class NodeMailerTransport {
     return error instanceof Error ? error : new Error('Unknown Brevo transport error')
   }
 
-  #extractErrorDetail(error: HTTPError): string | undefined {
-    const body = error.response?.body
+  #extractAxiosErrorDetail(error: AxiosError): string | undefined {
+    const body = error.response?.data
     if (!body) {
       return undefined
     }
