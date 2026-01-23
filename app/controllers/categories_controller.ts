@@ -1,13 +1,13 @@
 import { getErrorObject } from '#helpers/error'
 import Category from '#models/category'
 import type { HttpContext } from '@adonisjs/core/http'
+import cache from '@adonisjs/cache/services/main'
 
 export default class CategoriesController {
   async index({ request, response }: HttpContext) {
     try {
       const { sortBy = 'created_at', order = 'desc', search = '', type } = request.qs()
 
-      console.log('query params:', request.qs())
       const validOrders = ['asc', 'desc']
       if (!validOrders.includes(order.toLowerCase())) {
         return response.badRequest({
@@ -24,19 +24,28 @@ export default class CategoriesController {
         })
       }
 
-      const query = Category.query()
+      // Generate cache key based on most common filters
+      const cacheKey = `categories:${type || 'all'}:${search || 'none'}:${sortBy}:${order}`
 
-      if (search) {
-        query.whereILike('name', `%${search}%`)
-      }
+      const categories = await cache.getOrSet({
+        key: cacheKey,
+        factory: async () => {
+          const query = Category.query()
 
-      if (type) {
-        query.where('type', type)
-      }
+          if (search) {
+            query.whereILike('name', `%${search}%`)
+          }
 
-      query.preload('subcategories').orderBy(sortBy, order)
+          if (type) {
+            query.where('type', type)
+          }
 
-      const categories = await query.exec()
+          query.preload('subcategories').orderBy(sortBy, order)
+          const result = await query.exec()
+          return result.map((r) => r.toJSON())
+        },
+        ttl: '5m',
+      })
 
       return response.ok({
         success: true,

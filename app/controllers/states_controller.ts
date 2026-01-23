@@ -2,11 +2,23 @@ import { getErrorObject } from '#helpers/error'
 import State from '#models/state'
 // import { createStateValidator, updateStateValidator } from '#validators/location'
 import type { HttpContext } from '@adonisjs/core/http'
+import cache from '@adonisjs/cache/services/main'
 
 export default class StatesController {
   public async index({ response, logger }: HttpContext) {
     try {
-      const states = await State.query().where('countryCode', 'af').preload('cities').orderBy('name', 'asc')
+      const states = await cache.getOrSet({
+        key: 'states',
+        factory: async () => {
+          const result = await State.query()
+            .where('countryCode', 'af')
+            .preload('cities')
+            .orderBy('name', 'asc')
+          return result.map((r) => r.toJSON())
+        },
+        ttl: '10m',
+      })
+
       logger.info('States fetched successfully')
       return response.ok({
         success: true,

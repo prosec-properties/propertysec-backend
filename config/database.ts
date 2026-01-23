@@ -22,6 +22,13 @@ const dbConfig = defineConfig({
         // ssl: false,
         ssl: env.get('DB_SSL') ? { rejectUnauthorized: false } : false,
       },
+      pool: {
+        min: 2,
+        max: 20,
+        acquireTimeoutMillis: 30000,
+        createTimeoutMillis: 30000,
+        idleTimeoutMillis: 10000,
+      },
       migrations: {
         naturalSort: true,
         disableRollbacksInProduction: true,
@@ -32,3 +39,5 @@ const dbConfig = defineConfig({
 })
 
 export default dbConfig
+
+

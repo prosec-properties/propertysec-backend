@@ -2,11 +2,19 @@ import { getErrorObject } from '#helpers/error'
 import Country from '#models/country'
 import { createCountryValidator, updateCountryValidator } from '#validators/location'
 import type { HttpContext } from '@adonisjs/core/http'
+import cache from '@adonisjs/cache/services/main'
 
 export default class CountriesController {
   public async index({ response, logger }: HttpContext) {
     try {
-      const countries = await Country.query().orderBy('created_at', 'desc')
+      const countries = await cache.getOrSet({
+        key: 'countries',
+        factory: async () => {
+          const result = await Country.query().orderBy('created_at', 'desc')
+          return result.map((r) => r.toJSON())
+        },
+        ttl: '10m',
+      })
 
       logger.info('Countries fetched successfully')
 
@@ -29,6 +37,9 @@ export default class CountriesController {
       const country = await Country.create({
         name,
       })
+
+      // Invalidate cache
+      await cache.delete({ key: 'countries' })
 
       logger.info(`Country created successfully with ID: ${country.id}`)
 
@@ -79,6 +90,9 @@ export default class CountriesController {
 
       await country.merge({ name }).save()
 
+      // Invalidate cache
+      await cache.delete({ key: 'countries' })
+
       logger.info(`Country updated successfully with ID: ${params.id}`)
 
       return response.ok({
@@ -102,6 +116,9 @@ export default class CountriesController {
 
       await country.delete()
 
+      // Invalidate cache
+      await cache.delete({ key: 'countries' })
+
       logger.info(`Country deleted successfully with ID: ${params.id}`)
 
       return response.ok({
@@ -118,3 +135,5 @@ export default class CountriesController {
     }
   }
 }
+
+

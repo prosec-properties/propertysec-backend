@@ -2,22 +2,32 @@ import { getErrorObject } from '#helpers/error'
 import Plan from '#models/plan'
 import { UpdatePlanValidator } from '#validators/plan'
 import type { HttpContext } from '@adonisjs/core/http'
+import cache from '@adonisjs/cache/services/main'
 
 export default class PlansContoller {
   async index({ auth, logger, response, request }: HttpContext) {
     const { duration } = request.qs()
-    console.log('Duration:', duration)
 
     try {
       await auth.authenticate()
 
-      const query = Plan.query()
+      // Create cache key based on duration filter
+      const cacheKey = duration ? `plans:${duration}` : 'plans'
 
-      if (duration) {
-        query.where('duration', duration)
-      }
+      const plans = await cache.getOrSet({
+        key: cacheKey,
+        factory: async () => {
+          const query = Plan.query()
 
-      const plans = await query.orderBy('order', 'asc')
+          if (duration) {
+            query.where('duration', duration)
+          }
+
+          const result = await query.orderBy('order', 'asc')
+          return result.map((r) => r.toJSON())
+        },
+        ttl: '5m',
+      })
 
       logger.info('Plans fetched successfully', { duration })
 
@@ -60,6 +70,13 @@ export default class PlansContoller {
       const plan = await Plan.findOrFail(id)
 
       await plan.merge({ price, discountPercentage: discount }).save()
+
+      // Invalidate all plans cache
+      // Note: In an ideal world we'd use namespaces or tags
+      await cache.delete({ key: 'plans' })
+      await cache.delete({ key: 'plans:monthly' })
+      await cache.delete({ key: 'plans:yearly' })
+
       logger.info('Plans updated successfully')
 
       return response.ok(plan)
@@ -68,3 +85,5 @@ export default class PlansContoller {
     }
   }
 }
+
+

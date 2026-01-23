@@ -20,9 +20,12 @@ export default class UsersController {
           message: 'User not authenticated',
         })
       }
+
       const user = await User.query()
         .where('id', auth.user.id)
-        .preload('properties')
+        .preload('properties', (query) => {
+          query.select('id', 'title', 'status', 'availability', 'price', 'createdAt')
+        })
         .preload('propertyAccessRequests')
         .preload('profileFiles')
         .preload('subscription', (query) => {
